@@ -1,5 +1,9 @@
 {
   "permissions": {
+    "allow": [
+      "WebSearch",
+      "Bash(rm:*)"
+    ],
     "additionalDirectories": [
       "/Users/shsingh/Documents/GitHub/nix"
     ]

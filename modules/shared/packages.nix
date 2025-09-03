@@ -51,13 +51,14 @@ with pkgs; [
   tmux
   unrar
   unzip
-  zsh-powerlevel10k
   starship
   atuin
 
   # Python packages
   python3
   virtualenv
+  uv
+  pixi
 
   # Linting and formatting
   pre-commit
