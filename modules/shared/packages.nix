@@ -23,11 +23,16 @@ with pkgs; [
   libfido2
 
   # Cloud-related tools and SDKs
+  awscli2
   docker
   docker-compose
+  rclone
+  s5cmd
+  duckdb
 
   # Version control and development tools
   gh
+  just
 
   # Media-related packages
   emacs-all-the-icons-fonts
@@ -49,6 +54,7 @@ with pkgs; [
   iftop
   jetbrains-mono
   jq
+  parallel
   ripgrep
   tree
   tmux
