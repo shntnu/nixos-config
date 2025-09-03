@@ -1,7 +1,7 @@
 ;; -------------------------
 ;; Variable Declarations
 ;; -------------------------
-(defvar org-config-file 
+(defvar org-config-file
   (or (getenv "EMACS_CONFIG_ORG")  ; Allow override via environment variable
       "~/.config/emacs/config.org"))
 (defvar default-config-file "~/.emacs.d/default-config.org")
@@ -101,12 +101,12 @@
   (message "DEBUG: Loading shortdoc...")
   (require 'shortdoc nil t)
   (message "DEBUG: Shortdoc loaded: %s" (featurep 'shortdoc))
-  
+
   ;; Redefine shortdoc-add-function to handle bad keywords
   (defun shortdoc-add-function (group &rest args)
     "Add function NAME to GROUP.
 This version filters out problematic keywords."
-    (let ((valid-keywords '(:no-manual :args :eval :result :result-string 
+    (let ((valid-keywords '(:no-manual :args :eval :result :result-string
                            :eg-result :eg-result-string :no-eval :no-value
                            :value :result-value :result-prefix :result-postfix
                            :eg-result-prefix :eg-result-postfix :no-eg-result))
@@ -140,7 +140,7 @@ This version filters out problematic keywords."
           (setq group-info (assq group shortdoc--groups)))
         (let ((fun-list (cons name (nreverse filtered-args))))
           (setcdr group-info (append (cdr group-info) (list fun-list)))))))
-  
+
   ;; Also clean up any existing f.el entries
   (with-eval-after-load 'shortdoc
     (when (boundp 'shortdoc--groups)

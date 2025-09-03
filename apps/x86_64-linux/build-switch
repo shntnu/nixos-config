@@ -35,7 +35,7 @@ if [ -n "$HOST" ]; then
 else
   # Default behavior: detect system architecture
   SYSTEM=$(uname -m)
-  
+
   case "$SYSTEM" in
     x86_64)
       FLAKE_TARGET="x86_64-linux"

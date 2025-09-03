@@ -21,7 +21,7 @@ mkdir -p hosts/nixos/hostname
 ### 2. Add to flake.nix
 In your `nixosConfigurations`, add named hosts alongside the existing platform-based ones:
 ```nix
-nixosConfigurations = 
+nixosConfigurations =
   # Platform-based (existing default hosts)
   nixpkgs.lib.genAttrs linuxSystems (system:
     nixpkgs.lib.nixosSystem {
@@ -33,7 +33,7 @@ nixosConfigurations =
       ];
     }
   )
-  
+
   // # Additional named hosts
   {
     hostname = nixpkgs.lib.nixosSystem {
@@ -57,7 +57,7 @@ nixosConfigurations =
     ../../../modules/shared       # Shared base configuration
     # Add/remove modules as needed
   ];
-  
+
   networking.hostName = "hostname";
   # Host-specific overrides (hardware drivers, packages, services)...
 }
@@ -109,7 +109,7 @@ After your first boot, here are the essential hotkeys to get started with the bs
 
 ### Audio Controls
 - **XF86AudioRaiseVolume** - Volume up
-- **XF86AudioLowerVolume** - Volume down  
+- **XF86AudioLowerVolume** - Volume down
 - **XF86AudioMute** - Toggle mute
 
 These hotkeys are defined in `~/.config/sxhkd/sxhkdrc` and can be customized by editing the configuration in this repository.
