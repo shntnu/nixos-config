@@ -105,6 +105,10 @@ The `flake.nix` defines:
 - `modules/shared/home-manager.nix`: Shell configuration (zsh, git, etc.)
 - `hosts/darwin/default.nix`: System-level macOS settings
 
+## Python Development
+
+UV is installed for Python package management. UV can download Python versions as needed, allowing flexible development without Nix-Python conflicts. For reproducible builds requiring Nix integration, consider adding uv2nix when specifically needed.
+
 ## Troubleshooting
 
 - If `build-switch` requires sudo password: This is normal for darwin-rebuild
