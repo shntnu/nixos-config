@@ -26,4 +26,8 @@ _:
   # Entertainment Tools - Examples (uncomment as needed)
   # "spotify"
   # "vlc"
+
+  # AI Tools
+  "chatgpt"
+  "claude"
 ]

@@ -26,6 +26,9 @@ with pkgs; [
   docker
   docker-compose
 
+  # Version control and development tools
+  gh
+
   # Media-related packages
   emacs-all-the-icons-fonts
   dejavu_fonts
