@@ -56,6 +56,9 @@ let name = "Shantanu Singh";
 
       # Always color ls and group directories
       alias ls='ls --color=auto'
+
+      # Use starship for prompt
+      eval "$(starship init zsh)"
     '';
   };
 
@@ -354,5 +357,13 @@ let name = "Shantanu Singh";
       bind-key -T copy-mode-vi 'C-l' select-pane -R
       bind-key -T copy-mode-vi 'C-\' select-pane -l
       '';
+    };
+
+    starship = {
+      enable = true;
+    };
+
+    atuin = {
+      enable = true;
     };
 }

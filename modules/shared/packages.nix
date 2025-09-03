@@ -52,8 +52,20 @@ with pkgs; [
   unrar
   unzip
   zsh-powerlevel10k
+  starship
+  atuin
 
   # Python packages
   python3
   virtualenv
+
+  # Linting and formatting
+  pre-commit
+  ruff
+
+  # Note taking tools
+  obsidian
+
+  # AI Coding tools
+  claude-code
 ]
