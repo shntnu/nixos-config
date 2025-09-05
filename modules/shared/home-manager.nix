@@ -4,6 +4,14 @@ let name = "Shantanu Singh";
     user = "shsingh";
     email = "shsingh@broadinstitute.org"; in
 {
+  # z-lua for smart directory jumping
+  z-lua = {
+    enable = true;
+    enableZshIntegration = true;
+    enableAliases = true;  # Adds zz, zi, zf, zb aliases
+    options = [ "enhanced" "once" "fzf" ];
+  };
+
   # Shared shell configuration
   zsh = {
     enable = true;
