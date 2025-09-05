@@ -159,13 +159,13 @@ let
     super + @space
           rofi -config -no-lazy-grab -show drun -modi drun -theme /home/${user}/.config/rofi/launcher.rasi
 
-    # Terminal emulator
-    super + Return
-          bspc rule -a Alacritty -o state=floating rectangle=1024x768x0x0 center=true && /etc/profiles/per-user/${user}/bin/alacritty
+#     # Terminal emulator
+#     super + Return
+#           bspc rule -a Alacritty -o state=floating rectangle=1024x768x0x0 center=true && /etc/profiles/per-user/${user}/bin/alacritty
 
-    # Terminal emulator
-    super + ctrl + Return
-          /etc/profiles/per-user/${user}/bin/alacritty
+#     # Terminal emulator
+#     super + ctrl + Return
+#           /etc/profiles/per-user/${user}/bin/alacritty
 
     # Jump to workspaces
     super + t

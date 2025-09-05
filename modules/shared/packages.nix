@@ -2,13 +2,14 @@
 
 with pkgs; [
   # General packages for development and system management
-  alacritty
+  # alacritty
   aspell
   aspellDicts.en
   bash-completion
   bat
   btop
   coreutils
+  duckdb
   killall
   neofetch
   openssh
@@ -28,7 +29,6 @@ with pkgs; [
   docker-compose
   rclone
   s5cmd
-  duckdb
 
   # Version control and development tools
   gh
@@ -52,7 +52,7 @@ with pkgs; [
   htop
   hunspell
   iftop
-  jetbrains-mono
+  # jetbrains-mono
   jq
   parallel
   ripgrep
@@ -62,6 +62,7 @@ with pkgs; [
   unzip
   starship
   atuin
+  z-lua
 
   # Python packages
   python3
@@ -78,4 +79,8 @@ with pkgs; [
 
   # AI Coding tools
   claude-code
+
+  # Utils
+  whisper-cpp
+  graphviz
 ]
