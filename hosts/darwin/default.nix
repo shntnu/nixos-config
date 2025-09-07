@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, lean4-nix, ... }:
 
 let user = "shsingh"; in
 
@@ -31,6 +31,7 @@ let user = "shsingh"; in
 
   environment.systemPackages = with pkgs; [
     emacs-unstable
+    lean4-nix.packages.${pkgs.system}.lean.lean-all
   ] ++ (import ../../modules/shared/packages.nix { inherit pkgs; });
 
   launchd.user.agents.emacs.path = [ config.environment.systemPath ];

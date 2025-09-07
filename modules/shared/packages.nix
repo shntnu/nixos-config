@@ -74,6 +74,9 @@ with pkgs; [
   pre-commit
   ruff
 
+  # Lean development
+  elan
+
   # Note taking tools
   obsidian
 
