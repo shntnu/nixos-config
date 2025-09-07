@@ -6,8 +6,8 @@ import Mathlib.Data.Real.Basic
 -- 1. Mathematical proofs (like the theorem below)
 -- 2. Executable programs (like the main function)
 
-/-- This is a theorem stating that 2 + 2 = 4
-    The /-- syntax creates documentation -/
+/-- This is a theorem stating that 2 + 2 = 4 -/
+
 theorem two_plus_two : 2 + 2 = 4 := by
   -- 'by' starts a proof
   -- 'norm_num' is a tactic that simplifies numerical expressions
@@ -24,7 +24,3 @@ def main : IO Unit := do
   IO.println s!"Hello from Lean with Mathlib!"
   IO.println s!"2 + 2 = {2 + 2}"
   IO.println s!"double 21 = {double 21}"
-
-  -- You can also use Mathlib's mathematical structures
-  let x : ℝ := 3.14  -- ℝ is the real numbers type from Mathlib
-  IO.println s!"A real number: {x}"

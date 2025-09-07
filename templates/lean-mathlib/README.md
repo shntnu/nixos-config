@@ -29,7 +29,7 @@ lake exe myproject
 ```
 
 ## What's included:
-- **`lean-toolchain`** - Specifies which version of Lean to use (stable)
+- **`lean-toolchain`** - Specifies which version of Lean to use (matches Mathlib's requirement)
 - **`lakefile.lean`** - Build configuration with extensive comments
 - **`Main.lean`** - Example starter file with comments explaining Lean basics
 
@@ -65,12 +65,18 @@ my-project/
    package myproject where  →  package yourname where
    ```
 
-2. **Add new Lean files**: Create `.lean` files and add them to roots in `lakefile.lean`:
+2. **Change the executable name** in `lakefile.lean`:
+   ```lean
+   lean_exe «myproject» where  →  lean_exe «yourapp» where
+   ```
+   Then run with `lake exe yourapp`
+
+3. **Add new Lean files**: Create `.lean` files and add them to roots in `lakefile.lean`:
    ```lean
    roots := #[`Main, `YourModule, `Another.Module]
    ```
 
-3. **Add more Mathlib imports** in your `.lean` files:
+4. **Add more Mathlib imports** in your `.lean` files:
    ```lean
    import Mathlib.Data.Real.Basic      -- Real numbers
    import Mathlib.Analysis.Calculus    -- Calculus

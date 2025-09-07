@@ -27,3 +27,7 @@ lean_lib «Main» where
   -- `Main` means it looks for Main.lean in the project root
   -- For multiple files, use: roots := #[`File1, `File2, `Subdir.File3]
   roots := #[`Main]
+
+-- This defines an executable that can be run with `lake exe`
+lean_exe «myproject» where
+  root := `Main
