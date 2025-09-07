@@ -86,4 +86,6 @@ with pkgs; [
   # Utils
   whisper-cpp
   graphviz
+  pandoc
+  texlive.combined.scheme-medium
 ]
