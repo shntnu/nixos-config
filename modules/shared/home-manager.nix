@@ -29,6 +29,12 @@ let name = "Shantanu Singh";
       export PATH=$HOME/.npm-packages/bin:$HOME/bin:$PATH
       export PATH=$HOME/.local/share/bin:$PATH
 
+      # Install/update AWS CDK globally if not at required version
+      if ! command -v cdk &> /dev/null || [[ $(cdk --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | cut -d. -f2) -lt 1024 ]]; then
+        echo "Installing/updating AWS CDK to latest version..."
+        npm install -g aws-cdk@latest --prefix=$HOME/.npm-packages
+      fi
+
       # Remove history data we don't want to see
       export HISTIGNORE="pwd:ls:cd"
 
