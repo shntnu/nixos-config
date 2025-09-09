@@ -29,6 +29,7 @@ with pkgs; [
   docker-compose
   rclone
   s5cmd
+  tailscale
 
   # Version control and development tools
   gh

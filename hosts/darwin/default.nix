@@ -28,6 +28,7 @@ let user = "shsingh"; in
     '';
   };
 
+  services.tailscale.enable = true;
 
   environment.systemPackages = with pkgs; [
     emacs-unstable
