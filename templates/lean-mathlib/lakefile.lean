@@ -12,6 +12,12 @@ package myproject where
     ⟨`autoImplicit, false⟩,
     ⟨`relaxedAutoImplicit, false⟩
   ]
+  -- Platform-specific linker flags
+  -- On macOS, suppress deployment target warnings from Lean's pre-built binaries
+  moreLinkArgs := if System.Platform.isOSX then
+    #["-mmacosx-version-min=14.0"]
+  else
+    #[]
 
 -- Dependencies: This pulls in Mathlib, Lean's mathematical library
 -- Mathlib provides thousands of pre-proven theorems and mathematical structures
