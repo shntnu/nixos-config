@@ -27,12 +27,9 @@
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    lean4-nix = {
-      url = "github:lenianiva/lean4-nix";
-    };
   };
 
-  outputs = { self, darwin, nix-homebrew, homebrew-bundle, homebrew-core, homebrew-cask, home-manager, nixpkgs, disko, lean4-nix } @inputs:
+  outputs = { self, darwin, nix-homebrew, homebrew-bundle, homebrew-core, homebrew-cask, home-manager, nixpkgs, disko } @inputs:
     let
       user = "shsingh";
       linuxSystems = [ "x86_64-linux" "aarch64-linux" ];
@@ -119,6 +116,30 @@
           ./hosts/nixos
         ];
      });
+
+    # Templates for creating new projects
+    templates = {
+      basic = {
+        path = ./templates/basic;
+        description = "Basic development environment";
+      };
+      python = {
+        path = ./templates/python;
+        description = "Python development environment with uv";
+      };
+      node = {
+        path = ./templates/node;
+        description = "Node.js development environment";
+      };
+      rust = {
+        path = ./templates/rust;
+        description = "Rust development environment";
+      };
+      lean-mathlib = {
+        path = ./templates/lean-mathlib;
+        description = "Lean 4 development with Mathlib";
+      };
+    };
 
   };
 }

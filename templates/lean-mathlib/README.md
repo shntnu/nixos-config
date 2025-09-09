@@ -1,8 +1,6 @@
-# Lean Project Template (Work in Progress)
+# Lean 4 Project Template with Mathlib
 
-> [!WARNING]
-> This will become a proper Nix flake template. Currently it's just example files you can copy manually.
-> TODO: Add flake.nix to make this work with `nix flake new -t github:shntnu/nixos-config#lean-mathlib`
+This is a Nix flake template for Lean 4 development with Mathlib support. It provides a complete, reproducible development environment using Nix and elan (Lean's version manager).
 
 ## What is Lean?
 Lean is a functional programming language and interactive theorem prover. You can use it to:
@@ -10,22 +8,35 @@ Lean is a functional programming language and interactive theorem prover. You ca
 - Build regular programs (it compiles to efficient C code)
 - Explore mathematics interactively with immediate feedback
 
-## Prerequisites
+## Quick Start
 
-You need Lean installed via Nix (either through your nixos-config or as a Nix package). This ensures a consistent, reproducible development environment.
-
-## To use this template:
+### Create a new project from this template:
 
 ```bash
-# Copy the template (if you have this repo cloned)
-cp -r ~/Documents/GitHub/nix/nixos-config-shntnu/templates/lean-mathlib ~/my-lean-project
-cd ~/my-lean-project
+# Create a new Lean project using this template
+nix flake new -t github:shntnu/nixos-config#lean-mathlib my-lean-project
+cd my-lean-project
 
-# Build your project (Elan will auto-download the right Lean version if needed)
+# Enter the development environment
+nix develop
+
+# Build your project (Elan will auto-download the right Lean version)
 lake build
 
 # Run the executable
 lake exe myproject
+```
+
+### Or use directly without installing globally:
+
+```bash
+# Clone and enter the development shell
+git clone <your-project>
+cd <your-project>
+nix develop
+
+# Now you have access to Lean, Lake, and all development tools
+lake build
 ```
 
 ## What's included:
