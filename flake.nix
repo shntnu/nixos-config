@@ -117,6 +117,28 @@
         ];
      });
 
+    # Home Manager standalone configuration for non-NixOS Linux (Ubuntu, WSL, etc.)
+    # Manages user packages and dotfiles via modules/shared without system-level changes
+    # Usage: nix run home-manager/master -- switch --flake .#shsingh
+    homeConfigurations = {
+      "${user}" = home-manager.lib.homeManagerConfiguration {
+        pkgs = nixpkgs.legacyPackages.x86_64-linux;
+        modules = [
+          ({ pkgs, ... }: {
+            imports = [ ./modules/shared ];
+            home = {
+              username = user;
+              homeDirectory = "/home/${user}";
+              stateVersion = "24.11";  # Use latest stable
+            };
+            programs.home-manager.enable = true;
+            nix.package = pkgs.nix;
+          })
+        ];
+        extraSpecialArgs = { inherit inputs; };
+      };
+    };
+
     # Templates for creating new projects
     templates = {
       basic = {
