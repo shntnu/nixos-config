@@ -28,6 +28,9 @@ nix run .#apply
 
 # Rollback to previous generation
 nix run .#rollback
+
+# For Home Manager standalone (experimental - see flake.nix homeConfigurations)
+nix run 'home-manager/master' -- switch --flake '.#shsingh' -b backup
 ```
 
 ### Development Commands
@@ -53,6 +56,7 @@ nix shell nixpkgs#<package-name>
 The `flake.nix` defines:
 - **darwinConfigurations**: macOS configurations using nix-darwin
 - **nixosConfigurations**: NixOS configurations (for Linux systems)
+- **homeConfigurations**: Home Manager standalone for non-NixOS Linux (Ubuntu, WSL, etc.)
 - **Apps**: Helper scripts for building, applying, and managing configurations
 - **DevShells**: Development environments
 
