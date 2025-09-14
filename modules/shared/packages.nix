@@ -74,6 +74,8 @@ with pkgs; [
   # Linting and formatting
   pre-commit
   ruff
+  nil # Nix LSP for VSCode
+  nixpkgs-fmt # Nix formatter
 
   # Note taking tools
   obsidian

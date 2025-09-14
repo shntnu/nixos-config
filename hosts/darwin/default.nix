@@ -31,7 +31,7 @@ let user = "shsingh"; in
   services.tailscale.enable = true;
 
   environment.systemPackages = with pkgs; [
-    emacs-unstable
+    emacs30  # Pinned to Emacs 30.x stable (Darwin only - NixOS config TBD)
   ] ++ (import ../../modules/shared/packages.nix { inherit pkgs; });
 
   launchd.user.agents.emacs.path = [ config.environment.systemPath ];

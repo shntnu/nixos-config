@@ -1,0 +1,21 @@
+{
+  "nix.enableLanguageServer": true,
+  "nix.serverPath": "nil",
+  "nix.serverSettings": {
+    "nil": {
+      "formatting": {
+        "command": ["nixpkgs-fmt"]
+      },
+      "nix": {
+        "flake": {
+          "autoArchive": true,
+          "autoEvalInputs": true
+        }
+      }
+    }
+  },
+  // Optional: Get better completions for Darwin options
+  "nix.serverSettings.nil.nix.darwin": {
+    "expr": "(builtins.getFlake \"${workspaceFolder}\").darwinConfigurations.aarch64-darwin.options"
+  }
+}
