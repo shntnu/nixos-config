@@ -20,6 +20,16 @@ nix run 'home-manager/master' -- switch --flake '.#shsingh'
 
 Ubuntu gets CLI tools and dotfiles but not GUI apps or system services. Those need `apt install`.
 
+## 2025-01-21: Home Manager's Two Modes
+
+**Key Insight:** Home Manager runs in integrated mode on NixOS/macOS (inside system rebuild) but standalone mode on Ubuntu.
+
+Home Manager isn't just for Ubuntu - it's used everywhere, differently:
+- NixOS/macOS: Loaded as a module in system configurations, runs during `nixos-rebuild`/`darwin-rebuild`
+- Ubuntu: Runs standalone via `home-manager switch` since no system rebuild exists
+
+Same Home Manager, different delivery mechanism. System rebuild carries it on NixOS/macOS; Ubuntu runs it directly.
+
 ---
 
 ## Entry Guidelines

@@ -119,10 +119,13 @@
 
     # Home Manager standalone configuration for non-NixOS Linux (Ubuntu, WSL, etc.)
     #
-    # ARCHITECTURE NOTE:
-    # - NixOS/Darwin: Use 'nix run .#build-switch' (system-level via nixos-rebuild/darwin-rebuild)
-    # - Ubuntu/WSL: Use command below (user-level via standalone Home Manager)
-    # - Cannot use build-switch on Ubuntu - it requires nixos-rebuild which doesn't exist there
+    # HOME MANAGER HAS TWO MODES:
+    # 1. Integrated mode (NixOS/Darwin): Runs as part of system rebuild
+    #    - Loaded as modules in darwinConfigurations and nixosConfigurations above
+    #    - Managed via 'nix run .#build-switch' (nixos-rebuild/darwin-rebuild)
+    # 2. Standalone mode (Ubuntu/WSL): Runs independently
+    #    - Defined here in homeConfigurations
+    #    - Managed via 'home-manager switch' command directly
     #
     # WHAT YOU GET vs WHAT YOU DON'T:
     # Included: CLI tools, development environments (from modules/shared/packages.nix)
