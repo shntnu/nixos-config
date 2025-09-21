@@ -84,8 +84,9 @@ with pkgs; [
   claude-code
 
   # Utils
-  whisper-cpp
   graphviz
   pandoc
+  poppler-utils
   texlive.combined.scheme-medium
+  whisper-cpp
 ]
