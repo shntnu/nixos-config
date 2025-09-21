@@ -119,6 +119,17 @@
 
     # Home Manager standalone configuration for non-NixOS Linux (Ubuntu, WSL, etc.)
     #
+    # ARCHITECTURE NOTE:
+    # - NixOS/Darwin: Use 'nix run .#build-switch' (system-level via nixos-rebuild/darwin-rebuild)
+    # - Ubuntu/WSL: Use command below (user-level via standalone Home Manager)
+    # - Cannot use build-switch on Ubuntu - it requires nixos-rebuild which doesn't exist there
+    #
+    # WHAT YOU GET vs WHAT YOU DON'T:
+    # Included: CLI tools, development environments (from modules/shared/packages.nix)
+    # Included: Shell configs (zsh, git, starship) and dotfiles
+    # NOT included: GUI applications (install via apt: chrome, keepassxc, etc.)
+    # NOT included: System services, desktop environment tools (polybar, rofi, etc.)
+    #
     # HOW THIS WORKS ON UBUNTU (not NixOS):
     # - Home Manager runs in "standalone" mode, managing only user-level files
     # - Installs packages to ~/.nix-profile/ instead of system-wide
