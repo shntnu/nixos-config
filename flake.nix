@@ -76,6 +76,7 @@
 
       darwinConfigurations = nixpkgs.lib.genAttrs darwinSystems (system: let
         user = "shsingh";
+        overlays = import ./modules/shared/overlays.nix { pkgs = nixpkgs.legacyPackages.${system}; };
       in
         darwin.lib.darwinSystem {
           inherit system;
@@ -84,6 +85,7 @@
             home-manager.darwinModules.home-manager
             nix-homebrew.darwinModules.nix-homebrew
             {
+              nixpkgs.overlays = overlays;
               nix-homebrew = {
                 inherit user;
                 enable = true;

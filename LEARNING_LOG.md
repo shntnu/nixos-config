@@ -33,6 +33,27 @@ Home Manager isn't just for Ubuntu - it's used everywhere, differently:
 
 Same Home Manager, different delivery mechanism. System rebuild carries it on NixOS/macOS; Ubuntu runs it directly.
 
+## 2025-01-26: Nix Overlays for Package Version Updates
+
+**Key Insight:** Overlays let you override package versions when nixpkgs is behind upstream releases.
+
+Encountered Nextflow 24.08.0-edge in nixpkgs but needed 25.08.0-edge for plugin compatibility. Solution: create an overlay that fetches the latest version directly from GitHub releases. Overlays modify the package set before it's used, allowing version updates without waiting for nixpkgs.
+
+```nix
+# modules/shared/overlays.nix
+nextflow = prev.stdenv.mkDerivation rec {
+  version = "25.08.0-edge";
+  src = prev.fetchurl { url = "...github release..."; };
+  # Custom build instructions
+};
+```
+
+Key learnings:
+- Git-track overlay files before building (flakes only see tracked files)
+- Use `nix-prefetch-url` to get SHA256 for new sources
+- Set `dontUnpack = true` for self-contained scripts
+- Override completely with `mkDerivation` when patches conflict
+
 ---
 
 ## Entry Guidelines
