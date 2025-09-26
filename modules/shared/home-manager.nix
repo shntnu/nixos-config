@@ -4,15 +4,14 @@ let name = "Shantanu Singh";
     user = "shsingh";
     email = "shsingh@broadinstitute.org"; in
 {
-  # z-lua for smart directory jumping
-  z-lua = {
-    enable = true;
-    enableZshIntegration = true;
-    enableAliases = true;  # Adds zz, zi, zf, zb aliases
-    options = [ "enhanced" "once" "fzf" ];
-  };
 
   # Shared shell configuration
+  zoxide = {
+    enable = true;
+    enableZshIntegration = true;
+    # This gives you 'z' for smart jumps and 'zi' for interactive mode
+  };
+
   zsh = {
     enable = true;
     autocd = false;
@@ -28,12 +27,6 @@ let name = "Shantanu Singh";
       export PATH=$HOME/.pnpm-packages/bin:$HOME/.pnpm-packages:$PATH
       export PATH=$HOME/.npm-packages/bin:$HOME/bin:$PATH
       export PATH=$HOME/.local/share/bin:$PATH
-
-      # Install/update AWS CDK globally if not at required version
-      if ! command -v cdk &> /dev/null || [[ $(cdk --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | cut -d. -f2) -lt 1024 ]]; then
-        echo "Installing/updating AWS CDK to latest version..."
-        npm install -g aws-cdk@latest --prefix=$HOME/.npm-packages
-      fi
 
       # Remove history data we don't want to see
       export HISTIGNORE="pwd:ls:cd"
@@ -131,8 +124,6 @@ let name = "Shantanu Singh";
       set gdefault
 
       "" Statusbar
-      set nocompatible " Disable vi-compatibility
-      set laststatus=2 " Always show the statusline
       let g:airline_theme='bubblegum'
       let g:airline_powerline_fonts = 1
 
@@ -189,68 +180,8 @@ let name = "Shantanu Singh";
         \ '~/Projects',
         \ '~/Documents',
         \ ]
-
-      let g:airline_theme='bubblegum'
-      let g:airline_powerline_fonts = 1
       '';
      };
-
-  # alacritty = {
-  #   enable = true;
-  #   settings = {
-  #     cursor = {
-  #       style = "Block";
-  #     };
-
-  #     window = {
-  #       opacity = 1.0;
-  #       padding = {
-  #         x = 24;
-  #         y = 24;
-  #       };
-  #     };
-
-  #     font = {
-  #       normal = {
-  #         family = "MesloLGS NF";
-  #         style = "Regular";
-  #       };
-  #       size = lib.mkMerge [
-  #         (lib.mkIf pkgs.stdenv.hostPlatform.isLinux 10)
-  #         (lib.mkIf pkgs.stdenv.hostPlatform.isDarwin 14)
-  #       ];
-  #     };
-
-  #     colors = {
-  #       primary = {
-  #         background = "0x1f2528";
-  #         foreground = "0xc0c5ce";
-  #       };
-
-  #       normal = {
-  #         black = "0x1f2528";
-  #         red = "0xec5f67";
-  #         green = "0x99c794";
-  #         yellow = "0xfac863";
-  #         blue = "0x6699cc";
-  #         magenta = "0xc594c5";
-  #         cyan = "0x5fb3b3";
-  #         white = "0xc0c5ce";
-  #       };
-
-  #       bright = {
-  #         black = "0x65737e";
-  #         red = "0xec5f67";
-  #         green = "0x99c794";
-  #         yellow = "0xfac863";
-  #         blue = "0x6699cc";
-  #         magenta = "0xc594c5";
-  #         cyan = "0x5fb3b3";
-  #         white = "0xd8dee9";
-  #       };
-  #     };
-  #   };
-  # };
 
   ssh = {
     enable = true;
@@ -263,20 +194,7 @@ let name = "Shantanu Singh";
         "/Users/${user}/.ssh/config_external"
       )
     ];
-    matchBlocks = {
-      # Example SSH configuration for GitHub
-      # "github.com" = {
-      #   identitiesOnly = true;
-      #   identityFile = [
-      #     (lib.mkIf pkgs.stdenv.hostPlatform.isLinux
-      #       "/home/${user}/.ssh/id_github"
-      #     )
-      #     (lib.mkIf pkgs.stdenv.hostPlatform.isDarwin
-      #       "/Users/${user}/.ssh/id_github"
-      #     )
-      #   ];
-      # };
-    };
+    matchBlocks = {};
   };
 
   tmux = {

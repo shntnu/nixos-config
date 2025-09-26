@@ -2,7 +2,6 @@
 
 with pkgs; [
   # General packages for development and system management
-  # alacritty
   aspell
   aspellDicts.en
   bash-completion
@@ -25,8 +24,8 @@ with pkgs; [
 
   # Cloud-related tools and SDKs
   awscli2
-  docker
-  docker-compose
+  # docker and docker-compose handled by Docker Desktop via Homebrew cask
+  # AWS CDK moved to Node.js section above
   rclone
   s5cmd
   tailscale
@@ -34,6 +33,10 @@ with pkgs; [
   # Version control and development tools
   gh
   just
+
+  # Workflow management
+  jdk17  # Java runtime for Nextflow
+  nextflow  # Bioinformatics workflow manager, works with Docker Desktop
 
   # Media-related packages
   emacs-all-the-icons-fonts
@@ -48,12 +51,11 @@ with pkgs; [
 
   # Node.js development tools
   nodejs_24
+  nodePackages.aws-cdk
 
   # Text and terminal utilities
-  htop
   hunspell
   iftop
-  # jetbrains-mono
   jq
   parallel
   ripgrep
@@ -63,7 +65,7 @@ with pkgs; [
   unzip
   starship
   atuin
-  z-lua
+  zoxide
 
   # Python packages
   python3
