@@ -6,6 +6,12 @@ let name = "Shantanu Singh";
 {
 
   # Shared shell configuration
+  direnv = {
+    enable = true;
+    enableZshIntegration = true;
+    nix-direnv.enable = true;
+  };
+
   zoxide = {
     enable = true;
     enableZshIntegration = true;
@@ -27,6 +33,10 @@ let name = "Shantanu Singh";
       export PATH=$HOME/.pnpm-packages/bin:$HOME/.pnpm-packages:$PATH
       export PATH=$HOME/.npm-packages/bin:$HOME/bin:$PATH
       export PATH=$HOME/.local/share/bin:$PATH
+
+      # Configure npm to use home directory for global packages
+      export NPM_CONFIG_PREFIX=$HOME/.npm-packages
+      export NODE_PATH=$HOME/.npm-packages/lib/node_modules
 
       # Remove history data we don't want to see
       export HISTIGNORE="pwd:ls:cd"
@@ -61,12 +71,12 @@ let name = "Shantanu Singh";
   git = {
     enable = true;
     ignores = [ "*.swp" ];
-    userName = name;
-    userEmail = email;
     lfs = {
       enable = true;
     };
-    extraConfig = {
+    settings = {
+      user.name = name;
+      user.email = email;
       init.defaultBranch = "main";
       core = {
 	    editor = "vim";
