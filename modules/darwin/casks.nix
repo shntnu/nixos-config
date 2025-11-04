@@ -22,6 +22,7 @@ _:
   # "syncthing"
   # "1password"
   # "rectangle"
+  "onedrive"
 
   # Entertainment Tools - Examples (uncomment as needed)
   # "spotify"
