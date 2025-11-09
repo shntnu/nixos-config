@@ -60,6 +60,8 @@ with pkgs; [
   parallel
   ripgrep
   tree
+  eza  # Modern ls/tree replacement with colors and icons
+  yazi  # Terminal file manager
   tmux
   unrar
   unzip

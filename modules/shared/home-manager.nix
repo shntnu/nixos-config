@@ -58,10 +58,12 @@ let name = "Shantanu Singh";
       # Use difftastic, syntax-aware diffing
       # alias diff=difft
 
-      alias ll="ls -l"
-
-      # Always color ls and group directories
-      alias ls='ls --color=auto'
+      # Use eza for better ls and tree views
+      alias ls='eza --icons'
+      alias ll='eza --long --git --icons'
+      alias la='eza --long --all --git --icons'
+      alias lt='eza --tree --level=2 --icons'
+      alias lta='eza --tree --level=2 --all --icons'
 
       # Use starship for prompt
       eval "$(starship init zsh)"
