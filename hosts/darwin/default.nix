@@ -47,9 +47,11 @@ let user = "shsingh"; in
   };
 
   # Weekly OneDrive SharePoint backup for OASIS consortium
+  # Uses OneDriveBackup.app wrapper (grant it Full Disk Access, not bash)
+  # Calls the app's executable directly (not via 'open') to capture stdout/stderr
   launchd.user.agents.onedrive-archive.serviceConfig = {
     ProgramArguments = [
-      "/Users/${user}/Documents/GitHub/oasis/oasis-management/archive-onedrive.sh"
+      "/Users/${user}/Applications/OneDriveBackup.app/Contents/MacOS/applet"
     ];
     StartCalendarInterval = [
       { Weekday = 0; Hour = 3; Minute = 0; }  # Sunday 3am (nix gc runs at 2am)
