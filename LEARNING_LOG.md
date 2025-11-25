@@ -73,6 +73,22 @@ brews = [ "awscli" ];  # Use Homebrew when nixpkgs broken
 
 When nixpkgs has broken packages: overlays, downgrade nixpkgs, or use alternative package managers (Homebrew, pip via uv).
 
+## 2025-11-25: Imperative vs Declarative Package Installation
+
+**Key Insight:** Use `nix profile install` for fast-updating packages instead of adding flake inputs to avoid configuration complexity.
+
+For packages that update frequently (like `claude-code` with hourly releases), imperative installation is simpler than declarative flake-based management. Adding a package as a flake input requires passing it through multiple configuration layers, while `nix profile install github:owner/repo` installs directly to your user profile. Update independently with `nix profile upgrade` without rebuilding your entire system configuration.
+
+```bash
+# Simple imperative install
+nix profile install github:sadjow/claude-code-nix
+
+# Update when needed
+nix profile upgrade github:sadjow/claude-code-nix
+```
+
+Use declarative (flake-based) for system packages that change with your config; use imperative for tools you want to update independently.
+
 ---
 
 ## Entry Guidelines

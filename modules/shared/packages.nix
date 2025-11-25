@@ -85,7 +85,7 @@ with pkgs; [
   obsidian
 
   # AI Coding tools
-  claude-code
+  # claude-code installed imperatively via: nix profile install github:sadjow/claude-code-nix
 
   # Utils
   graphviz
