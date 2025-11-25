@@ -23,7 +23,7 @@ with pkgs; [
   libfido2
 
   # Cloud-related tools and SDKs
-  awscli2
+  # awscli via Homebrew (see modules/darwin/home-manager.nix brews)
   # docker and docker-compose handled by Docker Desktop via Homebrew cask
   # AWS CDK moved to Node.js section above
   rclone

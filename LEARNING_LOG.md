@@ -54,6 +54,25 @@ Key learnings:
 - Set `dontUnpack = true` for self-contained scripts
 - Override completely with `mkDerivation` when patches conflict
 
+## 2025-11-25: Flake Input Follows and Hash Mismatches
+
+**Key Insight:** Use `inputs.nixpkgs.follows = "nixpkgs"` for consistency, but hash mismatches in nixpkgs require different solutions.
+
+Hit hash mismatch building `awscli2` because nixpkgs had a stale hash for `prompt-toolkit` dependency. Adding `home-manager.inputs.nixpkgs.follows = "nixpkgs"` is good practice (prevents multiple nixpkgs versions, reduces disk usage) but didn't fix this upstream package issue. Solution: moved `awscli` to Homebrew brews instead of nixpkgs.
+
+```nix
+# flake.nix - Best practice for consistency
+home-manager = {
+  url = "github:nix-community/home-manager";
+  inputs.nixpkgs.follows = "nixpkgs";
+};
+
+# modules/darwin/home-manager.nix - Workaround for broken packages
+brews = [ "awscli" ];  # Use Homebrew when nixpkgs broken
+```
+
+When nixpkgs has broken packages: overlays, downgrade nixpkgs, or use alternative package managers (Homebrew, pip via uv).
+
 ---
 
 ## Entry Guidelines

@@ -26,6 +26,7 @@ in
   homebrew = {
     enable = true;
     casks = pkgs.callPackage ./casks.nix {};
+    brews = [ "awscli" ];
     # onActivation.cleanup = "uninstall";
 
     # These app IDs are from using the mas CLI app
