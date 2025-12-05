@@ -83,8 +83,8 @@ For packages that update frequently (like `claude-code` with hourly releases), i
 # Simple imperative install
 nix profile install github:sadjow/claude-code-nix
 
-# Update when needed
-nix profile upgrade github:sadjow/claude-code-nix
+# Update when needed (use profile name, not URL; --refresh bypasses cache)
+nix profile upgrade claude-code-nix --refresh
 ```
 
 Use declarative (flake-based) for system packages that change with your config; use imperative for tools you want to update independently.
