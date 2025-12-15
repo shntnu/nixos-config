@@ -37,6 +37,7 @@ with pkgs; [
   # Workflow management
   jdk17  # Java runtime for Nextflow
   nextflow  # Bioinformatics workflow manager, works with Docker Desktop
+  nf-test  # Testing framework for Nextflow pipelines
 
   # Media-related packages
   emacs-all-the-icons-fonts
@@ -85,7 +86,9 @@ with pkgs; [
   obsidian
 
   # AI Coding tools
-  # claude-code installed imperatively via: nix profile add github:sadjow/claude-code-nix
+  # claude-code installed imperatively:
+  #   Install: nix profile install github:sadjow/claude-code-nix
+  #   Upgrade: nix profile upgrade claude-code-nix --refresh
 
   # Utils
   graphviz
