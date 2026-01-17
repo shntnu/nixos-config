@@ -26,13 +26,17 @@
       url = "github:homebrew/homebrew-cask";
       flake = false;
     };
+    specstoryai-tap = {
+      url = "github:specstoryai/homebrew-tap";
+      flake = false;
+    };
     disko = {
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
-  outputs = { self, darwin, nix-homebrew, homebrew-bundle, homebrew-core, homebrew-cask, home-manager, nixpkgs, disko } @inputs:
+  outputs = { self, darwin, nix-homebrew, homebrew-bundle, homebrew-core, homebrew-cask, specstoryai-tap, home-manager, nixpkgs, disko } @inputs:
     let
       user = "shsingh";
       linuxSystems = [ "x86_64-linux" "aarch64-linux" ];
@@ -96,6 +100,7 @@
                   "homebrew/homebrew-core" = homebrew-core;
                   "homebrew/homebrew-cask" = homebrew-cask;
                   "homebrew/homebrew-bundle" = homebrew-bundle;
+                  "specstoryai/homebrew-tap" = specstoryai-tap;
                 };
                 mutableTaps = false;
                 autoMigrate = true;

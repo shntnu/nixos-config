@@ -92,6 +92,7 @@ with pkgs; [
 
   # Utils
   graphviz
+  mermaid-cli
   pandoc
   poppler-utils
   texlive.combined.scheme-medium

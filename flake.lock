@@ -169,7 +169,24 @@
         "homebrew-cask": "homebrew-cask",
         "homebrew-core": "homebrew-core",
         "nix-homebrew": "nix-homebrew",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "specstoryai-tap": "specstoryai-tap"
+      }
+    },
+    "specstoryai-tap": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1768604797,
+        "narHash": "sha256-gYAjNugkbvI8ZYVEC9doOP+cpS1wnCJGQGLXIbo4Mbc=",
+        "owner": "specstoryai",
+        "repo": "homebrew-tap",
+        "rev": "1e817cba0e7a458e55ac896423e954eea1ecfc43",
+        "type": "github"
+      },
+      "original": {
+        "owner": "specstoryai",
+        "repo": "homebrew-tap",
+        "type": "github"
       }
     }
   },
