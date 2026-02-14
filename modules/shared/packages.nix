@@ -77,6 +77,7 @@ with pkgs; [
   pixi
 
   # Linting and formatting
+  markdownlint-cli
   pre-commit
   ruff
   nil # Nix LSP for VSCode
@@ -89,6 +90,9 @@ with pkgs; [
   # claude-code installed imperatively:
   #   Install: nix profile install github:sadjow/claude-code-nix
   #   Upgrade: nix profile upgrade claude-code-nix --refresh
+  # gemini-cli installed imperatively:
+  #   Install: nix profile install github:sadjow/gemini-cli-nix
+  #   Upgrade: nix profile upgrade gemini-cli-nix --refresh
 
   # Utils
   graphviz

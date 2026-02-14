@@ -89,6 +89,18 @@ nix profile upgrade claude-code-nix --refresh
 
 Use declarative (flake-based) for system packages that change with your config; use imperative for tools you want to update independently.
 
+## 2026-02-14: Why Nix Flake Wrappers Over npm/Homebrew for CLI Tools
+
+**Key Insight:** Third-party nix flake wrappers (like `sadjow/claude-code-nix` and `sadjow/gemini-cli-nix`) solve problems that `npm install -g` and Homebrew cannot.
+
+When adding `gemini-cli`, considered Homebrew (macOS-only, won't work on NixOS), npm global install, and nixpkgs (version 0.17.0 vs latest 0.28.2 — same lag problem as claude-code). The `sadjow` flake wrappers provide: Node.js version isolation (survives runtime switches), disabled auto-update (respects Nix store immutability), rollback via `nix profile rollback`, and hourly CI-driven version updates with hash verification. These aren't thin npm wrappers — they fundamentally repackage the tools for Nix compatibility.
+
+```bash
+# Both tools follow the same pattern
+nix profile install github:sadjow/gemini-cli-nix
+nix profile upgrade gemini-cli-nix --refresh
+```
+
 ---
 
 ## Entry Guidelines
