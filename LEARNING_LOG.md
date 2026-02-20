@@ -101,6 +101,24 @@ nix profile install github:sadjow/gemini-cli-nix
 nix profile upgrade gemini-cli-nix --refresh
 ```
 
+## 2026-02-19: nix-darwin's `brew bundle --no-upgrade` Default
+
+**Key Insight:** `build-switch` won't upgrade already-installed Homebrew formulae because nix-darwin runs `brew bundle install --no-upgrade` by default.
+
+Tried updating specstory from 1.0.0 to 1.7.0. Two separate systems are involved: nix-homebrew (zhaofengli) manages Homebrew itself and tap availability only ("does not manage any package installed by it"), while nix-darwin's `homebrew.*` module manages installed formulae via `brew bundle`. The `--no-upgrade` flag means missing formulae get installed but existing ones are never upgraded. Required a manual `brew upgrade specstoryai/tap/specstory`.
+
+```bash
+# Full update flow for custom tap brews (with default settings)
+nix flake update specstoryai-tap
+nix run .#build-switch
+brew upgrade specstoryai/tap/specstory
+
+# Or set in modules/darwin/home-manager.nix to auto-upgrade on rebuild:
+# homebrew.onActivation.upgrade = true;
+```
+
+Key distinction: nix-homebrew = tap sources; nix-darwin `homebrew.*` = installed packages. The `onActivation.upgrade` default of `false` is intentional for idempotent rebuilds.
+
 ---
 
 ## Entry Guidelines

@@ -176,11 +176,11 @@
     "specstoryai-tap": {
       "flake": false,
       "locked": {
-        "lastModified": 1768604797,
-        "narHash": "sha256-gYAjNugkbvI8ZYVEC9doOP+cpS1wnCJGQGLXIbo4Mbc=",
+        "lastModified": 1771254117,
+        "narHash": "sha256-3P2YtruPSZi0iMfD3tEFzMshJFFpfEjV2mDFITKAbLw=",
         "owner": "specstoryai",
         "repo": "homebrew-tap",
-        "rev": "1e817cba0e7a458e55ac896423e954eea1ecfc43",
+        "rev": "c62a4151b23641191408a90f0d3ac1dec7b5964b",
         "type": "github"
       },
       "original": {

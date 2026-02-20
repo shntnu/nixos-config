@@ -88,6 +88,19 @@ The `flake.nix` defines:
 
 ## Configuration Workflow
 
+### Updating Homebrew Tap Packages (e.g., specstory)
+
+nix-darwin runs `brew bundle install --no-upgrade` by default, so `build-switch` installs missing formulae but never upgrades existing ones. Two approaches:
+
+**Manual upgrade (default behavior):**
+```bash
+nix flake update <tap-input-name>   # e.g., nix flake update specstoryai-tap
+nix run .#build-switch              # syncs tap sources
+brew upgrade <tap>/<formula>         # e.g., brew upgrade specstoryai/tap/specstory
+```
+
+**Auto-upgrade:** Set `homebrew.onActivation.upgrade = true` in `modules/darwin/home-manager.nix` to remove the `--no-upgrade` flag. Trade-off: slower, less idempotent rebuilds.
+
 1. **Adding Packages**:
    - System packages: Edit `modules/shared/packages.nix` (cross-platform) or `modules/darwin/packages.nix` (macOS-specific)
    - Homebrew casks: Edit `modules/darwin/casks.nix`

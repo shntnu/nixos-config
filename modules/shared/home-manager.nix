@@ -58,6 +58,9 @@ let name = "Shantanu Singh";
       # Use difftastic, syntax-aware diffing
       # alias diff=difft
 
+      # Use terminal mode for emacs
+      alias emacs='emacs -nw'
+
       # Use eza for better ls and tree views
       alias ls='eza --icons'
       alias ll='eza --long --git --icons'

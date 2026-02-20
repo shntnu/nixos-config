@@ -28,6 +28,9 @@ _:
   # "spotify"
   # "vlc"
 
+  # Terminal
+  "ghostty"
+
   # AI Tools
   "chatgpt"
   "claude"
