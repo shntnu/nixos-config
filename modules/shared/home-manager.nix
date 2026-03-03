@@ -68,6 +68,11 @@ let name = "Shantanu Singh";
       alias lt='eza --tree --level=2 --icons'
       alias lta='eza --tree --level=2 --all --icons'
 
+      # Obsidian CLI (v1.12+, installed via Homebrew cask on macOS)
+      if [ -d "/Applications/Obsidian.app/Contents/MacOS" ]; then
+        export PATH="$PATH:/Applications/Obsidian.app/Contents/MacOS"
+      fi
+
       # Use starship for prompt
       eval "$(starship init zsh)"
     '';

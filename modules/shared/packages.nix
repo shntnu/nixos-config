@@ -85,7 +85,7 @@ with pkgs; [
   nixpkgs-fmt # Nix formatter
 
   # Note taking tools
-  obsidian
+  # obsidian — moved to Homebrew cask (modules/darwin/casks.nix) for v1.12+ CLI support
 
   # AI Coding tools
   # claude-code installed imperatively:

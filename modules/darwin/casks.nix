@@ -31,6 +31,9 @@ _:
   # Terminal
   "ghostty"
 
+  # Note taking tools
+  "obsidian"
+
   # AI Tools
   "chatgpt"
   "claude"
