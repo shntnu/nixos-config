@@ -44,6 +44,7 @@ with pkgs; [
   dejavu_fonts
   ffmpeg
   fd
+  sox
   font-awesome
   hack-font
   noto-fonts

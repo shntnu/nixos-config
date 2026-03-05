@@ -28,6 +28,7 @@ in
     casks = pkgs.callPackage ./casks.nix {};
     # taps managed by nix-homebrew in flake.nix (mutableTaps = false)
     brews = [ "awscli" "specstoryai/tap/specstory" ];
+    onActivation.upgrade = true;
     # onActivation.cleanup = "uninstall";
 
     # These app IDs are from using the mas CLI app
