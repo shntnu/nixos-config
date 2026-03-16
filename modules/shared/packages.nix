@@ -10,7 +10,7 @@ with pkgs; [
   coreutils
   duckdb
   killall
-  neofetch
+  fastfetch
   openssh
   sqlite
   wget
