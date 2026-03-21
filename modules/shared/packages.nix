@@ -55,6 +55,9 @@ with pkgs; [
   nodejs_24
   nodePackages.aws-cdk
 
+  # Terminal support
+  ghostty.terminfo
+
   # Text and terminal utilities
   hunspell
   iftop

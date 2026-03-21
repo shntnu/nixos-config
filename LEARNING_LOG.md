@@ -119,6 +119,18 @@ brew upgrade specstoryai/tap/specstory
 
 Key distinction: nix-homebrew = tap sources; nix-darwin `homebrew.*` = installed packages. The `onActivation.upgrade` default of `false` is intentional for idempotent rebuilds.
 
+## 2026-03-21: Homebrew Cask Reinstall vs Upgrade for Auto-Updating Apps
+
+**Key Insight:** Apps that auto-update internally (like Obsidian) can outgrow their Homebrew cask installer, requiring `brew reinstall --cask` rather than a version upgrade.
+
+Obsidian's app bundle auto-updates its asar package (1.10.3 → 1.12.4) independently of Homebrew. The cask version stayed at 1.10.3, leaving the old installer wrapper in place — missing the new CLI (`obsidian.wrapper.sh`). `homebrew.onActivation.upgrade = true` only triggers upgrades when a new cask *version* exists; it doesn't detect that the installed app has self-updated past its cask. `brew reinstall --cask` replaces the entire app bundle and links the current CLI entry point.
+
+```bash
+# When cask version lags behind the app's self-update
+brew reinstall --cask obsidian
+# Not: brew upgrade --cask obsidian (no new cask version to upgrade to)
+```
+
 ---
 
 ## Entry Guidelines

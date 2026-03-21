@@ -129,3 +129,9 @@ UV is installed for Python package management. UV can download Python versions a
 - If `build-switch` requires sudo password: This is normal for darwin-rebuild
 - If encountering "experimental features" errors: Ensure Nix flakes are enabled
 - For file permission issues: Scripts in `apps/` must be executable (`chmod +x`)
+- Homebrew cask operations (`brew reinstall --cask`, `brew install --cask`) require sudo for `/Applications` — suggest user run via `!` prefix since Claude's sandbox can't provide a password
+- Auto-updating apps (e.g., Obsidian) can outgrow their cask installer; `brew upgrade` won't help if no new cask version exists — use `brew reinstall --cask <app>`
+
+## Learning Log
+
+`LEARNING_LOG.md` tracks Nix/Homebrew/system learnings. Update it when encountering new gotchas or non-obvious behavior worth preserving for future reference.
