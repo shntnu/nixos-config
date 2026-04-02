@@ -44,6 +44,9 @@ let name = "Shantanu Singh";
       # Remove history data we don't want to see
       export HISTIGNORE="pwd:ls:cd"
 
+      # Disable Claude AI cloud MCP servers (Gmail, Slack, etc.)
+      export ENABLE_CLAUDEAI_MCP_SERVERS=false
+
       # Emacs is my editor
       export ALTERNATE_EDITOR=""
       export EDITOR="emacsclient -t"

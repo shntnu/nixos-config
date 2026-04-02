@@ -75,6 +75,9 @@ with pkgs; [
   atuin
   zoxide
 
+  # Theorem proving
+  elan  # Lean 4 toolchain manager (provides lean, lake)
+
   # Python packages
   python3
   virtualenv
@@ -98,6 +101,9 @@ with pkgs; [
   # gemini-cli installed imperatively:
   #   Install: nix profile install github:sadjow/gemini-cli-nix
   #   Upgrade: nix profile upgrade gemini-cli-nix --refresh
+  # codex-cli installed imperatively:
+  #   Install: nix profile install github:sadjow/codex-cli-nix
+  #   Upgrade: nix profile upgrade codex-cli-nix --refresh
 
   # Utils
   graphviz
