@@ -38,7 +38,7 @@ let name = "Shantanu Singh";
       export NPM_CONFIG_PREFIX=$HOME/.npm-packages
       export NODE_PATH=$HOME/.npm-packages/lib/node_modules
 
-      # Terminfo for Nix-managed terminal entries (e.g., ghostty)
+      # Terminfo for Nix-managed terminal entries (ghostty.terminfo on NixOS)
       export TERMINFO_DIRS=$HOME/.nix-profile/share/terminfo:/usr/share/terminfo
 
       # Remove history data we don't want to see

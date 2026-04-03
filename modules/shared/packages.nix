@@ -1,4 +1,4 @@
-{ pkgs }:
+{ pkgs, lib ? pkgs.lib }:
 
 with pkgs; [
   # General packages for development and system management
@@ -55,9 +55,10 @@ with pkgs; [
   nodejs_24
   nodePackages.aws-cdk
 
-  # Terminal support
+  # Terminal support (Linux only; macOS uses Ghostty cask which ships its own terminfo)
+] ++ lib.optionals (!pkgs.stdenv.isDarwin) [
   ghostty.terminfo
-
+] ++ [
   # Text and terminal utilities
   hunspell
   iftop
