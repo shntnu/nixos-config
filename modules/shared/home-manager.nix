@@ -65,19 +65,17 @@ let name = "Shantanu Singh";
       alias emacs='emacs -nw'
 
       # Use eza for better ls and tree views
-      alias ls='eza --icons'
-      alias ll='eza --long --git --icons'
-      alias la='eza --long --all --git --icons'
-      alias lt='eza --tree --level=2 --icons'
-      alias lta='eza --tree --level=2 --all --icons'
+      alias ls='eza --icons=auto'
+      alias ll='eza --long --git --icons=auto'
+      alias la='eza --long --all --git --icons=auto'
+      alias lt='eza --tree --level=2 --icons=auto'
+      alias lta='eza --tree --level=2 --all --icons=auto'
 
       # Obsidian CLI (v1.12+, installed via Homebrew cask on macOS)
       if [ -d "/Applications/Obsidian.app/Contents/MacOS" ]; then
         export PATH="$PATH:/Applications/Obsidian.app/Contents/MacOS"
       fi
 
-      # Use starship for prompt
-      eval "$(starship init zsh)"
     '';
   };
 
