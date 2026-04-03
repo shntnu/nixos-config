@@ -32,7 +32,7 @@ let name = "Shantanu Singh";
       # Define variables for directories
       export PATH=$HOME/.pnpm-packages/bin:$HOME/.pnpm-packages:$PATH
       export PATH=$HOME/.npm-packages/bin:$HOME/bin:$PATH
-      export PATH=$HOME/.local/share/bin:$PATH
+      export PATH=$HOME/.local/bin:$HOME/.local/share/bin:$PATH
 
       # Configure npm to use home directory for global packages
       export NPM_CONFIG_PREFIX=$HOME/.npm-packages

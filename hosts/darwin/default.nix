@@ -60,6 +60,24 @@ let user = "shsingh"; in
     StandardOutPath = "/tmp/onedrive-archive.out.log";
   };
 
+  # Incremental Gmail sync every 15 minutes (syncs all configured accounts)
+  # msgvault installed outside Nix: curl -fsSL https://msgvault.io/install.sh | bash
+  # Binary: ~/.local/bin/msgvault (self-updates via `msgvault update`)
+  launchd.user.agents.msgvault-sync.serviceConfig = {
+    ProgramArguments = [
+      "/Users/${user}/.local/bin/msgvault"
+      "sync"
+    ];
+    StartCalendarInterval = [
+      { Minute = 0; }
+      { Minute = 15; }
+      { Minute = 30; }
+      { Minute = 45; }
+    ];
+    StandardErrorPath = "/tmp/msgvault-sync.err.log";
+    StandardOutPath = "/tmp/msgvault-sync.out.log";
+  };
+
   system = {
     checks.verifyNixPath = false;
     primaryUser = user;
