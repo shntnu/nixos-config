@@ -60,6 +60,7 @@ with pkgs; [
   ghostty.terminfo
 ] ++ [
   # Text and terminal utilities
+  trash-cli
   hunspell
   iftop
   jq
@@ -105,6 +106,10 @@ with pkgs; [
   # codex-cli installed imperatively:
   #   Install: nix profile install github:sadjow/codex-cli-nix
   #   Upgrade: nix profile upgrade codex-cli-nix --refresh
+  # qmd (Query Markup Documents) — no nix flake wrapper yet, uses npm:
+  #   Install: npm install -g @tobilu/qmd
+  #   Upgrade: npm update -g @tobilu/qmd
+  #   Repo: https://github.com/tobi/qmd
 
   # Utils
   graphviz
