@@ -33,6 +33,7 @@ with pkgs; [
   # Version control and development tools
   gh
   just
+  just-lsp
 
   # Workflow management
   jdk17  # Java runtime for Nextflow
