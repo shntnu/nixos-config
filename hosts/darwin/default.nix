@@ -78,6 +78,26 @@ let user = "shsingh"; in
     StandardOutPath = "/tmp/msgvault-sync.out.log";
   };
 
+  # Hourly qmd re-index + embed (refreshes configured collections)
+  # qmd installed outside Nix: npm install -g @tobilu/qmd
+  # Launcher exec's node, so nix-profile must be on PATH
+  launchd.user.agents.qmd-reindex.serviceConfig = {
+    ProgramArguments = [
+      "/bin/sh"
+      "-c"
+      "/Users/${user}/.npm-packages/bin/qmd update && /Users/${user}/.npm-packages/bin/qmd embed"
+    ];
+    EnvironmentVariables = {
+      PATH = "/Users/${user}/.nix-profile/bin:/usr/bin:/bin";
+      HOME = "/Users/${user}";
+    };
+    StartCalendarInterval = [
+      { Minute = 20; }
+    ];
+    StandardErrorPath = "/tmp/qmd-reindex.err.log";
+    StandardOutPath = "/tmp/qmd-reindex.out.log";
+  };
+
   system = {
     checks.verifyNixPath = false;
     primaryUser = user;
