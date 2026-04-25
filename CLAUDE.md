@@ -88,12 +88,12 @@ The `flake.nix` defines:
 
 ## Configuration Workflow
 
-### Updating Homebrew Tap Packages (e.g., specstory)
+### Updating Homebrew Tap Packages
 
 `homebrew.onActivation.upgrade = true` is set in `modules/darwin/home-manager.nix`, so `build-switch` upgrades all Homebrew formulae and casks automatically. For tap-only source updates (without waiting for a full rebuild):
 
 ```bash
-nix flake update <tap-input-name>   # e.g., nix flake update specstoryai-tap
+nix flake update <tap-input-name>   # e.g., nix flake update some-tap
 nix run .#build-switch              # syncs tap sources and upgrades formulae/casks
 ```
 
