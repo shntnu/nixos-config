@@ -27,7 +27,7 @@ in
     enable = true;
     casks = pkgs.callPackage ./casks.nix {};
     # taps managed by nix-homebrew in flake.nix (mutableTaps = false)
-    brews = [ "awscli" "specstoryai/tap/specstory" ];
+    brews = [ "awscli" "specstoryai/tap/specstory" "agent-browser" ];
     onActivation.upgrade = true;
     # onActivation.cleanup = "uninstall";
 
