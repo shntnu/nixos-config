@@ -98,6 +98,7 @@ with pkgs; [
   # obsidian — moved to Homebrew cask (modules/darwin/casks.nix) for v1.12+ CLI support
 
   # AI Coding tools
+  ollama  # local LLM runtime; daemon: `ollama serve`, models: `ollama pull <name>`
   # claude-code installed imperatively:
   #   Install: nix profile install github:sadjow/claude-code-nix
   #   Upgrade: nix profile upgrade claude-code-nix --refresh
