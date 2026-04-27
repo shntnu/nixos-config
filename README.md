@@ -2,6 +2,8 @@
 
 Personal Nix configuration for macOS, NixOS, and Ubuntu/WSL, based on [dustinlyons/nixos-config](https://github.com/dustinlyons/nixos-config).
 
+Thanks to [@leoank](https://github.com/leoank) for bringing Nix to the Carpenter-Singh lab.
+
 See also: [leoank/neusis](https://github.com/leoank/neusis), [HugoHakem/nix-os.config](https://github.com/HugoHakem/nix-os.config), [afermg/nix-configs](https://github.com/afermg/nix-configs)
 
 ```bash
