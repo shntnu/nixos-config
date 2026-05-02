@@ -4,6 +4,7 @@ _:
   # Development Tools
   "docker-desktop"
   "visual-studio-code"
+  "positron"
 
   # Productivity Tools
   "raycast"
