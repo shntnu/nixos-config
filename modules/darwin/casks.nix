@@ -15,13 +15,14 @@ _:
   # Communication Tools - Examples (uncomment as needed)
   # "discord"
   # "notion"
-  # "slack"
+  "slack"
   # "telegram"
-  # "zoom"
+  "zoom"
 
   # Utility Tools - Examples (uncomment as needed)
   # "syncthing"
-  # "1password"
+  "1password"
+  "1password-cli"
   # "rectangle"
   "onedrive"
 
