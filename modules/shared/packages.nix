@@ -54,7 +54,7 @@ with pkgs; [
 
   # Node.js development tools
   nodejs_24
-  nodePackages.aws-cdk
+  aws-cdk-cli
 
   # Terminal support (Linux only; macOS uses Ghostty cask which ships its own terminfo)
 ] ++ lib.optionals (!pkgs.stdenv.isDarwin) [
