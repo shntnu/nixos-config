@@ -6,9 +6,6 @@ _:
   "visual-studio-code"
   "positron"
 
-  # Productivity Tools
-  "raycast"
-
   # Browsers
   "google-chrome"
 
@@ -17,6 +14,7 @@ _:
   # "notion"
   "slack"
   # "telegram"
+  "whatsapp"
   "zoom"
 
   # Utility Tools - Examples (uncomment as needed)
