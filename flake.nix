@@ -30,9 +30,13 @@
       url = "github:nix-community/disko";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    msgvault = {
+      url = "github:shntnu/msgvault";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, darwin, nix-homebrew, homebrew-bundle, homebrew-core, homebrew-cask, home-manager, nixpkgs, disko } @inputs:
+  outputs = { self, darwin, nix-homebrew, homebrew-bundle, homebrew-core, homebrew-cask, home-manager, nixpkgs, disko, msgvault } @inputs:
     let
       user = "shsingh";
       linuxSystems = [ "x86_64-linux" "aarch64-linux" ];
@@ -79,7 +83,8 @@
 
       darwinConfigurations = nixpkgs.lib.genAttrs darwinSystems (system: let
         user = "shsingh";
-        overlays = import ./modules/shared/overlays.nix { pkgs = nixpkgs.legacyPackages.${system}; };
+        overlays = import ./modules/shared/overlays.nix { pkgs = nixpkgs.legacyPackages.${system}; }
+          ++ [ (final: prev: { msgvault = msgvault.packages.${system}.default; }) ];
       in
         darwin.lib.darwinSystem {
           inherit system;

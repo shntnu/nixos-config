@@ -35,6 +35,9 @@ with pkgs; [
   just
   just-lsp
 
+  # Email archive (msgvault flake input -> overlay in flake.nix)
+  msgvault
+
   # Workflow management
   jdk17  # Java runtime for Nextflow
   nextflow  # Bioinformatics workflow manager, works with Docker Desktop
