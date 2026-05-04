@@ -133,15 +133,15 @@
         ]
       },
       "locked": {
-        "lastModified": 1775094489,
-        "narHash": "sha256-uba9VgneVM5Syx3PyOoAxuejn2wLrWmRu+K8bqlajHE=",
-        "owner": "shntnu",
+        "lastModified": 1777916861,
+        "narHash": "sha256-2+LD2VW4GFRHA0SGRTxfEIwb44l5FG3W4qCDe/xmbEw=",
+        "owner": "wesm",
         "repo": "msgvault",
-        "rev": "d666d3eb11f7c3b2536b7fa33fd5a910ec06d72f",
+        "rev": "157e82e406b6d420fdfcae612a4883749a86e509",
         "type": "github"
       },
       "original": {
-        "owner": "shntnu",
+        "owner": "wesm",
         "repo": "msgvault",
         "type": "github"
       }
