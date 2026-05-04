@@ -31,7 +31,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     msgvault = {
-      url = "github:shntnu/msgvault";
+      url = "github:wesm/msgvault";
       inputs.nixpkgs.follows = "nixpkgs";
     };
   };
