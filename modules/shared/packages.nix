@@ -55,6 +55,7 @@ with pkgs; [
   # Node.js development tools
   nodejs_24
   aws-cdk-cli
+  pi-coding-agent  # trails npm by days; if needed: npm install -g @mariozechner/pi-coding-agent
 
   # Terminal support (Linux only; macOS uses Ghostty cask which ships its own terminfo)
 ] ++ lib.optionals (!pkgs.stdenv.isDarwin) [
