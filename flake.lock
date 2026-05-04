@@ -126,6 +126,26 @@
         "type": "github"
       }
     },
+    "msgvault": {
+      "inputs": {
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1775094489,
+        "narHash": "sha256-uba9VgneVM5Syx3PyOoAxuejn2wLrWmRu+K8bqlajHE=",
+        "owner": "shntnu",
+        "repo": "msgvault",
+        "rev": "d666d3eb11f7c3b2536b7fa33fd5a910ec06d72f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "shntnu",
+        "repo": "msgvault",
+        "type": "github"
+      }
+    },
     "nix-homebrew": {
       "inputs": {
         "brew-src": "brew-src"
@@ -168,6 +188,7 @@
         "homebrew-bundle": "homebrew-bundle",
         "homebrew-cask": "homebrew-cask",
         "homebrew-core": "homebrew-core",
+        "msgvault": "msgvault",
         "nix-homebrew": "nix-homebrew",
         "nixpkgs": "nixpkgs"
       }

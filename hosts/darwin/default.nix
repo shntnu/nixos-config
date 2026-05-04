@@ -61,11 +61,10 @@ let user = "shsingh"; in
   };
 
   # Incremental Gmail sync every 15 minutes (syncs all configured accounts)
-  # msgvault installed outside Nix: curl -fsSL https://msgvault.io/install.sh | bash
-  # Binary: ~/.local/bin/msgvault (self-updates via `msgvault update`)
+  # msgvault is managed via Nix flake input; update with: nix flake update msgvault
   launchd.user.agents.msgvault-sync.serviceConfig = {
     ProgramArguments = [
-      "/Users/${user}/.local/bin/msgvault"
+      "${pkgs.msgvault}/bin/msgvault"
       "sync"
     ];
     StartCalendarInterval = [
