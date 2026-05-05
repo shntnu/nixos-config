@@ -7,7 +7,7 @@ NC='\033[0m'
 
 LOCAL_HOSTNAME=$(scutil --get LocalHostName)
 case "$LOCAL_HOSTNAME" in
-  Shantanus-Mac-mini) HOST="macmini" ;;
+  caladan)            HOST="caladan" ;;
   wm89a-c9c)          HOST="laptop" ;;
   *)
     echo "${RED}Unknown LocalHostName: $LOCAL_HOSTNAME${NC}"

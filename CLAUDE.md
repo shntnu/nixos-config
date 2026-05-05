@@ -122,7 +122,7 @@ Trade-off: rebuilds are slightly slower due to upgrade checks. To revert to manu
 
 ## pi-coding-agent
 
-Pi reads `OPENROUTER_API_KEY` from the env, exported in `modules/shared/home-manager.nix` zsh init from the `openrouter` macOS Keychain entry. 1Password (`op://Personal/OpenRouter/credential`) is the upstream copy, used only to seed/rotate the keychain - not in the runtime path. Re-seed with `security add-generic-password -U -a "$USER" -s openrouter -w "$(op read 'op://Personal/OpenRouter/credential')"`. Keychain is **per-machine** (not iCloud-synced) - run the seed on each Mac (macmini and laptop) independently.
+Pi reads `OPENROUTER_API_KEY` from the env, exported in `modules/shared/home-manager.nix` zsh init from the `openrouter` macOS Keychain entry. 1Password (`op://Personal/OpenRouter/credential`) is the upstream copy, used only to seed/rotate the keychain - not in the runtime path. Re-seed with `security add-generic-password -U -a "$USER" -s openrouter -w "$(op read 'op://Personal/OpenRouter/credential')"`. Keychain is **per-machine** (not iCloud-synced) - run the seed on each Mac (caladan and laptop) independently.
 
 If pi reports "No API key for provider: openrouter": check `security find-generic-password -ws openrouter` returns the key, and that the env var is set in a fresh shell (`echo "${#OPENROUTER_API_KEY}"` should be 73). Two paths that look right but don't work: `auth.json` `!command` resolvers are ignored by pi 0.73.0 despite docs claiming support, and a custom `openrouter` provider in `models.json` hangs silently per [pi-mono #3168](https://github.com/badlogic/pi-mono/issues/3168). If either bug closes, the curated-list-in-models.json approach would be more elegant. Full convergence story in `LEARNING_LOG.md`.
 
