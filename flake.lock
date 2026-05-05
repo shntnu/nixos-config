@@ -180,6 +180,21 @@
         "type": "github"
       }
     },
+    "private": {
+      "locked": {
+        "lastModified": 1778007123,
+        "narHash": "sha256-Z1H2ZvK/37Va74YojO+O66G0NwGsZ71VKs3fTYovhBo=",
+        "ref": "refs/heads/main",
+        "rev": "98e52f0b065c6736f085d656185ed6310484a952",
+        "revCount": 1,
+        "type": "git",
+        "url": "ssh://git@github.com/shntnu/nixos-config-private"
+      },
+      "original": {
+        "type": "git",
+        "url": "ssh://git@github.com/shntnu/nixos-config-private"
+      }
+    },
     "root": {
       "inputs": {
         "darwin": "darwin",
@@ -190,7 +205,8 @@
         "homebrew-core": "homebrew-core",
         "msgvault": "msgvault",
         "nix-homebrew": "nix-homebrew",
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "private": "private"
       }
     }
   },

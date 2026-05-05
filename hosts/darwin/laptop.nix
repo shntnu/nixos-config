@@ -1,5 +1,8 @@
-_:
+{ private, ... }:
 
 {
-  imports = [ ./default.nix ];
+  imports = [
+    ./default.nix
+    private.darwinModules.laptop
+  ];
 }

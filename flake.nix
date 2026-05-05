@@ -34,9 +34,10 @@
       url = "github:wesm/msgvault";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    private.url = "git+ssh://git@github.com/shntnu/nixos-config-private";
   };
 
-  outputs = { self, darwin, nix-homebrew, homebrew-bundle, homebrew-core, homebrew-cask, home-manager, nixpkgs, disko, msgvault } @inputs:
+  outputs = { self, darwin, nix-homebrew, homebrew-bundle, homebrew-core, homebrew-cask, home-manager, nixpkgs, disko, msgvault, private } @inputs:
     let
       user = "shsingh";
       linuxSystems = [ "x86_64-linux" "aarch64-linux" ];
