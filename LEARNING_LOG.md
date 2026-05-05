@@ -131,7 +131,7 @@ brew reinstall --cask obsidian
 # Not: brew upgrade --cask obsidian (no new cask version to upgrade to)
 ```
 
----
+
 
 ## Entry Guidelines
 

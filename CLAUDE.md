@@ -120,6 +120,7 @@ Trade-off: rebuilds are slightly slower due to upgrade checks. To revert to manu
 - `modules/shared/home-manager.nix`: Shell configuration (zsh, git, etc.)
 - `hosts/darwin/default.nix`: System-level macOS settings
 
+
 ## Python Development
 
 UV is installed for Python package management. UV can download Python versions as needed, allowing flexible development without Nix-Python conflicts. For reproducible builds requiring Nix integration, consider adding uv2nix when specifically needed.
