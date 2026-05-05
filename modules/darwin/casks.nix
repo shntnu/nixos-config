@@ -12,10 +12,8 @@ _:
   # Communication Tools - Examples (uncomment as needed)
   # "discord"
   # "notion"
-  "slack"
   # "telegram"
   "whatsapp"
-  "zoom"
 
   # Utility Tools - Examples (uncomment as needed)
   # "syncthing"
@@ -33,6 +31,9 @@ _:
 
   # Note taking tools
   "obsidian"
+
+  # Dictation
+  "wispr-flow"
 
   # AI Tools
   "chatgpt"

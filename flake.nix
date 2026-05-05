@@ -76,13 +76,7 @@
         "check-keys" = mkApp "check-keys" system;
         "rollback" = mkApp "rollback" system;
       };
-    in
-    {
-      devShells = forAllSystems devShell;
-      apps = nixpkgs.lib.genAttrs linuxSystems mkLinuxApps // nixpkgs.lib.genAttrs darwinSystems mkDarwinApps;
-
-      darwinConfigurations = nixpkgs.lib.genAttrs darwinSystems (system: let
-        user = "shsingh";
+      mkDarwinConfig = { hostModule, system ? "aarch64-darwin" }: let
         overlays = import ./modules/shared/overlays.nix { pkgs = nixpkgs.legacyPackages.${system}; }
           ++ [ (final: prev: { msgvault = msgvault.packages.${system}.default; }) ];
       in
@@ -106,10 +100,18 @@
                 autoMigrate = true;
               };
             }
-            ./hosts/darwin
+            hostModule
           ];
-        }
-      );
+        };
+    in
+    {
+      devShells = forAllSystems devShell;
+      apps = nixpkgs.lib.genAttrs linuxSystems mkLinuxApps // nixpkgs.lib.genAttrs darwinSystems mkDarwinApps;
+
+      darwinConfigurations = {
+        macmini = mkDarwinConfig { hostModule = ./hosts/darwin/macmini.nix; };
+        laptop = mkDarwinConfig { hostModule = ./hosts/darwin/laptop.nix; };
+      };
 
       nixosConfigurations = nixpkgs.lib.genAttrs linuxSystems (system: nixpkgs.lib.nixosSystem {
         inherit system;
