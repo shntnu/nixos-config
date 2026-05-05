@@ -33,6 +33,8 @@ nix run .#rollback
 nix run 'home-manager/master' -- switch --flake '.#shsingh' -b backup
 ```
 
+`build` / `build-switch` dispatch on `scutil --get LocalHostName` (case statement in `apps/aarch64-darwin/build{,-switch}`) into a `darwinConfigurations.<host>` key in `flake.nix`. Renaming a Mac requires updating both.
+
 ### Development Commands
 
 ```bash
