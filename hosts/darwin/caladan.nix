@@ -1,7 +1,10 @@
-_:
+{ private, ... }:
 
 {
-  imports = [ ./default.nix ];
+  imports = [
+    ./default.nix
+    private.darwinModules.caladan
+  ];
 
   homebrew.casks = [
     "google-drive"
