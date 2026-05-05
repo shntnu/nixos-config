@@ -47,6 +47,13 @@ let name = "Shantanu Singh";
       # Disable Claude AI cloud MCP servers (Gmail, Slack, etc.)
       export ENABLE_CLAUDEAI_MCP_SERVERS=false
 
+      # OpenRouter key for pi-coding-agent. Sourced from macOS Keychain (auto-
+      # unlocked at login) rather than 1Password — Mac mini has no Touch ID,
+      # so `op` requires `op signin` per shell which breaks fresh sessions.
+      # Seed once with: security add-generic-password -a "$USER" -s openrouter -w "$(op read 'op://Personal/OpenRouter/credential')"
+      # Pi 0.73.0 ignores auth.json `!command` resolvers (LEARNING_LOG.md), so env var is the only working path.
+      export OPENROUTER_API_KEY="$(security find-generic-password -ws openrouter 2>/dev/null)"
+
       # Emacs is my editor
       export ALTERNATE_EDITOR=""
       export EDITOR="emacsclient -t"

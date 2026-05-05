@@ -131,6 +131,22 @@ brew reinstall --cask obsidian
 # Not: brew upgrade --cask obsidian (no new cask version to upgrade to)
 ```
 
+## 2026-05-04: Claude Subscription OAuth Blocked in Third-Party Coding Agents
+
+**Key Insight:** Anthropic blocked Claude Pro/Max OAuth tokens from third-party tools in Jan-Feb 2026, so "use your Claude plan with pi/OpenCode/etc." is no longer the cheap path it appears to be.
+
+Pi's docs still advertise Claude subscription auth, but pi clarifies it's billed per-token from the "extra usage" pool on `claude.ai/settings/usage`, not against your $20/$100 monthly plan limits — effectively API rates wearing a subscription's hat. ChatGPT Plus + Codex CLI does still draw from plan limits, but committing $20/mo for a second daily-driver agent duplicates Claude Code rather than complementing it. OpenRouter PAYG with a 1Password-backed key wins for "experiment with pi and other models" since it composes with the existing Claude Code subscription instead of replacing it. DeepSeek V3.2 / Qwen3-Coder via OpenRouter cost roughly 100x less than Opus for comparable code tasks, making throwaway pi sessions effectively free.
+
+Refs: [WinBuzzer (2026-02-19)](https://winbuzzer.com/2026/02/19/anthropic-bans-claude-subscription-oauth-in-third-party-apps-xcxwbn/), [pi-mono providers docs](https://github.com/badlogic/pi-mono/blob/main/packages/coding-agent/docs/providers.md).
+
+## 2026-05-04: Pi Custom Providers in models.json Are Broken
+
+**Key Insight:** Defining a custom OpenAI-compatible provider in `~/.pi/agent/models.json` makes the model selectable but every request hangs silently — known unfixed bug as of v0.73.0.
+
+I scaffolded a `models.json` with a custom `openrouter` provider so the OpenRouter API key could be resolved via `!op read` at runtime. Models appeared in `/model`, were selectable, and `pi --list-models` showed them — but every prompt produced no response, no error, zero token consumption. Bug filed as [pi-mono #3168](https://github.com/badlogic/pi-mono/issues/3168) (April 2026) and dupe [#3095](https://github.com/badlogic/pi-mono/issues/3095): "Custom providers aren't registered with pi-ai's provider streaming system. Only extensions with explicit streamSimple get registered." Both auto-closed by an OSS-weekend bot, not by a fix; no relevant changelog entry through v0.73.0.
+
+Workaround: use pi's built-in OpenRouter provider (which does register) and supply the API key via the `OPENROUTER_API_KEY` env var. Tried auth.json first with `{"openrouter": {"type": "api_key", "key": "!op read 'op://Personal/OpenRouter/credential'"}}` since pi's docs claim `!command` resolution; pi v0.73.0 ignores it and reports "No API key for provider: openrouter". Tried env var sourced from `op read` in zsh init second; that fails on a fresh shell because `op` requires per-session `op signin` on a Mac mini (no Touch ID, so 1Password's desktop integration can't biometrically auto-unlock). Settled on macOS Keychain: seeded with `security add-generic-password -a "$USER" -s openrouter -w "$(op read ...)"` once, then zsh init exports the env var via `security find-generic-password -ws openrouter`. Keychain auto-unlocks at login, every shell inherits, no prompts. 1Password remains the offline backup for syncing the same key to other hosts.
+
 ---
 
 ## Entry Guidelines

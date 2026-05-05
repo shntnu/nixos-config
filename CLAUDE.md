@@ -120,6 +120,32 @@ Trade-off: rebuilds are slightly slower due to upgrade checks. To revert to manu
 - `modules/shared/home-manager.nix`: Shell configuration (zsh, git, etc.)
 - `hosts/darwin/default.nix`: System-level macOS settings
 
+## pi-coding-agent
+
+Pi uses its built-in OpenRouter provider; the API key is supplied via the `OPENROUTER_API_KEY` env var, exported from `modules/shared/home-manager.nix` zsh init by reading the macOS Keychain entry `openrouter`. The keychain auto-unlocks at login, so every shell (interactive, Claude Code subshells, pi) gets the key with no prompts. 1Password holds the upstream copy at `op://Personal/OpenRouter/credential` for sync and rotation; it is not in the runtime path.
+
+### First-time setup on a new host
+
+Assumes the host has 1Password (app + CLI), `op` is signed in once (`eval $(op signin)`), and `nix run .#build-switch` has been applied so the zsh init export is in place.
+
+```
+security add-generic-password -U -a "$USER" -s openrouter \
+  -w "$(op read 'op://Personal/OpenRouter/credential')"
+```
+
+That's it. Open a fresh shell and verify:
+
+```
+echo "${#OPENROUTER_API_KEY}"   # 73 = working
+pi                              # /model -> pick anything -> send "test"
+```
+
+To rotate: update the 1Password item, re-run the same `security add-generic-password` line on each host.
+
+### Why this shape
+
+Pi v0.73.0 ignores `!command` resolvers in `auth.json` despite the docs claiming support, and `op read` only works in shells where `op signin` has been run - Mac mini has no Touch ID so 1Password's desktop integration can't biometrically auto-unlock. Keychain dodges both. Custom OpenAI-compatible providers in `models.json` hang silently due to [pi-mono #3168](https://github.com/badlogic/pi-mono/issues/3168), so the built-in OpenRouter provider is the only working option. Revisit if either bug closes - the curated-model-list approach in `models.json` is more elegant than env-var-plus-built-in.
+
 ## Python Development
 
 UV is installed for Python package management. UV can download Python versions as needed, allowing flexible development without Nix-Python conflicts. For reproducible builds requiring Nix integration, consider adding uv2nix when specifically needed.
