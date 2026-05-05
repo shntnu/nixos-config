@@ -28,7 +28,6 @@ with pkgs; [
   # AWS CDK moved to Node.js section above
   rclone
   s5cmd
-  sshfs   # mount remote dirs over SSH (uses macFUSE on darwin)
   tailscale
 
   # Version control and development tools
