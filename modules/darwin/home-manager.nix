@@ -57,6 +57,15 @@ in
           sharedFiles
           additionalFiles
           { "emacs-launcher.command".source = myEmacsLauncher; }
+          {
+            # ssh-terminfo auto-installs xterm-ghostty terminfo on remote hosts
+            # on first SSH, so SSHing into caladan / oppy / spirit / etc. doesn't
+            # warn about the missing terminal definition. ssh-env falls back to
+            # xterm-256color if the install fails (e.g., remote lacks tic).
+            "Library/Application Support/com.mitchellh.ghostty/config".text = ''
+              shell-integration-features = cursor,sudo,title,ssh-env,ssh-terminfo
+            '';
+          }
         ];
         stateVersion = "23.11";
       };
