@@ -109,7 +109,7 @@
       apps = nixpkgs.lib.genAttrs linuxSystems mkLinuxApps // nixpkgs.lib.genAttrs darwinSystems mkDarwinApps;
 
       darwinConfigurations = {
-        macmini = mkDarwinConfig { hostModule = ./hosts/darwin/macmini.nix; };
+        caladan = mkDarwinConfig { hostModule = ./hosts/darwin/caladan.nix; };
         laptop = mkDarwinConfig { hostModule = ./hosts/darwin/laptop.nix; };
       };
 
