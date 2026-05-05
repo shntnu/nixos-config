@@ -5,17 +5,27 @@ YELLOW='\033[1;33m'
 RED='\033[1;31m'
 NC='\033[0m'
 
-SYSTEM_TYPE="aarch64-darwin"
-FLAKE_SYSTEM="darwinConfigurations.${SYSTEM_TYPE}.system"
+LOCAL_HOSTNAME=$(scutil --get LocalHostName)
+case "$LOCAL_HOSTNAME" in
+  Shantanus-Mac-mini) HOST="macmini" ;;
+  wm89a-c9c)          HOST="laptop" ;;
+  *)
+    echo "${RED}Unknown LocalHostName: $LOCAL_HOSTNAME${NC}"
+    echo "${RED}Add a mapping in apps/aarch64-darwin/build-switch and apps/aarch64-darwin/build${NC}"
+    exit 1
+    ;;
+esac
+
+FLAKE_SYSTEM="darwinConfigurations.${HOST}.system"
 
 export NIXPKGS_ALLOW_UNFREE=1
 
-echo "${YELLOW}Starting build...${NC}"
+echo "${YELLOW}Building host '${HOST}' (LocalHostName: ${LOCAL_HOSTNAME})...${NC}"
 nix --extra-experimental-features 'nix-command flakes' build .#$FLAKE_SYSTEM $@
 
 echo "${YELLOW}Switching to new generation...${NC}"
 # See https://github.com/nix-darwin/nix-darwin/issues/1457 on why we need sudo
-sudo ./result/sw/bin/darwin-rebuild switch --flake .#${SYSTEM_TYPE} $@
+sudo ./result/sw/bin/darwin-rebuild switch --flake .#${HOST} $@
 
 echo "${YELLOW}Cleaning up...${NC}"
 unlink ./result
