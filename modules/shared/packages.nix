@@ -49,6 +49,7 @@ with pkgs; [
   ffmpeg
   fd
   sox
+  chafa  # Inline images in terminal (auto-detects kitty graphics protocol in Ghostty)
   font-awesome
   hack-font
   noto-fonts
@@ -70,6 +71,7 @@ with pkgs; [
   iftop
   jq
   parallel
+  procps  # watch, ps, top, free, kill - macOS has BSD ps but no watch
   ripgrep
   tree
   eza  # Modern ls/tree replacement with colors and icons
