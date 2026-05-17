@@ -32,13 +32,16 @@ in
     zsh = {
       autosuggestion.enable = true;
       syntaxHighlighting.enable = true;
-      initContent = lib.mkAfter ''
-        bindkey -e
-        unsetopt auto_menu
+      initContent = lib.mkMerge [
+        sharedPrograms.zsh.initContent
+        (lib.mkAfter ''
+          bindkey -e
+          unsetopt auto_menu
 
-        export EDITOR="nvim"
-        export VISUAL="nvim"
-      '';
+          export EDITOR="nvim"
+          export VISUAL="nvim"
+        '')
+      ];
     };
 
     git.settings = {
