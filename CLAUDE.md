@@ -14,47 +14,11 @@ This is a Nix flake configuration for macOS (using nix-darwin) and NixOS, create
 
 ## Essential Commands
 
-### Building and Switching Configuration
+See [README.md](./README.md) for platform-specific build/switch workflows (macOS, lab servers, Ubuntu/WSL).
 
-```bash
-# IMPORTANT: Choose the right command for your platform:
-# - macOS (nix-darwin): nix run .#build-switch
-# - NixOS: nix run .#build-switch
-# - Non-NixOS Linux (Ubuntu, WSL): nix run 'home-manager/master' -- switch --flake '.#shsingh' -b backup
+Key detail for Claude: `build` / `build-switch` dispatch on `scutil --get LocalHostName` (case statement in `apps/aarch64-darwin/build{,-switch}`) into a `darwinConfigurations.<host>` key in `flake.nix`. Renaming a Mac requires updating both.
 
-# Build and switch to new configuration (most common command)
-nix run .#build-switch
-
-# Build only (without switching)
-nix run .#build
-
-# Apply user information (replaces %USER%, %EMAIL%, %NAME% tokens)
-nix run .#apply
-
-# Rollback to previous generation
-nix run .#rollback
-
-# For non-NixOS Linux (Ubuntu, WSL) - uses Home Manager standalone
-nix run 'home-manager/master' -- switch --flake '.#shsingh' -b backup
-```
-
-`build` / `build-switch` dispatch on `scutil --get LocalHostName` (case statement in `apps/aarch64-darwin/build{,-switch}`) into a `darwinConfigurations.<host>` key in `flake.nix`. Renaming a Mac requires updating both.
-
-### Development Commands
-
-```bash
-# Update flake dependencies
-nix flake update
-
-# Check flake configuration
-nix flake check
-
-# Enter development shell
-nix develop
-
-# Try a package without installing
-nix shell nixpkgs#<package-name>
-```
+On neusis-managed lab servers (oppy, karkinos, spirit), this flake only manages the Home Manager profile — do not attempt `nix run .#build-switch` or `nixos-rebuild` from this repo on those machines.
 
 ## Architecture Overview
 
