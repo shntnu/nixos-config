@@ -63,18 +63,11 @@
       mkLinuxApps = system: {
         "apply" = mkApp "apply" system;
         "build-switch" = mkApp "build-switch" system;
-        "copy-keys" = mkApp "copy-keys" system;
-        "create-keys" = mkApp "create-keys" system;
-        "check-keys" = mkApp "check-keys" system;
-        "install" = mkApp "install" system;
       };
       mkDarwinApps = system: {
         "apply" = mkApp "apply" system;
         "build" = mkApp "build" system;
         "build-switch" = mkApp "build-switch" system;
-        "copy-keys" = mkApp "copy-keys" system;
-        "create-keys" = mkApp "create-keys" system;
-        "check-keys" = mkApp "check-keys" system;
         "rollback" = mkApp "rollback" system;
       };
       mkDarwinConfig = { hostModule, system ? "aarch64-darwin" }: let
@@ -223,18 +216,6 @@
       basic = {
         path = ./templates/basic;
         description = "Basic development environment";
-      };
-      python = {
-        path = ./templates/python;
-        description = "Python development environment with uv";
-      };
-      node = {
-        path = ./templates/node;
-        description = "Node.js development environment";
-      };
-      rust = {
-        path = ./templates/rust;
-        description = "Rust development environment";
       };
       lean-mathlib = {
         path = ./templates/lean-mathlib;

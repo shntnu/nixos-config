@@ -17,6 +17,11 @@ This is a Nix flake configuration for macOS (using nix-darwin) and NixOS, create
 ### Building and Switching Configuration
 
 ```bash
+# IMPORTANT: Choose the right command for your platform:
+# - macOS (nix-darwin): nix run .#build-switch
+# - NixOS: nix run .#build-switch
+# - Non-NixOS Linux (Ubuntu, WSL): nix run 'home-manager/master' -- switch --flake '.#shsingh' -b backup
+
 # Build and switch to new configuration (most common command)
 nix run .#build-switch
 
@@ -29,7 +34,7 @@ nix run .#apply
 # Rollback to previous generation
 nix run .#rollback
 
-# For Home Manager standalone (experimental - see flake.nix homeConfigurations)
+# For non-NixOS Linux (Ubuntu, WSL) - uses Home Manager standalone
 nix run 'home-manager/master' -- switch --flake '.#shsingh' -b backup
 ```
 
@@ -56,30 +61,42 @@ nix shell nixpkgs#<package-name>
 ### Flake Structure
 
 The `flake.nix` defines:
-- **darwinConfigurations**: macOS configurations using nix-darwin
-- **nixosConfigurations**: NixOS configurations (for Linux systems)
-- **homeConfigurations**: Home Manager standalone for non-NixOS Linux (Ubuntu, WSL, etc.)
-- **Apps**: Helper scripts for building, applying, and managing configurations
-- **DevShells**: Development environments
+- **darwinConfigurations**: per-host macOS configurations (`caladan`, `laptop`) — each loads `hosts/darwin/default.nix` (shared base) plus a host-specific file that imports a `darwinModules.<host>` from the `private` input
+- **nixosConfigurations**: NixOS configurations (per Linux system)
+- **homeConfigurations**: Home Manager standalone. Includes plain `shsingh` (for Ubuntu/WSL) plus lab-server entries `shsingh@oppy`, `shsingh@spirit`, `shsingh@karkinos` built via `mkHeadlessHomeConfiguration` from `modules/headless/`
+- **homeModules**: exposes `shsingh-headless` (= `modules/headless/home-manager.nix`) for downstream consumers
+- **Apps**: helper scripts for building, applying, and managing configurations. Darwin platforms expose `apply`, `build`, `build-switch`, `rollback`; Linux platforms expose `apply` and `build-switch`.
+- **DevShells**: development environments
+- **Templates**: `basic`, `lean-mathlib`
+
+Notable flake inputs:
+- `private` (`git+ssh://git@github.com/shntnu/nixos-config-private`) — provides per-host darwinModules (caladan, laptop) and other private config. Required for darwin builds.
+- `msgvault` (`github:wesm/msgvault`) — provides the `msgvault` package used by the `msgvault-sync` launchd agent in `hosts/darwin/default.nix`.
 
 ### Module Organization
 
 - **`hosts/`**: System-specific configurations
-  - `darwin/default.nix`: macOS system configuration
+  - `darwin/default.nix`: shared macOS base (nix settings, common launchd agents — emacs, onedrive-archive, msgvault-sync, qmd-reindex — and `system.defaults`)
+  - `darwin/caladan.nix`, `darwin/laptop.nix`: per-host entry points; each imports `./default.nix` plus `private.darwinModules.<host>` and may layer host-specific casks (e.g., caladan adds google-drive, dropbox, slack, zoom)
   - `nixos/default.nix`: NixOS system configuration
 
 - **`modules/`**: Reusable configuration modules
   - `shared/`: Cross-platform packages and configurations
     - `packages.nix`: Common packages for all systems
-    - `home-manager.nix`: User shell and program configurations
+    - `home-manager.nix`: User shell and program configurations (zsh init, including the `OPENROUTER_API_KEY` keychain pull)
+    - `overlays.nix`: shared nixpkgs overlays (e.g., pinned `nextflow`)
   - `darwin/`: macOS-specific modules
     - `packages.nix`: macOS-only packages
     - `casks.nix`: Homebrew cask applications
     - `dock/`: Dock configuration module
   - `nixos/`: Linux-specific modules
+  - `headless/`: Home Manager profile for lab servers (oppy/spirit/karkinos). Imports `../shared`, adds headless-only packages from `headless/packages.nix`. Also re-exported as `homeModules.shsingh-headless`.
 
 - **`apps/`**: Platform-specific build and management scripts
-  - Each platform directory contains: `apply`, `build`, `build-switch`, `rollback`
+  - `aarch64-darwin/`, `x86_64-darwin/`: `apply`, `build`, `build-switch`, `rollback`
+  - `x86_64-linux/`, `aarch64-linux/`: `apply`, `build-switch` only
+
+- **`overlays/`** (top-level): legacy starter-template overlays (e.g., `10-feather-font.nix`); not referenced by `flake.nix`. The active overlays live in `modules/shared/overlays.nix`.
 
 ### Key Integration Points
 
@@ -118,9 +135,11 @@ Trade-off: rebuilds are slightly slower due to upgrade checks. To revert to manu
 ## Important Files to Modify
 
 - `modules/shared/packages.nix`: Add/remove common packages
-- `modules/darwin/casks.nix`: Manage GUI applications via Homebrew
+- `modules/darwin/casks.nix`: Manage GUI applications via Homebrew (applies to all darwin hosts)
 - `modules/shared/home-manager.nix`: Shell configuration (zsh, git, etc.)
-- `hosts/darwin/default.nix`: System-level macOS settings
+- `hosts/darwin/default.nix`: Shared macOS settings (nix config, launchd agents, `system.defaults`)
+- `hosts/darwin/{caladan,laptop}.nix`: Per-host overrides (e.g., host-specific casks). For private/secret host config, edit the corresponding module in the `private` flake input repo.
+- `modules/headless/`: Headless lab-server profile (`shsingh@oppy`, `shsingh@spirit`, `shsingh@karkinos`)
 
 ## pi-coding-agent
 
