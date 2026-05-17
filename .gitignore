@@ -6,3 +6,5 @@ result
 scratch/
 .specstory
 .remember/
+.direnv/
+.envrc
