@@ -63,6 +63,9 @@ with pkgs; [
 ] ++ lib.optionals (!pkgs.stdenv.isDarwin) [
   ghostty.terminfo
 ] ++ [
+  # Dotfile management
+  chezmoi
+
   # Text and terminal utilities
   trash-cli
   hunspell
