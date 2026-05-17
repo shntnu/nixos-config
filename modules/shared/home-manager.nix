@@ -224,7 +224,12 @@ let name = "Shantanu Singh";
         "/Users/${user}/.ssh/config_external"
       )
     ];
-    matchBlocks = {};
+    matchBlocks."*" = {
+      extraOptions = {
+        "AddKeysToAgent" = "yes";
+        "IdentityFile" = "~/.ssh/id_ed25519";
+      };
+    };
   };
 
   tmux = {
