@@ -104,6 +104,16 @@
             hostModule
           ];
         };
+      mkHeadlessHomeConfiguration = system: home-manager.lib.homeManagerConfiguration {
+        pkgs = nixpkgs.legacyPackages.${system};
+        modules = [
+          ./modules/headless/home-manager.nix
+          {
+            home.homeDirectory = "/home/${user}";
+          }
+        ];
+        extraSpecialArgs = { inherit inputs; };
+      };
     in
     {
       devShells = forAllSystems devShell;
@@ -112,6 +122,10 @@
       darwinConfigurations = {
         caladan = mkDarwinConfig { hostModule = ./hosts/darwin/caladan.nix; };
         laptop = mkDarwinConfig { hostModule = ./hosts/darwin/laptop.nix; };
+      };
+
+      homeModules = {
+        shsingh-headless = ./modules/headless/home-manager.nix;
       };
 
       nixosConfigurations = nixpkgs.lib.genAttrs linuxSystems (system: nixpkgs.lib.nixosSystem {
@@ -187,35 +201,22 @@
       "${user}" = home-manager.lib.homeManagerConfiguration {
         pkgs = nixpkgs.legacyPackages.x86_64-linux;
         modules = [
-          ./modules/shared
-          ({ pkgs, config, lib, ... }: {
-            home = {
-              username = user;
-              homeDirectory = "/home/${user}";
-              stateVersion = "24.11";  # Use latest stable
-              packages = pkgs.callPackage ./modules/shared/packages.nix {};
-              file = lib.mkMerge [
-                (import ./modules/shared/files.nix { inherit pkgs config; })
-              ];
-            };
-
-            programs = (import ./modules/shared/home-manager.nix { inherit config pkgs lib; }) // {
-              home-manager.enable = true;
-            };
-
-            # Nix configuration
+          ./modules/headless/home-manager.nix
+          {
             nix = {
-              package = pkgs.nix;
+              package = nixpkgs.legacyPackages.x86_64-linux.nix;
               settings = {
                 experimental-features = [ "nix-command" "flakes" ];
                 warn-dirty = false;
               };
             };
-          })
+          }
         ];
         extraSpecialArgs = { inherit inputs; };
       };
-    };
+    } // nixpkgs.lib.genAttrs
+      (builtins.map (host: "${user}@${host}") [ "oppy" "spirit" "karkinos" ])
+      (_: mkHeadlessHomeConfiguration "x86_64-linux");
 
     # Templates for creating new projects
     templates = {

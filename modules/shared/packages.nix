@@ -36,9 +36,6 @@ with pkgs; [
   just
   just-lsp
 
-  # Email archive (msgvault flake input -> overlay in flake.nix)
-  msgvault
-
   # Workflow management
   jdk17  # Java runtime for Nextflow
   nextflow  # Bioinformatics workflow manager, works with Docker Desktop
@@ -127,4 +124,7 @@ with pkgs; [
   poppler-utils
   texlive.combined.scheme-medium
   whisper-cpp
+] ++ lib.optionals (pkgs ? msgvault) [
+  # Email archive (msgvault flake input -> overlay in flake.nix)
+  msgvault
 ]
