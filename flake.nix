@@ -1,5 +1,5 @@
 {
-  description = "Starter Configuration for MacOS and NixOS";
+  description = "Nix configuration for macOS (nix-darwin) and Linux (Home Manager)";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -26,10 +26,6 @@
       url = "github:homebrew/homebrew-cask";
       flake = false;
     };
-    disko = {
-      url = "github:nix-community/disko";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
     msgvault = {
       url = "github:wesm/msgvault";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -37,7 +33,7 @@
     private.url = "git+ssh://git@github.com/shntnu/nixos-config-private";
   };
 
-  outputs = { self, darwin, nix-homebrew, homebrew-bundle, homebrew-core, homebrew-cask, home-manager, nixpkgs, disko, msgvault, private } @inputs:
+  outputs = { self, darwin, nix-homebrew, homebrew-bundle, homebrew-core, homebrew-cask, home-manager, nixpkgs, msgvault, private } @inputs:
     let
       user = "shsingh";
       linuxSystems = [ "x86_64-linux" "aarch64-linux" ];
@@ -59,10 +55,6 @@
           echo "Running ${scriptName} for ${system}"
           exec ${self}/apps/${system}/${scriptName}
         '')}/bin/${scriptName}";
-      };
-      mkLinuxApps = system: {
-        "apply" = mkApp "apply" system;
-        "build-switch" = mkApp "build-switch" system;
       };
       mkDarwinApps = system: {
         "apply" = mkApp "apply" system;
@@ -110,7 +102,7 @@
     in
     {
       devShells = forAllSystems devShell;
-      apps = nixpkgs.lib.genAttrs linuxSystems mkLinuxApps // nixpkgs.lib.genAttrs darwinSystems mkDarwinApps;
+      apps = nixpkgs.lib.genAttrs darwinSystems mkDarwinApps;
 
       darwinConfigurations = {
         caladan = mkDarwinConfig { hostModule = ./hosts/darwin/caladan.nix; };
@@ -121,28 +113,12 @@
         shsingh-headless = ./modules/headless/home-manager.nix;
       };
 
-      nixosConfigurations = nixpkgs.lib.genAttrs linuxSystems (system: nixpkgs.lib.nixosSystem {
-        inherit system;
-        specialArgs = inputs;
-        modules = [
-          disko.nixosModules.disko
-          home-manager.nixosModules.home-manager {
-            home-manager = {
-              useGlobalPkgs = true;
-              useUserPackages = true;
-              users.${user} = import ./modules/nixos/home-manager.nix;
-            };
-          }
-          ./hosts/nixos
-        ];
-     });
-
     # Home Manager standalone configuration for non-NixOS Linux (Ubuntu, WSL, etc.)
     #
     # HOME MANAGER HAS TWO MODES:
-    # 1. Integrated mode (NixOS/Darwin): Runs as part of system rebuild
-    #    - Loaded as modules in darwinConfigurations and nixosConfigurations above
-    #    - Managed via 'nix run .#build-switch' (nixos-rebuild/darwin-rebuild)
+    # 1. Integrated mode (Darwin): Runs as part of system rebuild
+    #    - Loaded as modules in darwinConfigurations above
+    #    - Managed via 'nix run .#build-switch' (darwin-rebuild)
     # 2. Standalone mode (Ubuntu/WSL): Runs independently
     #    - Defined here in homeConfigurations
     #    - Managed via 'home-manager switch' command directly
