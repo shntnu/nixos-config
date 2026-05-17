@@ -90,7 +90,7 @@ Notable flake inputs:
     - `casks.nix`: Homebrew cask applications
     - `dock/`: Dock configuration module
   - `nixos/`: Linux-specific modules
-  - `headless/`: Home Manager profile for lab servers (oppy/spirit/karkinos). Imports `../shared`, adds headless-only packages from `headless/packages.nix`. Also re-exported as `homeModules.shsingh-headless`.
+  - `headless/`: Home Manager profile for lab servers (oppy/spirit/karkinos). Imports `../shared`, adds headless-only packages from `headless/packages.nix`, and layers server-specific program configs (fzf, delta, gh, yazi, zsh autosuggestion/syntax-highlighting, git SSH signing). Also re-exported as `homeModules.shsingh-headless`. Git SSH signing uses `~/.ssh/id_ed25519` with `~/.ssh/allowed_signers`. On a new server, create the signers file once: `echo "shsingh@broadinstitute.org $(cat ~/.ssh/id_ed25519.pub)" > ~/.ssh/allowed_signers`.
 
 - **`apps/`**: Platform-specific build and management scripts
   - `aarch64-darwin/`, `x86_64-darwin/`: `apply`, `build`, `build-switch`, `rollback`
