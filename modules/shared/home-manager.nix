@@ -234,6 +234,7 @@ let name = "Shantanu Singh";
 
   tmux = {
     enable = true;
+    package = pkgs.tmux.override { withSystemd = false; };
     plugins = with pkgs.tmuxPlugins; [
       vim-tmux-navigator
       sensible

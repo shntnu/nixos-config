@@ -78,7 +78,6 @@ with pkgs; [
   eza  # Modern ls/tree replacement with colors and icons
   yazi  # Terminal file manager
   tldr
-  tmux
   unrar
   unzip
   starship
