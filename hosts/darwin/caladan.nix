@@ -6,7 +6,7 @@
     private.darwinModules.caladan
   ];
 
-  power.sleep.computer = 0;
+  power.sleep.computer = "never";
   power.sleep.display = 15;
   power.restartAfterPowerFailure = true;
   power.restartAfterFreeze = true;
