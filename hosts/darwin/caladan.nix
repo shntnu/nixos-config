@@ -8,7 +8,8 @@
 
   power.sleep.computer = 0;
   power.sleep.display = 15;
-  power.restoreOnPowerFailure = true;
+  power.restartAfterPowerFailure = true;
+  power.restartAfterFreeze = true;
 
   homebrew.casks = [
     "google-drive"
