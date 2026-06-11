@@ -1,6 +1,8 @@
 { pkgs }:
 
 with pkgs; [
+  awscli2  # Mac gets awscli via Homebrew; servers have no Homebrew, so add it here
+
   duf
   httpie
   mtr
