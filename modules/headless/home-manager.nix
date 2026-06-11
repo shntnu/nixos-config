@@ -92,6 +92,7 @@ in
     yazi = {
       enable = true;
       enableZshIntegration = true;
+      shellWrapperName = "yy";  # keep legacy default; new default becomes "y" at stateVersion 26.05
       settings = {
         mgr.show_hidden = true;
         preview = {
