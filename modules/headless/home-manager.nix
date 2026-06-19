@@ -18,6 +18,13 @@ in
     username = lib.mkDefault user;
     homeDirectory = lib.mkDefault "/home/${user}";
     stateVersion = lib.mkDefault "24.11";
+    sessionVariables = {
+      # Local ChEMBL SQLite copy for the chembl-data Claude skill (avoids the
+      # flaky public REST API). Points at the shared reference-data home per the
+      # imaging-server-maintenance data-storage policy; the skill checks for the
+      # dir and falls back to download if a given host has no copy yet.
+      CHEMBL_DIR = "/work/datasets/chembl";
+    };
     packages =
       (pkgs.callPackage ../shared/packages.nix { })
       ++ (pkgs.callPackage ./packages.nix { });
