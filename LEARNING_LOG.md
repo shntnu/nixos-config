@@ -147,6 +147,19 @@ I scaffolded a `models.json` with a custom `openrouter` provider so the OpenRout
 
 Workaround: use pi's built-in OpenRouter provider (which does register) and supply the API key via the `OPENROUTER_API_KEY` env var. Tried auth.json first with `{"openrouter": {"type": "api_key", "key": "!op read 'op://Personal/OpenRouter/credential'"}}` since pi's docs claim `!command` resolution; pi v0.73.0 ignores it and reports "No API key for provider: openrouter". Tried env var sourced from `op read` in zsh init second; that fails on a fresh shell because `op` requires per-session `op signin` on a Mac mini (no Touch ID, so 1Password's desktop integration can't biometrically auto-unlock). Settled on macOS Keychain: seeded with `security add-generic-password -a "$USER" -s openrouter -w "$(op read ...)"` once, then zsh init exports the env var via `security find-generic-password -ws openrouter`. Keychain auto-unlocks at login, every shell inherits, no prompts. 1Password remains the offline backup for syncing the same key to other hosts.
 
+## 2026-06-28: Stale Homebrew Casks Need a Flake Bump, Not `brew update`
+
+**Key Insight:** With `nix-homebrew` and `mutableTaps = false`, the cask catalog is pinned to the `homebrew-cask` flake input — `brew update` is a no-op by design, so a sunset/stale cask is fixed by bumping that one input and rebuilding.
+
+ChatGPT's app showed "This version has been sunset"; its in-app updater just bounced to the download page, and the installed cask version was itself already sunset (the catalog lagged OpenAI's release). `brew update` failed with `/nix/store/...-source/.git: Permission denied` because the taps are read-only Nix store paths. The fix is targeted, not a full `nix flake update` (that bumps nixpkgs/msgvault/private/all taps — a world rebuild for a one-app problem). Two related-but-distinct failure modes now in this log: app self-updates *past* its cask → `brew reinstall --cask` (Obsidian); cask catalog *lags behind* the app → bump the flake input (below).
+
+```bash
+nix flake update homebrew-cask   # pulls latest cask catalog revision
+nix run .#build-switch           # onActivation.upgrade=true reinstalls at new version
+```
+
+Separately, if a cask's app bundle goes missing from `/Applications` but brew's receipt still says installed, `build-switch` won't notice — `brew reinstall --cask <name>` re-syncs disk to receipt.
+
 ---
 
 ## Entry Guidelines
