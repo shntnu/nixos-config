@@ -41,8 +41,8 @@ NixOS system-level configuration is not managed here - lab servers (oppy, karkin
 ### Module Organization
 
 - **`hosts/`**: System-specific configurations
-  - `darwin/default.nix`: shared macOS base (nix settings, common launchd agents — emacs, onedrive-archive, msgvault-sync, qmd-reindex — and `system.defaults`)
-  - `darwin/caladan.nix`, `darwin/laptop.nix`: per-host entry points; each imports `./default.nix` plus `private.darwinModules.<host>` and may layer host-specific casks (e.g., caladan adds google-drive, dropbox, slack, zoom)
+  - `darwin/default.nix`: shared macOS base (nix settings, common launchd agents — emacs, msgvault-sync, qmd-reindex — and `system.defaults`)
+  - `darwin/caladan.nix`, `darwin/laptop.nix`: per-host entry points; each imports `./default.nix` plus `private.darwinModules.<host>` and may layer host-specific config (e.g., caladan adds google-drive, dropbox, slack, zoom casks; laptop owns the onedrive-archive agent since OneDriveBackup.app exists only there)
 - **`modules/`**: Reusable configuration modules
   - `shared/`: Cross-platform packages and configurations
     - `packages.nix`: Common packages for all systems
