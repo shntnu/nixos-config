@@ -49,20 +49,6 @@ let user = "shsingh"; in
     StandardOutPath = "/tmp/emacs.out.log";
   };
 
-  # Weekly OneDrive SharePoint backup for OASIS consortium
-  # Uses OneDriveBackup.app wrapper (grant it Full Disk Access, not bash)
-  # Calls the app's executable directly (not via 'open') to capture stdout/stderr
-  launchd.user.agents.onedrive-archive.serviceConfig = {
-    ProgramArguments = [
-      "/Users/${user}/Applications/OneDriveBackup.app/Contents/MacOS/applet"
-    ];
-    StartCalendarInterval = [
-      { Weekday = 0; Hour = 3; Minute = 0; }  # Sunday 3am (nix gc runs at 2am)
-    ];
-    StandardErrorPath = "/tmp/onedrive-archive.err.log";
-    StandardOutPath = "/tmp/onedrive-archive.out.log";
-  };
-
   # Incremental Gmail sync every 15 minutes (syncs all configured accounts)
   # msgvault is managed via Nix flake input; update with: nix flake update msgvault
   launchd.user.agents.msgvault-sync.serviceConfig = {
