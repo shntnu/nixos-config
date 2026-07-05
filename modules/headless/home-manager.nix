@@ -1,17 +1,13 @@
-{
-  config,
-  pkgs,
-  lib,
-  ...
-}:
+# Home Manager profile for lab servers (oppy, spirit, karkinos) and other
+# SSH-first Linux machines. Also re-exported as homeModules.shsingh-headless
+# for neusis to consume. Imports the shared shell/git/tmux/ssh module plus
+# nixpkgs settings, then layers server-only deltas.
+{ config, pkgs, lib, user, ... }:
 
-let
-  user = "shsingh";
-  sharedPrograms = import ../shared/home-manager.nix { inherit config pkgs lib; };
-in
 {
   imports = [
     ../shared/nixpkgs.nix
+    ../shared/home-manager.nix
   ];
 
   home = {
@@ -28,31 +24,24 @@ in
     packages =
       (pkgs.callPackage ../shared/packages.nix { })
       ++ (pkgs.callPackage ./packages.nix { });
-    file = lib.mkMerge [
-      (import ../shared/files.nix { inherit pkgs config; })
-    ];
   };
 
-  programs = lib.recursiveUpdate sharedPrograms {
+  programs = {
     home-manager.enable = true;
 
     zsh = {
       autosuggestion.enable = true;
       syntaxHighlighting.enable = true;
-      initContent = lib.mkMerge [
-        sharedPrograms.zsh.initContent
-        (lib.mkAfter ''
-          bindkey -e
-          unsetopt auto_menu
+      initContent = lib.mkAfter ''
+        bindkey -e
+        unsetopt auto_menu
 
-          export EDITOR="nvim"
-          export VISUAL="nvim"
-        '')
-      ];
+        export EDITOR="nvim"
+        export VISUAL="nvim"
+      '';
     };
 
     git.settings = {
-      core.editor = "nvim";
       commit.gpgsign = true;
       gpg = {
         format = "ssh";

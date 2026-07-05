@@ -1,327 +1,289 @@
+# Cross-platform Home Manager module: shell, git, vim, ssh, tmux.
+# Imported by modules/darwin/home-manager.nix (inside the per-user block)
+# and modules/headless/home-manager.nix. Platform-specific additions
+# (macOS keychain, server editors, ...) live in those importers and merge
+# via the module system (lib.mkAfter etc.).
 { config, pkgs, lib, ... }:
 
-let name = "Shantanu Singh";
-    user = "shsingh";
-    email = "shsingh@broadinstitute.org"; in
+let
+  name = "Shantanu Singh";
+  email = "shsingh@broadinstitute.org";
+in
 {
-
-  # Shared shell configuration
-  direnv = {
-    enable = true;
-    enableZshIntegration = true;
-    nix-direnv.enable = true;
-  };
-
-  zoxide = {
-    enable = true;
-    enableZshIntegration = true;
-    # This gives you 'z' for smart jumps and 'zi' for interactive mode
-  };
-
-  zsh = {
-    enable = true;
-    autocd = false;
-    plugins = [];
-
-    initContent = lib.mkBefore ''
-      if [[ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]]; then
-        . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
-        . /nix/var/nix/profiles/default/etc/profile.d/nix.sh
-      fi
-
-      # Define variables for directories
-      export PATH=$HOME/.pnpm-packages/bin:$HOME/.pnpm-packages:$PATH
-      export PATH=$HOME/.npm-packages/bin:$HOME/bin:$PATH
-      export PATH=$PATH:$HOME/.local/bin:$HOME/.local/share/bin
-
-      # Configure npm to use home directory for global packages
-      export NPM_CONFIG_PREFIX=$HOME/.npm-packages
-      export NODE_PATH=$HOME/.npm-packages/lib/node_modules
-
-      # Terminfo for Nix-managed terminal entries (ghostty.terminfo on NixOS)
-      export TERMINFO_DIRS=$HOME/.nix-profile/share/terminfo:/usr/share/terminfo
-
-      # Remove history data we don't want to see
-      export HISTIGNORE="pwd:ls:cd"
-
-      # Disable Claude AI cloud MCP servers (Gmail, Slack, etc.)
-      export ENABLE_CLAUDEAI_MCP_SERVERS=false
-
-      # OpenRouter key for pi-coding-agent. Sourced from macOS Keychain (auto-
-      # unlocked at login) rather than 1Password — Mac mini has no Touch ID,
-      # so `op` requires `op signin` per shell which breaks fresh sessions.
-      # Seed once with: security add-generic-password -a "$USER" -s openrouter -w "$(op read 'op://Personal/OpenRouter/credential')"
-      # Pi 0.73.0 ignores auth.json `!command` resolvers (LEARNING_LOG.md), so env var is the only working path.
-      export OPENROUTER_API_KEY="$(security find-generic-password -ws openrouter 2>/dev/null)"
-
-      # Emacs is my editor
-      export ALTERNATE_EDITOR=""
-      export EDITOR="emacsclient -t"
-
-      e() {
-          emacsclient -t "$@"
-      }
-
-      # nix shortcuts
-      shell() {
-          nix-shell '<nixpkgs>' -A "$1"
-      }
-
-      # Use difftastic, syntax-aware diffing
-      # alias diff=difft
-
-      # Use terminal mode for emacs
-      alias emacs='emacs -nw'
-
-      # Use eza for better ls and tree views
-      alias ls='eza --icons=auto'
-      alias ll='eza --long --git --icons=auto'
-      alias la='eza --long --all --git --icons=auto'
-      alias lt='eza --tree --level=2 --icons=auto'
-      alias lta='eza --tree --level=2 --all --icons=auto'
-
-      # Obsidian CLI (v1.12+, installed via Homebrew cask on macOS)
-      if [ -d "/Applications/Obsidian.app/Contents/MacOS" ]; then
-        export PATH="$PATH:/Applications/Obsidian.app/Contents/MacOS"
-      fi
-
-    '';
-  };
-
-  git = {
-    enable = true;
-    ignores = [ "*.swp" ];
-    lfs = {
+  programs = {
+    direnv = {
       enable = true;
+      enableZshIntegration = true;
+      nix-direnv.enable = true;
     };
-    settings = {
-      user.name = name;
-      user.email = email;
-      init.defaultBranch = "main";
-      core = {
-	    editor = "vim";
-        autocrlf = "input";
-      };
-      pull.rebase = true;
-      rebase.autoStash = true;
+
+    zoxide = {
+      enable = true;
+      enableZshIntegration = true;
+      # This gives you 'z' for smart jumps and 'zi' for interactive mode
     };
-  };
 
-  vim = {
-    enable = true;
-    plugins = with pkgs.vimPlugins; [ vim-airline vim-airline-themes vim-startify vim-tmux-navigator ];
-    settings = { ignorecase = true; };
-    extraConfig = ''
-      "" General
-      set number
-      set history=1000
-      set nocompatible
-      set modelines=0
-      set encoding=utf-8
-      set scrolloff=3
-      set showmode
-      set showcmd
-      set hidden
-      set wildmenu
-      set wildmode=list:longest
-      set cursorline
-      set ttyfast
-      set nowrap
-      set ruler
-      set backspace=indent,eol,start
-      set laststatus=2
-      set clipboard=autoselect
+    starship.enable = true;
 
-      " Dir stuff
-      set nobackup
-      set nowritebackup
-      set noswapfile
-      set backupdir=~/.config/vim/backups
-      set directory=~/.config/vim/swap
+    atuin.enable = true;
 
-      " Relative line numbers for easy movement
-      set relativenumber
-      set rnu
+    zsh = {
+      enable = true;
+      autocd = false;
 
-      "" Whitespace rules
-      set tabstop=8
-      set shiftwidth=2
-      set softtabstop=2
-      set expandtab
+      initContent = lib.mkBefore ''
+        if [[ -f /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh ]]; then
+          . /nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh
+          . /nix/var/nix/profiles/default/etc/profile.d/nix.sh
+        fi
 
-      "" Searching
-      set incsearch
-      set gdefault
+        export PATH=$HOME/.npm-packages/bin:$HOME/bin:$PATH
+        export PATH=$PATH:$HOME/.local/bin
 
-      "" Statusbar
-      let g:airline_theme='bubblegum'
-      let g:airline_powerline_fonts = 1
+        # Configure npm to use home directory for global packages
+        export NPM_CONFIG_PREFIX=$HOME/.npm-packages
+        export NODE_PATH=$HOME/.npm-packages/lib/node_modules
 
-      "" Local keys and such
-      let mapleader=","
-      let maplocalleader=" "
+        # Terminfo for Nix-managed terminal entries (ghostty.terminfo on Linux)
+        export TERMINFO_DIRS=$HOME/.nix-profile/share/terminfo:/usr/share/terminfo
 
-      "" Change cursor on mode
-      :autocmd InsertEnter * set cul
-      :autocmd InsertLeave * set nocul
+        # Remove history data we don't want to see
+        export HISTIGNORE="pwd:ls:cd"
 
-      "" File-type highlighting and configuration
-      syntax on
-      filetype on
-      filetype plugin on
-      filetype indent on
+        # Disable Claude AI cloud MCP servers (Gmail, Slack, etc.)
+        export ENABLE_CLAUDEAI_MCP_SERVERS=false
 
-      "" Paste from clipboard
-      nnoremap <Leader>, "+gP
+        # nix shortcuts
+        shell() {
+            nix-shell '<nixpkgs>' -A "$1"
+        }
 
-      "" Copy from clipboard
-      xnoremap <Leader>. "+y
-
-      "" Move cursor by display lines when wrapping
-      nnoremap j gj
-      nnoremap k gk
-
-      "" Map leader-q to quit out of window
-      nnoremap <leader>q :q<cr>
-
-      "" Move around split
-      nnoremap <C-h> <C-w>h
-      nnoremap <C-j> <C-w>j
-      nnoremap <C-k> <C-w>k
-      nnoremap <C-l> <C-w>l
-
-      "" Easier to yank entire line
-      nnoremap Y y$
-
-      "" Move buffers
-      nnoremap <tab> :bnext<cr>
-      nnoremap <S-tab> :bprev<cr>
-
-      "" Like a boss, sudo AFTER opening the file to write
-      cmap w!! w !sudo tee % >/dev/null
-
-      let g:startify_lists = [
-        \ { 'type': 'dir',       'header': ['   Current Directory '. getcwd()] },
-        \ { 'type': 'sessions',  'header': ['   Sessions']       },
-        \ { 'type': 'bookmarks', 'header': ['   Bookmarks']      }
-        \ ]
-
-      let g:startify_bookmarks = [
-        \ '~/Projects',
-        \ '~/Documents',
-        \ ]
-      '';
-     };
-
-  ssh = {
-    enable = true;
-    enableDefaultConfig = false;
-    includes = [
-      (lib.mkIf pkgs.stdenv.hostPlatform.isLinux
-        "/home/${user}/.ssh/config_external"
-      )
-      (lib.mkIf pkgs.stdenv.hostPlatform.isDarwin
-        "/Users/${user}/.ssh/config_external"
-      )
-    ];
-    matchBlocks."*" = {
-      extraOptions = {
-        "AddKeysToAgent" = "yes";
-        "IdentityFile" = "~/.ssh/id_ed25519";
-      };
-    };
-  };
-
-  tmux = {
-    enable = true;
-    package = pkgs.tmux.override { withSystemd = false; };
-    plugins = with pkgs.tmuxPlugins; [
-      vim-tmux-navigator
-      sensible
-      yank
-      prefix-highlight
-      {
-        plugin = power-theme;
-        extraConfig = ''
-           set -g @tmux_power_theme 'gold'
-        '';
-      }
-      {
-        plugin = resurrect; # Used by tmux-continuum
-
-        # Use XDG data directory
-        # https://github.com/tmux-plugins/tmux-resurrect/issues/348
-        extraConfig = ''
-          set -g @resurrect-dir '$HOME/.cache/tmux/resurrect'
-          set -g @resurrect-capture-pane-contents 'on'
-          set -g @resurrect-pane-contents-area 'visible'
-        '';
-      }
-      {
-        plugin = continuum;
-        extraConfig = ''
-          set -g @continuum-restore 'on'
-          set -g @continuum-save-interval '5' # minutes
-        '';
-      }
-    ];
-    terminal = "screen-256color";
-    prefix = "C-x";
-    escapeTime = 10;
-    historyLimit = 50000;
-    extraConfig = ''
-      # Remove Vim mode delays
-      set -g focus-events on
-
-      # Enable full mouse support
-      set -g mouse on
-
-      # -----------------------------------------------------------------------------
-      # Key bindings
-      # -----------------------------------------------------------------------------
-
-      # Unbind default keys
-      unbind C-b
-      unbind '"'
-      unbind %
-
-      # Split panes, vertical or horizontal
-      bind-key x split-window -v
-      bind-key v split-window -h
-
-      # Move around panes with vim-like bindings (h,j,k,l)
-      bind-key -n M-k select-pane -U
-      bind-key -n M-h select-pane -L
-      bind-key -n M-j select-pane -D
-      bind-key -n M-l select-pane -R
-
-      # Smart pane switching with awareness of Vim splits.
-      # This is copy paste from https://github.com/christoomey/vim-tmux-navigator
-      is_vim="ps -o state= -o comm= -t '#{pane_tty}' \
-        | grep -iqE '^[^TXZ ]+ +(\\S+\\/)?g?(view|n?vim?x?)(diff)?$'"
-      bind-key -n 'C-h' if-shell "$is_vim" 'send-keys C-h'  'select-pane -L'
-      bind-key -n 'C-j' if-shell "$is_vim" 'send-keys C-j'  'select-pane -D'
-      bind-key -n 'C-k' if-shell "$is_vim" 'send-keys C-k'  'select-pane -U'
-      bind-key -n 'C-l' if-shell "$is_vim" 'send-keys C-l'  'select-pane -R'
-      tmux_version='$(tmux -V | sed -En "s/^tmux ([0-9]+(.[0-9]+)?).*/\1/p")'
-      if-shell -b '[ "$(echo "$tmux_version < 3.0" | bc)" = 1 ]' \
-        "bind-key -n 'C-\\' if-shell \"$is_vim\" 'send-keys C-\\'  'select-pane -l'"
-      if-shell -b '[ "$(echo "$tmux_version >= 3.0" | bc)" = 1 ]' \
-        "bind-key -n 'C-\\' if-shell \"$is_vim\" 'send-keys C-\\\\'  'select-pane -l'"
-
-      bind-key -T copy-mode-vi 'C-h' select-pane -L
-      bind-key -T copy-mode-vi 'C-j' select-pane -D
-      bind-key -T copy-mode-vi 'C-k' select-pane -U
-      bind-key -T copy-mode-vi 'C-l' select-pane -R
-      bind-key -T copy-mode-vi 'C-\' select-pane -l
+        # Use eza for better ls and tree views
+        alias ls='eza --icons=auto'
+        alias ll='eza --long --git --icons=auto'
+        alias la='eza --long --all --git --icons=auto'
+        alias lt='eza --tree --level=2 --icons=auto'
+        alias lta='eza --tree --level=2 --all --icons=auto'
       '';
     };
 
-    starship = {
+    git = {
       enable = true;
+      ignores = [ "*.swp" ];
+      lfs.enable = true;
+      settings = {
+        user.name = name;
+        user.email = email;
+        init.defaultBranch = "main";
+        # core.editor deliberately unset: git falls back to $EDITOR, which
+        # each platform sets (emacsclient on macOS, nvim on servers)
+        core.autocrlf = "input";
+        pull.rebase = true;
+        rebase.autoStash = true;
+      };
     };
 
-    atuin = {
+    vim = {
       enable = true;
+      plugins = with pkgs.vimPlugins; [ vim-airline vim-airline-themes vim-startify vim-tmux-navigator ];
+      settings = { ignorecase = true; };
+      extraConfig = ''
+        "" General
+        set number
+        set history=1000
+        set nocompatible
+        set modelines=0
+        set encoding=utf-8
+        set scrolloff=3
+        set showmode
+        set showcmd
+        set hidden
+        set wildmenu
+        set wildmode=list:longest
+        set cursorline
+        set ttyfast
+        set nowrap
+        set ruler
+        set backspace=indent,eol,start
+        set laststatus=2
+        set clipboard=autoselect
+
+        " Dir stuff
+        set nobackup
+        set nowritebackup
+        set noswapfile
+        set backupdir=~/.config/vim/backups
+        set directory=~/.config/vim/swap
+
+        " Relative line numbers for easy movement
+        set relativenumber
+        set rnu
+
+        "" Whitespace rules
+        set tabstop=8
+        set shiftwidth=2
+        set softtabstop=2
+        set expandtab
+
+        "" Searching
+        set incsearch
+        set gdefault
+
+        "" Statusbar
+        let g:airline_theme='bubblegum'
+        let g:airline_powerline_fonts = 1
+
+        "" Local keys and such
+        let mapleader=","
+        let maplocalleader=" "
+
+        "" Change cursor on mode
+        :autocmd InsertEnter * set cul
+        :autocmd InsertLeave * set nocul
+
+        "" File-type highlighting and configuration
+        syntax on
+        filetype on
+        filetype plugin on
+        filetype indent on
+
+        "" Paste from clipboard
+        nnoremap <Leader>, "+gP
+
+        "" Copy from clipboard
+        xnoremap <Leader>. "+y
+
+        "" Move cursor by display lines when wrapping
+        nnoremap j gj
+        nnoremap k gk
+
+        "" Map leader-q to quit out of window
+        nnoremap <leader>q :q<cr>
+
+        "" Move around split
+        nnoremap <C-h> <C-w>h
+        nnoremap <C-j> <C-w>j
+        nnoremap <C-k> <C-w>k
+        nnoremap <C-l> <C-w>l
+
+        "" Easier to yank entire line
+        nnoremap Y y$
+
+        "" Move buffers
+        nnoremap <tab> :bnext<cr>
+        nnoremap <S-tab> :bprev<cr>
+
+        "" Like a boss, sudo AFTER opening the file to write
+        cmap w!! w !sudo tee % >/dev/null
+
+        let g:startify_lists = [
+          \ { 'type': 'dir',       'header': ['   Current Directory '. getcwd()] },
+          \ { 'type': 'sessions',  'header': ['   Sessions']       },
+          \ { 'type': 'bookmarks', 'header': ['   Bookmarks']      }
+          \ ]
+
+        let g:startify_bookmarks = [
+          \ '~/Projects',
+          \ '~/Documents',
+          \ ]
+        '';
     };
+
+    ssh = {
+      enable = true;
+      enableDefaultConfig = false;
+      includes = [ "${config.home.homeDirectory}/.ssh/config_external" ];
+      matchBlocks."*" = {
+        extraOptions = {
+          "AddKeysToAgent" = "yes";
+          "IdentityFile" = "~/.ssh/id_ed25519";
+        };
+      };
+    };
+
+    tmux = {
+      enable = true;
+      package = pkgs.tmux.override { withSystemd = false; };
+      plugins = with pkgs.tmuxPlugins; [
+        vim-tmux-navigator
+        sensible
+        yank
+        prefix-highlight
+        {
+          plugin = power-theme;
+          extraConfig = ''
+             set -g @tmux_power_theme 'gold'
+          '';
+        }
+        {
+          plugin = resurrect; # Used by tmux-continuum
+
+          # Use XDG data directory
+          # https://github.com/tmux-plugins/tmux-resurrect/issues/348
+          extraConfig = ''
+            set -g @resurrect-dir '$HOME/.cache/tmux/resurrect'
+            set -g @resurrect-capture-pane-contents 'on'
+            set -g @resurrect-pane-contents-area 'visible'
+          '';
+        }
+        {
+          plugin = continuum;
+          extraConfig = ''
+            set -g @continuum-restore 'on'
+            set -g @continuum-save-interval '5' # minutes
+          '';
+        }
+      ];
+      terminal = "screen-256color";
+      prefix = "C-x";
+      escapeTime = 10;
+      historyLimit = 50000;
+      extraConfig = ''
+        # Remove Vim mode delays
+        set -g focus-events on
+
+        # Enable full mouse support
+        set -g mouse on
+
+        # -----------------------------------------------------------------------------
+        # Key bindings
+        # -----------------------------------------------------------------------------
+
+        # Unbind default keys
+        unbind C-b
+        unbind '"'
+        unbind %
+
+        # Split panes, vertical or horizontal
+        bind-key x split-window -v
+        bind-key v split-window -h
+
+        # Move around panes with vim-like bindings (h,j,k,l)
+        bind-key -n M-k select-pane -U
+        bind-key -n M-h select-pane -L
+        bind-key -n M-j select-pane -D
+        bind-key -n M-l select-pane -R
+
+        # Smart pane switching with awareness of Vim splits.
+        # This is copy paste from https://github.com/christoomey/vim-tmux-navigator
+        is_vim="ps -o state= -o comm= -t '#{pane_tty}' \
+          | grep -iqE '^[^TXZ ]+ +(\\S+\\/)?g?(view|n?vim?x?)(diff)?$'"
+        bind-key -n 'C-h' if-shell "$is_vim" 'send-keys C-h'  'select-pane -L'
+        bind-key -n 'C-j' if-shell "$is_vim" 'send-keys C-j'  'select-pane -D'
+        bind-key -n 'C-k' if-shell "$is_vim" 'send-keys C-k'  'select-pane -U'
+        bind-key -n 'C-l' if-shell "$is_vim" 'send-keys C-l'  'select-pane -R'
+        tmux_version='$(tmux -V | sed -En "s/^tmux ([0-9]+(.[0-9]+)?).*/\1/p")'
+        if-shell -b '[ "$(echo "$tmux_version < 3.0" | bc)" = 1 ]' \
+          "bind-key -n 'C-\\' if-shell \"$is_vim\" 'send-keys C-\\'  'select-pane -l'"
+        if-shell -b '[ "$(echo "$tmux_version >= 3.0" | bc)" = 1 ]' \
+          "bind-key -n 'C-\\' if-shell \"$is_vim\" 'send-keys C-\\\\'  'select-pane -l'"
+
+        bind-key -T copy-mode-vi 'C-h' select-pane -L
+        bind-key -T copy-mode-vi 'C-j' select-pane -D
+        bind-key -T copy-mode-vi 'C-k' select-pane -U
+        bind-key -T copy-mode-vi 'C-l' select-pane -R
+        bind-key -T copy-mode-vi 'C-\' select-pane -l
+        '';
+    };
+  };
 }
