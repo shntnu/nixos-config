@@ -34,7 +34,7 @@ in
 
     home = {
       enableNixpkgsReleaseCheck = false;
-      packages = import ../shared/packages.nix { inherit pkgs; };
+      packages = import ../shared/packages.nix { inherit pkgs; } ++ [ pkgs.msgvault ];
       stateVersion = "23.11";
       file = {
         "emacs-launcher.command".source = myEmacsLauncher;
