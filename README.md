@@ -48,15 +48,31 @@ git add .
 home-manager switch --flake '.#shsingh@spirit'
 ```
 
-### Ubuntu / WSL (standalone Home Manager, generic)
+## Repo Map
 
-For non-server Ubuntu or WSL machines without a machine-specific profile:
-
-```bash
-nix run 'home-manager/master' -- switch --flake '.#shsingh' -b backup
+```
+flake.nix                       inputs + outputs (darwinConfigurations, homeConfigurations)
+apps/aarch64-darwin/            build / build-switch / rollback (dispatch on hostname)
+hosts/darwin/
+  default.nix                   shared macOS base: nix settings, launchd agents, system.defaults
+  caladan.nix, laptop.nix       per-host: private module + host-only casks/agents
+modules/
+  shared/
+    nixpkgs.nix                 nixpkgs.config + overlays (used at darwin AND HM level)
+    overlays.nix                nextflow pin + msgvault
+    home-manager.nix            cross-platform HM module: zsh, git, vim, ssh, tmux
+    packages.nix                cross-platform package list
+  darwin/
+    home-manager.nix            macOS user block: imports shared, adds mac-only shell + emacs
+    casks.nix                   Homebrew casks (all Macs)
+    dock/                        declarative dock module
+    emacs/                       init.el + config.org
+  headless/
+    home-manager.nix            lab-server HM: imports shared, adds server deltas
+    packages.nix                server-only package list
 ```
 
-The `-b backup` flag renames conflicting existing dotfiles (e.g., `~/.zshrc` -> `~/.zshrc.backup`). Safe to omit after the first run.
+`modules/shared/*` is the single source of truth; `darwin/` and `headless/` import it and layer platform-specific config.
 
 ## How It All Fits Together
 

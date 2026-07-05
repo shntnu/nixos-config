@@ -160,6 +160,18 @@ nix run .#build-switch           # onActivation.upgrade=true reinstalls at new v
 
 Separately, if a cask's app bundle goes missing from `/Applications` but brew's receipt still says installed, `build-switch` won't notice — `brew reinstall --cask <name>` re-syncs disk to receipt.
 
+## 2026-07-05: Refactoring Out Starter-Template Residue
+
+**Key Insight:** Two starter-template patterns were the whole reason this repo felt unmaintainable - a `fetchTarball` of a *moving* branch, and a "shared config" that was a raw attrset instead of a real module.
+
+The `dustinlyons/emacs-overlay` was pulled via `builtins.fetchTarball` of `refs/heads/master` pinned by `sha256`. Pinning a branch (not a tag/commit) by hash is a time bomb: the moment upstream pushes, every build on every machine fails with a hash mismatch for a package I don't even customize. Worse, it was a no-op - `nix store diff-closures` before/after removing it showed zero change, because nixpkgs' `emacs` already resolves to `emacs30`. Lesson: never `fetchTarball` a branch; if you need a pinned dep it belongs in `flake.nix` inputs (which lock to a commit), and check whether an overlay actually changes the closure before trusting it.
+
+The bigger wart: `modules/shared/home-manager.nix` was a plain attrset `import`ed and stitched into consumers with `lib.recursiveUpdate` plus a hand-written `lib.mkMerge` of `zsh.initContent`. That defeats the module system - you can't see what wins, and every consumer re-implements the merge. Rewriting it as a normal HM module (`programs = { ... }`, pulled in via `imports`) let darwin and headless just declare their deltas and let the module system merge them (`lib.mkAfter` for shell init, plain attrs for git). The headless file lost ~40 lines of `sharedPrograms`/`recursiveUpdate`/`mkMerge` plumbing.
+
+Also consolidated two overlay mechanisms into one (`modules/shared/overlays.nix`, applied everywhere via `modules/shared/nixpkgs.nix`) so servers get the same `nextflow` pin and `msgvault` as the Macs - the point of the repo is that all machines match.
+
+Verification that made the refactor safe: snapshot `nix eval ...drvPath` for all five configs before touching anything, then `nix build` + `nix store diff-closures /run/current-system ./result` after. A refactor that's meant to be behavior-preserving should show an *empty or explainable* closure diff; anything else is an unintended change.
+
 ---
 
 ## Entry Guidelines
