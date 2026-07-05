@@ -172,6 +172,10 @@ Also consolidated two overlay mechanisms into one (`modules/shared/overlays.nix`
 
 Verification that made the refactor safe: snapshot `nix eval ...drvPath` for all five configs before touching anything, then `nix build` + `nix store diff-closures /run/current-system ./result` after. A refactor that's meant to be behavior-preserving should show an *empty or explainable* closure diff; anything else is an unintended change.
 
+Postscript - a pin you no longer need is just debt. The nextflow overlay (pinned Sep 2025 to jump 24.08 -> 25.08) was still carrying a hardcoded version and hash long after nixpkgs caught up and passed it. The overlay wasn't buying anything anymore - nixpkgs already had a version that met the original need - so it was pure maintenance surface: a custom derivation to keep bumping for a tool I barely run. Deleting it made the config strictly simpler and let nixpkgs own the version like every other package. The point isn't which nextflow version anyone ends up on; it's that an override outlives its reason, and the maintainable move once upstream can provide the thing is to drop the pin, not to keep tending it.
+
+Second lesson, mechanical: build on the real target, not a proxy. I'd reasoned on the Mac that unifying the overlays "just adds the pin on the servers too," a no-op. Actually building the profile on oppy (`rsync` the tree over, `nix build .#homeConfigurations."shsingh@oppy".activationPackage`) and diffing against oppy's *live* profile is what surfaced that the pin was even in play there. An eval on the build host is not a build on the target host; the closure diff that told the real story only appeared on oppy.
+
 ---
 
 ## Entry Guidelines

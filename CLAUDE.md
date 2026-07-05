@@ -49,7 +49,7 @@ NixOS system-level configuration is not managed here - lab servers (oppy, karkin
     - `home-manager.nix`: cross-platform HM module — `programs.{zsh,git,vim,ssh,tmux}` etc. A real module (imported via `imports`), not an attrset merged by hand.
     - `packages.nix`: cross-platform package list
     - `nixpkgs.nix`: `nixpkgs.config` + overlays; imported at the darwin **system** level and at the headless **HM** level (both expose `nixpkgs.*`)
-    - `overlays.nix`: all overlays — the `nextflow` pin and `msgvault` (from the flake input). Applied on every machine via `nixpkgs.nix`.
+    - `overlays.nix`: overlays — currently just `msgvault` (from the flake input). Applied on every machine via `nixpkgs.nix`.
   - `darwin/`: macOS-specific
     - `home-manager.nix`: the per-user block; imports `../shared/home-manager.nix` and layers mac-only shell config (emacs `EDITOR`, `OPENROUTER_API_KEY` keychain pull, Obsidian PATH) plus the emacs files
     - `casks.nix`: Homebrew casks (all Macs); per-host casks live in `hosts/darwin/{caladan,laptop}.nix`
