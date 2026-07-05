@@ -126,7 +126,7 @@ with pkgs; [
   poppler-utils
   texlive.combined.scheme-medium
   whisper-cpp
-
-  # Email archive (msgvault flake input -> overlay in modules/shared/overlays.nix)
-  msgvault
 ]
+# msgvault (email archive) is macOS-only on purpose: its sync launchd agent and
+# local DB live on the Macs, so the binary is dead weight on the servers. It's
+# added to home.packages in modules/darwin/home-manager.nix.
