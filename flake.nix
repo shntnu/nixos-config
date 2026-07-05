@@ -61,18 +61,14 @@
         "build-switch" = mkApp "build-switch" system;
         "rollback" = mkApp "rollback" system;
       };
-      mkDarwinConfig = { hostModule, system ? "aarch64-darwin" }: let
-        overlays = import ./modules/shared/overlays.nix { pkgs = nixpkgs.legacyPackages.${system}; }
-          ++ [ (final: prev: { msgvault = msgvault.packages.${system}.default; }) ];
-      in
+      mkDarwinConfig = { hostModule, system ? "aarch64-darwin" }:
         darwin.lib.darwinSystem {
           inherit system;
-          specialArgs = inputs;
+          specialArgs = inputs // { inherit user; };
           modules = [
             home-manager.darwinModules.home-manager
             nix-homebrew.darwinModules.nix-homebrew
             {
-              nixpkgs.overlays = overlays;
               nix-homebrew = {
                 inherit user;
                 enable = true;
@@ -96,7 +92,7 @@
             home.homeDirectory = "/home/${user}";
           }
         ];
-        extraSpecialArgs = { inherit inputs; };
+        extraSpecialArgs = inputs // { inherit user; };
       };
     in
     {

@@ -1,6 +1,15 @@
-{ pkgs }:
+# All overlays, applied on every machine via modules/shared/nixpkgs.nix.
+{ msgvault }:
 
 [
+  # msgvault flake input -> pkgs.msgvault (listed in packages.nix, run by the
+  # msgvault-sync launchd agent on macOS). Update: nix flake update msgvault
+  (final: prev: {
+    msgvault = msgvault.packages.${prev.stdenv.hostPlatform.system}.default;
+  })
+
+  # nixpkgs carries 24.08.0-edge; plugins need a newer Nextflow, so fetch the
+  # release dist directly. Drop this when nixpkgs catches up.
   (final: prev: {
     nextflow = prev.stdenv.mkDerivation rec {
       pname = "nextflow";
