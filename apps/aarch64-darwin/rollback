@@ -5,7 +5,16 @@ YELLOW='\033[1;33m'
 RED='\033[1;31m'
 NC='\033[0m'
 
-FLAKE="macos"
+LOCAL_HOSTNAME=$(scutil --get LocalHostName)
+case "$LOCAL_HOSTNAME" in
+  caladan)            FLAKE="caladan" ;;
+  wm89a-c9c)          FLAKE="laptop" ;;
+  *)
+    echo "${RED}Unknown LocalHostName: $LOCAL_HOSTNAME${NC}"
+    echo "${RED}Add a mapping in apps/aarch64-darwin/rollback${NC}"
+    exit 1
+    ;;
+esac
 
 echo "${YELLOW}Available generations:${NC}"
 /run/current-system/sw/bin/darwin-rebuild --list-generations

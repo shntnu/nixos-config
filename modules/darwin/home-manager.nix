@@ -8,7 +8,6 @@ let
     emacsclient -c -n &
   '';
   sharedFiles = import ../shared/files.nix { inherit config pkgs; };
-  additionalFiles = import ./files.nix { inherit user config pkgs; };
 in
 {
   imports = [
@@ -29,21 +28,6 @@ in
     # taps managed by nix-homebrew in flake.nix (mutableTaps = false)
     brews = [ "awscli" "agent-browser" ];
     onActivation.upgrade = true;
-    # onActivation.cleanup = "uninstall";
-
-    # These app IDs are from using the mas CLI app
-    # mas = mac app store
-    # https://github.com/mas-cli/mas
-    #
-    # $ nix shell nixpkgs#mas
-    # $ mas search <app name>
-    #
-    # If you have previously added these apps to your Mac App Store profile (but not installed them on this system),
-    # you may receive an error message "Redownload Unavailable with This Apple ID".
-    # This message is safe to ignore. (https://github.com/dustinlyons/nixos-config/issues/83)
-    masApps = {
-      # "wireguard" = 1451685025;
-    };
   };
 
   # Enable home-manager
@@ -55,7 +39,6 @@ in
         packages = pkgs.callPackage ./packages.nix {};
         file = lib.mkMerge [
           sharedFiles
-          additionalFiles
           { "emacs-launcher.command".source = myEmacsLauncher; }
           {
             # ssh-terminfo auto-installs xterm-ghostty terminfo on remote hosts
