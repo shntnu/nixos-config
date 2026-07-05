@@ -57,7 +57,6 @@
         '')}/bin/${scriptName}";
       };
       mkDarwinApps = system: {
-        "apply" = mkApp "apply" system;
         "build" = mkApp "build" system;
         "build-switch" = mkApp "build-switch" system;
         "rollback" = mkApp "rollback" system;
@@ -102,7 +101,7 @@
     in
     {
       devShells = forAllSystems devShell;
-      apps = nixpkgs.lib.genAttrs darwinSystems mkDarwinApps;
+      apps = nixpkgs.lib.genAttrs [ "aarch64-darwin" ] mkDarwinApps;
 
       darwinConfigurations = {
         caladan = mkDarwinConfig { hostModule = ./hosts/darwin/caladan.nix; };
@@ -113,91 +112,12 @@
         shsingh-headless = ./modules/headless/home-manager.nix;
       };
 
-    # Home Manager standalone configuration for non-NixOS Linux (Ubuntu, WSL, etc.)
-    #
-    # HOME MANAGER HAS TWO MODES:
-    # 1. Integrated mode (Darwin): Runs as part of system rebuild
-    #    - Loaded as modules in darwinConfigurations above
-    #    - Managed via 'nix run .#build-switch' (darwin-rebuild)
-    # 2. Standalone mode (Ubuntu/WSL): Runs independently
-    #    - Defined here in homeConfigurations
-    #    - Managed via 'home-manager switch' command directly
-    #
-    # WHAT YOU GET vs WHAT YOU DON'T:
-    # Included: CLI tools, development environments (from modules/shared/packages.nix)
-    # Included: Shell configs (zsh, git, starship) and dotfiles
-    # NOT included: GUI applications (install via apt: chrome, keepassxc, etc.)
-    # NOT included: System services, desktop environment tools (polybar, rofi, etc.)
-    #
-    # HOW THIS WORKS ON UBUNTU (not NixOS):
-    # - Home Manager runs in "standalone" mode, managing only user-level files
-    # - Installs packages to ~/.nix-profile/ instead of system-wide
-    # - Creates symlinks from your home directory to Nix store for configs
-    # - Your Ubuntu system remains unchanged - only your user environment is managed
-    # - You get the same declarative package/config management as NixOS, but only for your user
-    #
-    # SETUP ON UBUNTU/WSL:
-    # Prerequisites: Nix with flakes (curl -L https://nixos.org/nix/install | sh)
-    #
-    # 1. Clone this repo and cd into it
-    # 2. Run initial setup WITH BACKUP FLAG (important!):
-    #    nix run 'home-manager/master' -- switch --flake '.#shsingh' -b backup
-    #    (Note: 'shsingh' is the username - replace with yours)
-    #
-    # WHAT THE BACKUP DOES:
-    # Home Manager will detect existing files that conflict and rename them:
-    #   ~/.zshrc → ~/.zshrc.backup
-    #   ~/.zshenv → ~/.zshenv.backup
-    #   ~/.config/git/ignore → ~/.config/git/ignore.backup
-    #   (any other managed files...)
-    # Then creates symlinks to Nix-managed versions in /nix/store/
-    #
-    # AFTER SETUP:
-    # - All packages from modules/shared/packages.nix available in PATH
-    # - Shell/program configs from modules/shared/home-manager.nix active
-    # - Same declarative management as NixOS, but user-level only
-    #
-    # DAILY USAGE:
-    # - Update config: nix run 'home-manager/master' -- switch --flake '.#shsingh'
-    #   (Replace 'shsingh' with your username)
-    # - Faster builds: add --max-jobs auto --cores 0
-    # - Changes require: git add . (flake only sees tracked files)
-    #
-    # ROLLBACK IF NEEDED:
-    # - home-manager generations  # list previous versions
-    # - home-manager rollback     # revert to previous
-    homeConfigurations = {
-      "${user}" = home-manager.lib.homeManagerConfiguration {
-        pkgs = nixpkgs.legacyPackages.x86_64-linux;
-        modules = [
-          ./modules/headless/home-manager.nix
-          {
-            nix = {
-              package = nixpkgs.legacyPackages.x86_64-linux.nix;
-              settings = {
-                experimental-features = [ "nix-command" "flakes" ];
-                warn-dirty = false;
-              };
-            };
-          }
-        ];
-        extraSpecialArgs = { inherit inputs; };
-      };
-    } // nixpkgs.lib.genAttrs
+    # Lab-server Home Manager profiles (standalone mode: `home-manager switch`,
+    # run on the server itself). System config for oppy/karkinos lives in
+    # shntnu/neusis; spirit is plain Ubuntu. See README.md for workflows.
+    homeConfigurations = nixpkgs.lib.genAttrs
       (builtins.map (host: "${user}@${host}") [ "oppy" "spirit" "karkinos" ])
       (_: mkHeadlessHomeConfiguration "x86_64-linux");
-
-    # Templates for creating new projects
-    templates = {
-      basic = {
-        path = ./templates/basic;
-        description = "Basic development environment";
-      };
-      lean-mathlib = {
-        path = ./templates/lean-mathlib;
-        description = "Lean 4 development with Mathlib";
-      };
-    };
 
   };
 }
