@@ -1,39 +1,32 @@
+# Homebrew casks installed on every Mac. Per-host casks live in
+# hosts/darwin/{caladan,laptop}.nix (they append to this list).
 [
-  # Development Tools
+  # Development
   "docker-desktop"
   "visual-studio-code"
   "positron"
 
-  # Browsers
+  # Browser
   "google-chrome"
 
-  # Communication Tools - Examples (uncomment as needed)
-  # "discord"
-  # "notion"
-  # "telegram"
+  # Communication
   "whatsapp"
 
-  # Utility Tools - Examples (uncomment as needed)
-  # "syncthing"
+  # Utilities
   "1password"
   "1password-cli"
-  # "rectangle"
   "onedrive"
-
-  # Entertainment Tools - Examples (uncomment as needed)
-  # "spotify"
-  # "vlc"
 
   # Terminal
   "ghostty"
 
-  # Note taking tools
+  # Note taking
   "obsidian"
 
   # Dictation
   "wispr-flow"
 
-  # AI Tools
+  # AI
   "chatgpt"
   "claude"
 ]

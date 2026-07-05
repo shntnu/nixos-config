@@ -26,11 +26,12 @@ On neusis-managed lab servers (oppy, karkinos, spirit), this flake only manages 
 
 The `flake.nix` defines:
 - **darwinConfigurations**: per-host macOS configurations (`caladan`, `laptop`) — each loads `hosts/darwin/default.nix` (shared base) plus a host-specific file that imports a `darwinModules.<host>` from the `private` input
-- **homeConfigurations**: Home Manager standalone. Includes plain `shsingh` (for Ubuntu/WSL) plus lab-server entries `shsingh@oppy`, `shsingh@spirit`, `shsingh@karkinos` built via `mkHeadlessHomeConfiguration` from `modules/headless/`
-- **homeModules**: exposes `shsingh-headless` (= `modules/headless/home-manager.nix`) for downstream consumers
-- **Apps**: helper scripts for building, applying, and managing configurations. Darwin platforms expose `apply`, `build`, `build-switch`, `rollback`.
-- **DevShells**: development environments
-- **Templates**: `basic`, `lean-mathlib`
+- **homeConfigurations**: standalone Home Manager for the lab servers — `shsingh@oppy`, `shsingh@spirit`, `shsingh@karkinos`, all built via `mkHeadlessHomeConfiguration` from `modules/headless/`
+- **homeModules**: exposes `shsingh-headless` (= `modules/headless/home-manager.nix`) for downstream consumers (neusis)
+- **Apps** (`aarch64-darwin` only): `build`, `build-switch`, `rollback` — all dispatch on `scutil --get LocalHostName`
+- **DevShells**: a minimal dev shell (used by `.envrc`)
+
+`user`, `msgvault`, and the other flake inputs are passed to every module via `specialArgs`/`extraSpecialArgs` (`inputs // { inherit user; }`), so modules take them as function args rather than redefining `let user = ...`.
 
 Notable flake inputs:
 - `private` (`git+ssh://git@github.com/shntnu/nixos-config-private`) — provides per-host darwinModules (caladan, laptop) and other private config. Required for darwin builds.
@@ -44,19 +45,18 @@ NixOS system-level configuration is not managed here - lab servers (oppy, karkin
   - `darwin/default.nix`: shared macOS base (nix settings, common launchd agents — emacs, msgvault-sync, qmd-reindex — and `system.defaults`)
   - `darwin/caladan.nix`, `darwin/laptop.nix`: per-host entry points; each imports `./default.nix` plus `private.darwinModules.<host>` and may layer host-specific config (e.g., caladan adds google-drive, dropbox, slack, zoom casks; laptop owns the onedrive-archive agent since OneDriveBackup.app exists only there)
 - **`modules/`**: Reusable configuration modules
-  - `shared/`: Cross-platform packages and configurations
-    - `packages.nix`: Common packages for all systems
-    - `overlays.nix`: shared nixpkgs overlays (e.g., pinned `nextflow`)
-  - `darwin/`: macOS-specific modules
-    - `packages.nix`: macOS-only packages
-    - `casks.nix`: Homebrew cask applications
-    - `dock/`: Dock configuration module
-  - `headless/`: Home Manager profile for lab servers (oppy/spirit/karkinos). Imports `../shared`, adds headless-only packages from `headless/packages.nix`, and layers server-specific program configs (fzf, delta, gh, yazi, zsh autosuggestion/syntax-highlighting, git SSH signing). Also re-exported as `homeModules.shsingh-headless`. Git SSH signing uses `~/.ssh/id_ed25519` with `~/.ssh/allowed_signers`. On a new server, create the signers file once: `echo "shsingh@broadinstitute.org $(cat ~/.ssh/id_ed25519.pub)" > ~/.ssh/allowed_signers`.
+  - `shared/`: the single source of truth, imported by both `darwin/` and `headless/`
+    - `home-manager.nix`: cross-platform HM module — `programs.{zsh,git,vim,ssh,tmux}` etc. A real module (imported via `imports`), not an attrset merged by hand.
+    - `packages.nix`: cross-platform package list
+    - `nixpkgs.nix`: `nixpkgs.config` + overlays; imported at the darwin **system** level and at the headless **HM** level (both expose `nixpkgs.*`)
+    - `overlays.nix`: all overlays — the `nextflow` pin and `msgvault` (from the flake input). Applied on every machine via `nixpkgs.nix`.
+  - `darwin/`: macOS-specific
+    - `casks.nix`: Homebrew casks (all Macs); per-host casks live in `hosts/darwin/{caladan,laptop}.nix`
+    - `dock/`: declarative dock module
+    - `emacs/`: `init.el` + `config.org`
+  - `headless/`: Home Manager profile for lab servers (oppy/spirit/karkinos). Imports `../shared/nixpkgs.nix` and `../shared/home-manager.nix`, adds headless-only packages from `headless/packages.nix`, and layers server-specific program configs (fzf, delta, gh, yazi, zsh autosuggestion/syntax-highlighting, `EDITOR=nvim`, git SSH signing). Also re-exported as `homeModules.shsingh-headless`. Git SSH signing uses `~/.ssh/id_ed25519` with `~/.ssh/allowed_signers`. On a new server, create the signers file once: `echo "shsingh@broadinstitute.org $(cat ~/.ssh/id_ed25519.pub)" > ~/.ssh/allowed_signers`.
 
-- **`apps/`**: Platform-specific build and management scripts
-  - `aarch64-darwin/`, `x86_64-darwin/`: `apply`, `build`, `build-switch`, `rollback`
-
-- **`overlays/`** (top-level): legacy starter-template overlays (e.g., `10-feather-font.nix`); not referenced by `flake.nix`. The active overlays live in `modules/shared/overlays.nix`.
+- **`apps/aarch64-darwin/`**: `build`, `build-switch`, `rollback` (Apple Silicon only)
 
 ### Key Integration Points
 
@@ -78,9 +78,9 @@ nix run .#build-switch              # syncs tap sources and upgrades formulae/ca
 Trade-off: rebuilds are slightly slower due to upgrade checks. To revert to manual upgrades, remove the `onActivation.upgrade` line.
 
 1. **Adding Packages**:
-   - System packages: Edit `modules/shared/packages.nix` (cross-platform) or `modules/darwin/packages.nix` (macOS-specific)
-   - Homebrew casks: Edit `modules/darwin/casks.nix`
-   - User packages: Edit `modules/darwin/home-manager.nix`
+   - Cross-platform (Macs + servers): Edit `modules/shared/packages.nix`
+   - Server-only: Edit `modules/headless/packages.nix`
+   - Homebrew casks: Edit `modules/darwin/casks.nix` (or a host file for one Mac)
 
 2. **Modifying System Settings**:
    - macOS: Edit `hosts/darwin/default.nix` for system preferences
