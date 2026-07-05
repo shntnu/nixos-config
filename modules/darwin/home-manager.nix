@@ -39,6 +39,13 @@ in
       file = {
         "emacs-launcher.command".source = myEmacsLauncher;
 
+        # Same repo path on Macs as on the lab servers: make ~/work/GitHub mirror
+        # ~/Documents/GitHub so `cd ~/work/GitHub/server/nixos-config` resolves
+        # everywhere (servers already keep checkouts under ~/work/GitHub/server).
+        # Out-of-store symlink: points at the live dir, not a nix-store copy.
+        "work/GitHub".source =
+          config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/Documents/GitHub";
+
         # Emacs bootstraps org-mode then tangles ~/.config/emacs/config.org
         ".emacs.d/init.el".source = ./emacs/init.el;
 
