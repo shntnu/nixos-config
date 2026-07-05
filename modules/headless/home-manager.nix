@@ -11,7 +11,7 @@ let
 in
 {
   imports = [
-    ../shared
+    ../shared/nixpkgs.nix
   ];
 
   home = {

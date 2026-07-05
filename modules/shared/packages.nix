@@ -126,7 +126,7 @@ with pkgs; [
   poppler-utils
   texlive.combined.scheme-medium
   whisper-cpp
-] ++ lib.optionals (pkgs ? msgvault) [
-  # Email archive (msgvault flake input -> overlay in flake.nix)
+
+  # Email archive (msgvault flake input -> overlay in modules/shared/overlays.nix)
   msgvault
 ]

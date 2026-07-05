@@ -5,7 +5,7 @@ let user = "shsingh"; in
 {
   imports = [
     ../../modules/darwin/home-manager.nix
-    ../../modules/shared
+    ../../modules/shared/nixpkgs.nix
   ];
 
   nix = {
@@ -43,7 +43,7 @@ let user = "shsingh"; in
     ProgramArguments = [
       "/bin/sh"
       "-c"
-      "/bin/wait4path ${pkgs.emacs}/bin/emacs && exec ${pkgs.emacs}/bin/emacs --fg-daemon"
+      "/bin/wait4path ${pkgs.emacs30}/bin/emacs && exec ${pkgs.emacs30}/bin/emacs --fg-daemon"
     ];
     StandardErrorPath = "/tmp/emacs.err.log";
     StandardOutPath = "/tmp/emacs.out.log";
