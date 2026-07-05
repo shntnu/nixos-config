@@ -59,7 +59,7 @@ hosts/darwin/
 modules/
   shared/
     nixpkgs.nix                 nixpkgs.config + overlays (used at darwin AND HM level)
-    overlays.nix                nextflow pin + msgvault
+    overlays.nix                msgvault (from the flake input)
     home-manager.nix            cross-platform HM module: zsh, git, vim, ssh, tmux
     packages.nix                cross-platform package list
   darwin/
