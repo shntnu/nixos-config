@@ -11,6 +11,8 @@ with pkgs; [
   docker
   docker-compose
 
+  neovim  # servers set EDITOR/VISUAL=nvim (see headless/home-manager.nix)
+
   ranger
 
   nixpkgs-fmt
