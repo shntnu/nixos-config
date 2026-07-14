@@ -109,8 +109,8 @@
       };
 
     # Lab-server Home Manager profiles (standalone mode: `home-manager switch`,
-    # run on the server itself). System config for oppy/karkinos lives in
-    # shntnu/neusis; spirit is plain Ubuntu. See README.md for workflows.
+    # run on the server itself). System config for oppy/spirit/karkinos lives in
+    # shntnu/neusis. See README.md for workflows.
     homeConfigurations = nixpkgs.lib.genAttrs
       (builtins.map (host: "${user}@${host}") [ "oppy" "spirit" "karkinos" ])
       (_: mkHeadlessHomeConfiguration "x86_64-linux");

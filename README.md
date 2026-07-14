@@ -18,7 +18,7 @@ This flake owns the full system. One command rebuilds everything (system + Home 
 nix run .#build-switch
 ```
 
-### Lab servers (oppy / karkinos) — neusis-managed NixOS
+### Lab servers (oppy / spirit / karkinos) — neusis-managed NixOS
 
 On these machines, [neusis](https://github.com/shntnu/neusis) owns the **system configuration** (NixOS, user accounts, SSH keys). This flake only manages **your Home Manager profile** (dotfiles, shell, programs).
 
@@ -28,6 +28,7 @@ git add .
 
 # 2. Apply your Home Manager profile
 home-manager switch --flake '.#shsingh@oppy'      # on oppy
+home-manager switch --flake '.#shsingh@spirit'    # on spirit
 home-manager switch --flake '.#shsingh@karkinos'   # on karkinos
 ```
 
@@ -37,15 +38,6 @@ To test-build without activating:
 
 ```bash
 nix build '.#homeConfigurations."shsingh@oppy".activationPackage'
-```
-
-### spirit — Ubuntu 22.04 (standalone Home Manager)
-
-spirit is not managed by neusis (NixOS migration planned but not yet done). Home Manager runs standalone:
-
-```bash
-git add .
-home-manager switch --flake '.#shsingh@spirit'
 ```
 
 ## Repo Map
@@ -77,30 +69,29 @@ modules/
 ## How It All Fits Together
 
 ```
-  oppy / karkinos (NixOS)               spirit (Ubuntu)
-  ========================               ================
+  oppy / spirit / karkinos (NixOS)
+  =================================
 
 ┌─────────────────────────────┐
 │  neusis (shntnu/neusis)     │
-│  Owns: NixOS system, users, │         (no neusis - Ubuntu
-│        SSH keys              │          manages its own OS)
+│  Owns: NixOS system, users, │
+│        SSH keys              │
 │  Cmd:  sudo nixos-rebuild   │
-│        switch --flake .#oppy │
+│    switch --flake .#<host>   │
 │  Note: shsingh homeModules  │
 │        = null (opted out)    │
 └──────────────┬──────────────┘
                │ account + SSH keys
                ▼
-┌─────────────────────────────┐   ┌──────────────────────────┐
-│  nixos-config (this repo)   │   │  nixos-config (this repo)│
-│  Owns: Home Manager profile │   │  Owns: Home Manager      │
-│  Cmd:  home-manager switch  │   │  Cmd:  home-manager switch│
-│    --flake .#shsingh@oppy   │   │    --flake .#shsingh@spirit│
-└─────────────────────────────┘   └──────────────────────────┘
+┌─────────────────────────────┐
+│  nixos-config (this repo)   │
+│  Owns: Home Manager profile │
+│  Cmd:  home-manager switch  │
+│    --flake .#shsingh@<host> │
+└─────────────────────────────┘
 ```
 
 On the NixOS machines, the two repos are independent - run either in any order, and one never triggers the other.
-On spirit, there is only one command to run (no neusis involvement).
 
 ## Headless Home Manager
 
