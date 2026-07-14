@@ -176,11 +176,11 @@ Postscript - a pin you no longer need is just debt. The nextflow overlay (pinned
 
 Second lesson, mechanical: build on the real target, not a proxy. I'd reasoned on the Mac that unifying the overlays "just adds the pin on the servers too," a no-op. Actually building the profile on oppy (`rsync` the tree over, `nix build .#homeConfigurations."shsingh@oppy".activationPackage`) and diffing against oppy's *live* profile is what surfaced that the pin was even in play there. An eval on the build host is not a build on the target host; the closure diff that told the real story only appeared on oppy.
 
-## 2026-07-14: VS Code Remote Extensions Need the Nix Runtime in `LD_LIBRARY_PATH`
+## 2026-07-14: Wrap Native Python Tools at the VS Code Process Boundary
 
-**Key Insight:** `NIX_LD_LIBRARY_PATH` configures `nix-ld`, but Python extension modules loaded by a Nix Python process still consult `LD_LIBRARY_PATH` for unpatched wheel dependencies such as `libstdc++.so.6`.
+**Key Insight:** VS Code Remote can strip `LD_LIBRARY_PATH` from its extension host, so a shell-level export is insufficient; restore native library paths in a wrapper around the affected extension process.
 
-The marimo VS Code extension launches its bundled uv environment from the remote extension host, outside any project `direnv` shell. Its manylinux `pyzmq` wheel therefore failed before the notebook sandbox started, even though `libstdc++.so.6` was present under `/run/current-system/sw/share/nix-ld/lib`. The headless Home Manager profile now prepends `$NIX_LD_LIBRARY_PATH` to `LD_LIBRARY_PATH` for remote login processes; project flakes must separately retain that C++ runtime when they override `LD_LIBRARY_PATH` for GPU driver libraries.
+The marimo extension launches its bundled uv environment outside project `direnv` shells. Process inspection after a full VS Code restart showed that the extension host and `marimo-lsp` retained `NIX_LD_LIBRARY_PATH` but not `LD_LIBRARY_PATH`, so the manylinux `pyzmq` wheel still could not load `libstdc++.so.6`; testing a clean login shell had exercised the wrong boundary. Home Manager now configures `marimo.lsp.path` to a narrow wrapper that discovers the installed extension and restores the Nix runtime only for `marimo-lsp` and its child kernels.
 
 ---
 

@@ -55,7 +55,7 @@ NixOS system-level configuration is not managed here - lab servers (oppy, karkin
     - `casks.nix`: Homebrew casks (all Macs); per-host casks live in `hosts/darwin/{caladan,laptop}.nix`
     - `dock/`: declarative dock module
     - `emacs/`: `init.el` + `config.org`
-  - `headless/`: Home Manager profile for lab servers (oppy/spirit/karkinos). Imports `../shared/nixpkgs.nix` and `../shared/home-manager.nix`, adds headless-only packages from `headless/packages.nix`, and layers server-specific program configs (fzf, delta, gh, yazi, zsh autosuggestion/syntax-highlighting, `EDITOR=nvim`, git SSH signing). Also re-exported as `homeModules.shsingh-headless`. Git SSH signing uses `~/.ssh/id_ed25519` with `~/.ssh/allowed_signers`. On a new server, create the signers file once: `echo "shsingh@broadinstitute.org $(cat ~/.ssh/id_ed25519.pub)" > ~/.ssh/allowed_signers`.
+  - `headless/`: Home Manager profile for lab servers (oppy/spirit/karkinos). Imports `../shared/nixpkgs.nix` and `../shared/home-manager.nix`, adds headless-only packages from `headless/packages.nix`, and layers server-specific program configs (fzf, delta, gh, yazi, zsh autosuggestion/syntax-highlighting, `EDITOR=nvim`, git SSH signing). It also manages the remote VS Code `marimo.lsp.path` setting and a NixOS wrapper for the extension's bundled language server. Also re-exported as `homeModules.shsingh-headless`. Git SSH signing uses `~/.ssh/id_ed25519` with `~/.ssh/allowed_signers`. On a new server, create the signers file once: `echo "shsingh@broadinstitute.org $(cat ~/.ssh/id_ed25519.pub)" > ~/.ssh/allowed_signers`.
 
 - **`apps/aarch64-darwin/`**: `build`, `build-switch`, `rollback` (Apple Silicon only)
 
