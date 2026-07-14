@@ -4,6 +4,40 @@
 # nixpkgs settings, then layers server-only deltas.
 { config, pkgs, lib, user, ... }:
 
+let
+  marimoLspNixos = pkgs.writeShellApplication {
+    name = "marimo-lsp-nixos";
+    runtimeInputs = [ pkgs.coreutils pkgs.findutils ];
+    text = ''
+      extension_dir="$(${pkgs.findutils}/bin/find "$HOME/.vscode-server/extensions" \
+        -mindepth 1 -maxdepth 1 -type d \
+        -name 'marimo-team.vscode-marimo-*-linux-x64' -print \
+        | ${pkgs.coreutils}/bin/sort -V | ${pkgs.coreutils}/bin/tail -n 1)"
+      if [[ -z "$extension_dir" ]]; then
+        echo "No remote marimo VS Code extension installation found" >&2
+        exit 1
+      fi
+
+      lsp_source="$(${pkgs.findutils}/bin/find "$extension_dir/dist" \
+        -mindepth 1 -maxdepth 1 -type d -name 'marimo_lsp-*' -print \
+        | ${pkgs.coreutils}/bin/sort -V | ${pkgs.coreutils}/bin/tail -n 1)"
+      if [[ -z "$lsp_source" ]]; then
+        echo "No bundled marimo-lsp source found below $extension_dir/dist" >&2
+        exit 1
+      fi
+
+      uv_bin="$extension_dir/bundled/libs/bin/uv"
+      if [[ ! -x "$uv_bin" ]]; then
+        echo "Bundled marimo uv executable not found: $uv_bin" >&2
+        exit 1
+      fi
+
+      nix_runtime="''${NIX_LD_LIBRARY_PATH:-/run/current-system/sw/share/nix-ld/lib}"
+      export LD_LIBRARY_PATH="$nix_runtime''${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+      exec "$uv_bin" tool run --python 3.13 --from "$lsp_source" marimo-lsp "$@"
+    '';
+  };
+in
 {
   imports = [
     ../shared/nixpkgs.nix
@@ -20,16 +54,20 @@
       # imaging-server-maintenance data-storage policy; the skill checks for the
       # dir and falls back to download if a given host has no copy yet.
       CHEMBL_DIR = "/work/datasets/chembl";
-
-      # VS Code Remote extensions run outside project direnv shells. Make the
-      # NixOS runtime libraries visible to uv/manylinux binaries such as pyzmq,
-      # while retaining any library path inherited from the login environment.
-      LD_LIBRARY_PATH =
-        "$NIX_LD_LIBRARY_PATH\${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}";
     };
     packages =
       (pkgs.callPackage ../shared/packages.nix { })
-      ++ (pkgs.callPackage ./packages.nix { });
+      ++ (pkgs.callPackage ./packages.nix { })
+      ++ [ marimoLspNixos ];
+  };
+
+  # VS Code strips LD_LIBRARY_PATH from its remote extension host. Launch the
+  # bundled marimo language server through a narrow wrapper that restores the
+  # Nix runtime only for marimo-lsp and its notebook-kernel children.
+  home.file.".vscode-server/data/Machine/settings.json" = {
+    text = builtins.toJSON {
+      "marimo.lsp.path" = [ "${marimoLspNixos}/bin/marimo-lsp-nixos" ];
+    };
   };
 
   programs = {
