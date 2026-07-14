@@ -20,6 +20,12 @@
       # imaging-server-maintenance data-storage policy; the skill checks for the
       # dir and falls back to download if a given host has no copy yet.
       CHEMBL_DIR = "/work/datasets/chembl";
+
+      # VS Code Remote extensions run outside project direnv shells. Make the
+      # NixOS runtime libraries visible to uv/manylinux binaries such as pyzmq,
+      # while retaining any library path inherited from the login environment.
+      LD_LIBRARY_PATH =
+        "$NIX_LD_LIBRARY_PATH\${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}";
     };
     packages =
       (pkgs.callPackage ../shared/packages.nix { })
