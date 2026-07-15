@@ -86,6 +86,24 @@ let user = "shsingh"; in
     StandardOutPath = "/tmp/qmd-reindex.out.log";
   };
 
+  # Start the tmux server at login so it is always up. tmux-continuum's
+  # @continuum-restore fires when config is sourced on a fresh server, so this
+  # also restores the saved sessions. Without it, `tmux ls` shows nothing until
+  # the first bare `tmux` starts the server.
+  launchd.user.agents.tmux-server.serviceConfig = {
+    ProgramArguments = [
+      "/Users/${user}/.nix-profile/bin/tmux"
+      "start-server"
+    ];
+    EnvironmentVariables = {
+      PATH = "/Users/${user}/.nix-profile/bin:/usr/bin:/bin";
+      HOME = "/Users/${user}";
+    };
+    RunAtLoad = true;
+    StandardErrorPath = "/tmp/tmux-server.err.log";
+    StandardOutPath = "/tmp/tmux-server.out.log";
+  };
+
   system = {
     checks.verifyNixPath = false;
     primaryUser = user;
