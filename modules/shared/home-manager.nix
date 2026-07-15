@@ -80,6 +80,12 @@ in
         core.autocrlf = "input";
         pull.rebase = true;
         rebase.autoStash = true;
+        # Sign commits with the ed25519 SSH key every machine already has.
+        # No GPG keyring to manage; same key path on Macs and servers.
+        commit.gpgsign = true;
+        gpg.format = "ssh";
+        gpg.ssh.allowedSignersFile = "~/.ssh/allowed_signers";
+        user.signingkey = "~/.ssh/id_ed25519.pub";
       };
     };
 
