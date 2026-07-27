@@ -71,9 +71,8 @@ in
 
       alias emacs='emacs -nw'
 
-
+      # User-managed tools installed outside Nix land here.
       export PATH="$HOME/.local/bin:$PATH"
-
 
       # Obsidian CLI (v1.12+, installed via Homebrew cask)
       if [ -d "/Applications/Obsidian.app/Contents/MacOS" ]; then

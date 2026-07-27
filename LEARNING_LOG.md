@@ -131,8 +131,6 @@ brew reinstall --cask obsidian
 # Not: brew upgrade --cask obsidian (no new cask version to upgrade to)
 ```
 
-
-
 ## 2026-06-28: Stale Homebrew Casks Need a Flake Bump, Not `brew update`
 
 **Key Insight:** With `nix-homebrew` and `mutableTaps = false`, the cask catalog is pinned to the `homebrew-cask` flake input — `brew update` is a no-op by design, so a sunset/stale cask is fixed by bumping that one input and rebuilding.

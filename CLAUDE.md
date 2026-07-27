@@ -51,10 +51,11 @@ NixOS system-level configuration is not managed here - lab servers (oppy, karkin
     - `nixpkgs.nix`: `nixpkgs.config` + overlays; imported at the darwin **system** level and at the headless **HM** level (both expose `nixpkgs.*`)
     - `overlays.nix`: overlays — currently just `msgvault` (from the flake input). Applied on every machine via `nixpkgs.nix`.
   - `darwin/`: macOS-specific
+    - `home-manager.nix`: the per-user block; imports `../shared/home-manager.nix` and layers mac-only editor, tool-path, and application configuration plus the emacs files
     - `casks.nix`: Homebrew casks (all Macs); per-host casks live in `hosts/darwin/{caladan,laptop}.nix`
     - `dock/`: declarative dock module
     - `emacs/`: `init.el` + `config.org`
-  - `headless/`: Home Manager profile for lab servers (oppy/spirit/karkinos). Imports `../shared/nixpkgs.nix` and `../shared/home-manager.nix`, adds headless-only packages from `headless/packages.nix`, and layers server-specific program configs (fzf, delta, gh, yazi, zsh autosuggestion/syntax-highlighting, `EDITOR=nvim`, git SSH signing). It also manages the remote VS Code `marimo.lsp.path` setting and a NixOS wrapper for the extension's bundled language server. Also re-exported as `homeModules.shsingh-headless`. Git SSH signing uses `~/.ssh/id_ed25519` with `~/.ssh/allowed_signers`. On a new server, create the signers file once: `echo "shsingh@broadinstitute.org $(cat ~/.ssh/id_ed25519.pub)" > ~/.ssh/allowed_signers`.
+  - `headless/`: Home Manager profile for lab servers (oppy/spirit/karkinos). Imports `../shared/nixpkgs.nix` and `../shared/home-manager.nix`, adds headless-only packages from `headless/packages.nix`, and layers server-specific program configs. It also manages the remote VS Code language-server wrapper and git SSH signing. Also re-exported as `homeModules.shsingh-headless`.
 
 - **`apps/aarch64-darwin/`**: `build`, `build-switch`, `rollback` (Apple Silicon only)
 
@@ -100,6 +101,10 @@ Trade-off: rebuilds are slightly slower due to upgrade checks. To revert to manu
 - `hosts/darwin/{caladan,laptop}.nix`: Per-host overrides (e.g., host-specific casks). For private/secret host config, edit the corresponding module in the `private` flake input repo.
 - `modules/headless/`: Headless lab-server profile (`shsingh@oppy`, `shsingh@spirit`, `shsingh@karkinos`)
 
+## Private host configuration
+
+Host-specific services, endpoints, credentials, and operational notes belong in the private flake input.
+Keep this repository limited to shared declarative configuration and consult the matching private host module when changing host-specific behavior.
 
 ## Python Development
 
