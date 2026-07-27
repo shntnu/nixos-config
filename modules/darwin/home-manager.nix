@@ -78,6 +78,17 @@ in
       # Pi 0.73.0 ignores auth.json `!command` resolvers (LEARNING_LOG.md), so env var is the only working path.
       export OPENROUTER_API_KEY="$(security find-generic-password -ws openrouter 2>/dev/null)"
 
+      # uv tool installs (hindsight-api and its admin/worker CLIs) land here
+      export PATH="$HOME/.local/bin:$PATH"
+
+      # Hindsight agent-memory server, hosted on caladan (the launchd agent that
+      # runs it lives in the private flake input, since it pins host-specific
+      # network exposure). Both Macs point at the same instance so they share one
+      # memory bank; the key is the bearer token for the CLI and MCP clients.
+      # Short hostname resolves over MagicDNS from either Mac.
+      export HINDSIGHT_API_URL="http://caladan:8888"
+      export HINDSIGHT_API_KEY="$(security find-generic-password -ws hindsight-api-key 2>/dev/null)"
+
       # Obsidian CLI (v1.12+, installed via Homebrew cask)
       if [ -d "/Applications/Obsidian.app/Contents/MacOS" ]; then
         export PATH="$PATH:/Applications/Obsidian.app/Contents/MacOS"

@@ -107,6 +107,18 @@ Pi reads `OPENROUTER_API_KEY` from the env, exported in `modules/darwin/home-man
 
 If pi reports "No API key for provider: openrouter": check `security find-generic-password -ws openrouter` returns the key, and that the env var is set in a fresh shell (`echo "${#OPENROUTER_API_KEY}"` should be 73). Two paths that look right but don't work: `auth.json` `!command` resolvers are ignored by pi 0.73.0 despite docs claiming support, and a custom `openrouter` provider in `models.json` hangs silently per [pi-mono #3168](https://github.com/badlogic/pi-mono/issues/3168). If either bug closes, the curated-list-in-models.json approach would be more elegant. Full convergence story in `LEARNING_LOG.md`.
 
+## Hindsight (agent memory)
+
+[Hindsight](https://github.com/vectorize-io/hindsight) runs on caladan and is the shared long-term memory bank for every agent that can reach it - Claude Code on both Macs, Claude Desktop, ChatGPT Desktop, the lab servers. API on 8888 with MCP mounted at `/mcp/{bank}/`, embedded PostgreSQL + pgvector under `~/.hindsight/data/`. No web UI - the Control Plane is a separate `@vectorize-io/hindsight-control-plane` process that `hindsight-api` does not start; upstream's port 9999 comes from the Docker image, which bundles both.
+
+**The launchd agent lives in the `private` flake input** (`modules/darwin/caladan.nix` there), not in this repo, because it pins host-specific network exposure. Read that module before changing anything about the server; the notes below are the client-side and package-level parts that stay public.
+
+The package is **not** Nix-managed, same arrangement as qmd: `uv tool install hindsight-api` puts the binaries in `~/.local/bin`, `uv tool upgrade hindsight-api` updates them. It drags in PyTorch, MLX and transformers for the bundled embedding and reranker models; nixpkgs-ifying that tree is not worth the maintenance. Apple Silicon only - Intel Macs need `hindsight-api-slim`.
+
+Both Macs export `HINDSIGHT_API_URL` and `HINDSIGHT_API_KEY` from `modules/darwin/home-manager.nix` for the CLI and for MCP clients. The key comes from the `hindsight-api-key` keychain entry; the server also reads an `anthropic` entry for consolidation and reflection (a console API key, not claude.ai subscription auth). Seed commands are in the private module.
+
+Troubleshooting: `tail /tmp/hindsight.err.log`. Cold start is ~70s (schema migrations plus model load), so a `curl http://localhost:8888/health` immediately after a switch fails before it succeeds. An `invalid x-api-key` line at startup means the `anthropic` keychain entry is missing or stale - the server still comes up healthy, but retain and reflect will fail.
+
 ## Python Development
 
 UV is installed for Python package management. UV can download Python versions as needed, allowing flexible development without Nix-Python conflicts. For reproducible builds requiring Nix integration, consider adding uv2nix when specifically needed.
