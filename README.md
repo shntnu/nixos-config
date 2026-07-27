@@ -32,7 +32,7 @@ home-manager switch --flake '.#shsingh@spirit'    # on spirit
 home-manager switch --flake '.#shsingh@karkinos'   # on karkinos
 ```
 
-> **Do not** run `nix run .#build-switch` on these machines — that would attempt a full NixOS system rebuild from this flake, which is not what you want. System changes go through neusis (`sudo nixos-rebuild switch --flake /path/to/neusis#oppy`).
+> **Do not** run `nix run .#build-switch` on these machines — that would attempt a full NixOS system rebuild from this flake, which is not what you want. System changes go through neusis, which has a separate configuration per machine (`sudo nixos-rebuild switch --flake /path/to/neusis#<host>`).
 
 To test-build without activating:
 
