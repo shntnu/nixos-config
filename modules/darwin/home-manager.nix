@@ -72,6 +72,9 @@ in
       alias emacs='emacs -nw'
 
 
+      export PATH="$HOME/.local/bin:$PATH"
+
+
       # Obsidian CLI (v1.12+, installed via Homebrew cask)
       if [ -d "/Applications/Obsidian.app/Contents/MacOS" ]; then
         export PATH="$PATH:/Applications/Obsidian.app/Contents/MacOS"
