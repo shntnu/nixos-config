@@ -13,6 +13,9 @@ with pkgs; [
 
   neovim  # servers set EDITOR/VISUAL=nvim (see headless/home-manager.nix)
 
+  ghostty  # only useful on karkinos (it has a display); dead weight on oppy/spirit
+  google-chrome  # ditto: karkinos has a display. Unfree (allowUnfree is on in shared/nixpkgs.nix)
+
   ranger
 
   nixpkgs-fmt
