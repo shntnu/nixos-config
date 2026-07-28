@@ -88,6 +88,7 @@
         pkgs = nixpkgs.legacyPackages.${system};
         modules = [
           ./modules/headless/home-manager.nix
+          private.homeModules.default
           {
             home.homeDirectory = "/home/${user}";
           }
