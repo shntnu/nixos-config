@@ -166,6 +166,12 @@ Second lesson, mechanical: build on the real target, not a proxy. I'd reasoned o
 
 The marimo extension launches its bundled uv environment outside project `direnv` shells. Process inspection after a full VS Code restart showed that the extension host and `marimo-lsp` retained `NIX_LD_LIBRARY_PATH` but not `LD_LIBRARY_PATH`, so the manylinux `pyzmq` wheel still could not load `libstdc++.so.6`; testing a clean login shell had exercised the wrong boundary. Home Manager now configures `marimo.lsp.path` to a narrow wrapper that discovers the installed extension and restores the Nix runtime only for `marimo-lsp` and its child kernels.
 
+## 2026-07-29: Claude Desktop on a Lab Server - Packaged, Then Scrapped
+
+**Key Insight:** A package that installs cleanly can still be the wrong thing to install; over SSH the CLI already covers it, and the app adds a third-party repackaging to maintain forever.
+
+Claude Desktop for Linux ships only as a `.deb` from Anthropic's apt repo, and nixpkgs has no `claude-desktop` (request #366213 closed unpackaged). The route that worked was `github:aaddrick/claude-desktop-debian` (repackages that official `.deb`): flake input, overlay entry beside `msgvault`, one line in `modules/headless/packages.nix`. Built and ran on karkinos, then reverted - updates ride `nix flake update` instead of the nixpkgs bump, and it lands in the shared headless profile so oppy and spirit inherit it too. Before adding a flake input for a GUI app: what does it do that the CLI can't, and who bumps it in six months?
+
 ---
 
 ## Entry Guidelines
