@@ -121,4 +121,4 @@ nix shell nixpkgs#<pkg>   # Try a package without installing
 
 - [`CLAUDE.md`](./CLAUDE.md) — architecture details and module organization (for Claude Code)
 - [`LEARNING_LOG.md`](./LEARNING_LOG.md) — Nix/Homebrew/system learnings and gotchas
-- [Hindsight client bootstrap](https://github.com/shntnu/nixos-config-private/blob/main/docs/hindsight-new-machine.md) - new-machine setup, token provisioning, and the two-session acceptance test
+- [Hindsight client bootstrap](https://github.com/shntnu/nixos-config-private/blob/main/docs/hindsight-new-machine.md) - shared Codex, Claude Code, and Pi repository memory over REST, with no Hindsight MCP
