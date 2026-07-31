@@ -171,6 +171,13 @@ Its `Stop` input includes `last_assistant_message` and may include `transcript_p
 Use the pinned upstream parser and validate it against the installed Codex release, or cache the `UserPromptSubmit` prompt and pair it with `last_assistant_message` for per-turn retention.
 Do not replace that logic with an untested transcript parser, and return valid `Stop` JSON such as `{"continue": true}` after a successful or intentional no-op run when the installed release requires JSON output.
 
+Codex can persist synthetic startup metadata as a user message before the real prompt.
+Older transcripts began that message with `# AGENTS.md instructions for <path>`.
+The current envelope can begin with a well-formed `<recommended_plugins>...</recommended_plugins>` block followed by `# AGENTS.md instructions` and `<INSTRUCTIONS>...</INSTRUCTIONS>`.
+Exclude only these anchored, well-formed startup envelopes from retention.
+Keep ordinary prompts that mention `AGENTS.md`, quoted instructions that do not begin the message, and malformed look-alike envelopes.
+Add regression fixtures for both startup formats and for normal discussion that must remain retainable.
+
 Codex asks the user to trust hook command definitions.
 That trust is tied to the hook definition hash, so changing the command or registration requires another review in `/hooks`.
 
@@ -305,19 +312,25 @@ For any server deployment:
 - Test service restart and container recreation without losing a retained sentinel. Reboot as well when the user authorizes it.
 
 The service needs an LLM provider for extraction and consolidation in addition to its local embedding and reranking models.
-Use a low-cost model unless measured extraction quality requires a larger one.
+Start with a low-cost model that reliably follows Hindsight's structured extraction contract unless measured quality requires a larger one.
+The macOS deployment tested Hindsight `v0.8.5` with OpenRouter's `openai/gpt-oss-20b`, a Hindsight-recommended model for structured retention and consolidation.
+It completed both successfully while leaving Hindsight's completion-limit overrides unset.
 Provider credentials and billing failures can break retention while `/health` continues to return success, so a health check is necessary but insufficient.
-In Hindsight `v0.8.6`, fact extraction defaults to a `64000`-token completion allowance.
-Some OpenAI-compatible gateways reserve or affordability-check that full allowance before generation, so a tiny retain can fail with a billing error even though it would produce a short answer.
-Retention extraction and consolidation use separate completion limits, so cap both deliberately for the chosen model and budget.
-The clean review used:
+In the tested Hindsight `v0.8.5` and `v0.8.6` releases, fact extraction defaults to a `64000`-token completion allowance.
+That allowance is an output ceiling, not the number of tokens a normal retain consumes.
+Some OpenAI-compatible gateways reserve or affordability-check the full allowance before generation, so a tiny retain can fail with a billing error even though it would produce a short answer.
+Choose retention and consolidation limits explicitly for the selected model, provider, and budget; the two operations have separate settings.
+Do not lower the `64000` retain ceiling automatically when an inexpensive model supports it.
+If provider affordability or quota requires a lower ceiling, reduce it and then repeat exact retain, recall, and consolidation tests against realistic transcripts.
+The clean NixOS review used these lower limits successfully:
 
 ```text
 HINDSIGHT_API_RETAIN_MAX_COMPLETION_TOKENS=8192
 HINDSIGHT_API_CONSOLIDATION_MAX_COMPLETION_TOKENS=8192
 ```
 
-Then prove extraction and consolidation quality with actual retain-and-recall tests and a clean server-error window.
+Treat those values as one tested deployment choice, not a universal default.
+Prove extraction and consolidation quality with actual retain-and-recall tests and a clean server-error window.
 
 Protect the REST service with Hindsight's API-key tenant extension and a strong tenant API key.
 For the version tested, the relevant settings were:
@@ -329,6 +342,13 @@ HINDSIGHT_API_TENANT_API_KEY=<strong-random-secret>
 HINDSIGHT_API_LLM_PROVIDER=<provider>
 HINDSIGHT_API_LLM_MODEL=<model>
 HINDSIGHT_API_LLM_API_KEY=<provider-secret>
+```
+
+The tested macOS provider pair was:
+
+```text
+HINDSIGHT_API_LLM_PROVIDER=openrouter
+HINDSIGHT_API_LLM_MODEL=openai/gpt-oss-20b
 ```
 
 These names are version-sensitive; verify them against the pinned server version.
@@ -420,7 +440,9 @@ Again, `default` is the tenant namespace in the REST API.
 
 ## Verification
 
-Run a quick structural test on every machine after installation, upgrades, hook changes, or token rotation.
+Use two verification levels before the paid cross-agent relay.
+
+Run one-time implementation acceptance after the first setup and after material changes to repository resolution, persistence, service architecture, or secret filtering.
 It should verify:
 
 - Each of the three adapters independently passes the same bank resolver cases and resolves identical repository and worktree bank IDs.
@@ -429,17 +451,23 @@ It should verify:
 - A second setup run produces an empty configuration diff and exactly one registration for each Hindsight hook.
 - On NixOS, the server, container, storage, startup, and backup declarations exist in managed Nix source; no imperative environment, hand-written user unit, or ad hoc wrapper owns the deployment.
 - The server starts independently of login, the image reference contains an immutable digest, backup and isolated restore have both been exercised without replacing active data, and a retained sentinel survives restart and container recreation.
-- The URL and bank policy match across clients.
 - Changing either mission value updates a bank already seen by each client; a boolean `mission set` cache is insufficient.
-- The token directory and file permissions are `0700` and `0600`.
-- Authenticated REST can list or access banks.
-- Both login and non-login non-interactive shells can authenticate.
-- Hindsight MCP is absent from the server and all three clients, and no unnecessary Control Plane port is reachable.
 - Adapters time out and fail open when the server is unavailable.
 - Resolver, timeout, fail-open, retain, and recall checks run separately for Claude Code, Codex, and Pi rather than treating one adapter as representative of the others.
 - `SessionStart` performs the promised bounded health check instead of silently skipping it when an explicit API URL is configured.
 - A Pi session ending in a tool result does not retain that raw tool result as assistant text.
 - Held-out synthetic fake-secret fixtures cover at least a PEM private-key block, bearer token, common API-token prefix, shell assignment, and JSON credential field. Keep those fixtures outside the filter implementation, verify that each causes both recall and retention to be skipped before any request reaches Hindsight, and verify that its unique marker appears in neither outbound requests nor adapter, setup, or server logs.
+
+Run a quick structural and connectivity test on every machine after installation, upgrades, hook changes, or token rotation.
+It should verify:
+
+- Hook and extension files exist and the expected registrations are active.
+- The URL and bank policy match across clients.
+- The token directory and file permissions are `0700` and `0600`.
+- Authenticated REST can list or access banks.
+- Both login and non-login non-interactive shells can authenticate.
+- Hindsight MCP is absent from the server and all three clients, and no unnecessary Control Plane port is reachable.
+- Codex excludes both the legacy and current synthetic startup envelopes while retaining ordinary `AGENTS.md` discussion and malformed look-alikes.
 - Adapter state files that contain recall or retention checkpoints are mode `0600` inside mode `0700` directories.
 
 Then run a real cross-agent relay in one unique temporary bank:
@@ -515,6 +543,7 @@ Count new extraction errors during the test and fail if the count increases.
 32. A retention checkpoint written before REST acceptance converts a temporary failure into permanent data loss.
 33. Retention extraction and consolidation have separate completion limits; capping only one can leave background errors behind a successful recall.
 34. A restore drill belongs in an isolated data path; a setup test does not authorize replacing active memory storage.
+35. Codex can persist startup metadata as a user message, and that envelope can change across releases. Keep its exclusion filter anchored and regression-test it against current transcripts.
 
 ## Deliberate boundaries
 
