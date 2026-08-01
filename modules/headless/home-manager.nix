@@ -136,6 +136,15 @@ in
 
   services.ssh-agent.enable = true;
 
+  # GNOME Files: only useful on karkinos (it has a display); inert on oppy/spirit.
+  # Nautilus defaults show-image-thumbnails to 'local-only', which skips anything
+  # on a remote mount, so browsing spirit over sftp:// showed no image previews.
+  # thumbnail-limit is in MB and must be a uint64 to match the schema type.
+  dconf.settings."org/gnome/nautilus/preferences" = {
+    show-image-thumbnails = "always";
+    thumbnail-limit = lib.hm.gvariant.mkUint64 200;
+  };
+
   # Marked broken Oct 20, 2022; keep disabled for standalone Linux targets too.
   # https://github.com/nix-community/home-manager/issues/3344
   manual.manpages.enable = false;
