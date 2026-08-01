@@ -1,5 +1,9 @@
 # Shared repository memory across Claude Code, Codex, and Pi using Hindsight REST
 
+[Hindsight](https://github.com/vectorize-io/hindsight) is an open-source long-term memory system for AI agents.
+It extracts durable information from conversations into memory banks, then recalls relevant memories during future work so agents can learn across sessions.
+This document configures Claude Code, Codex, and Pi to share one Hindsight memory bank per Git repository through its REST API.
+
 This is an implementation specification.
 Claude Code, Codex, and Pi must already be installed and authenticated on a client machine.
 
