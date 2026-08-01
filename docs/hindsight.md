@@ -1,6 +1,6 @@
 # Shared repository memory across Claude Code, Codex, and Pi using Hindsight REST
 
-This is an implementation specification, not an installer.
+This is an implementation specification.
 Claude Code, Codex, and Pi must already be installed and authenticated on a client machine.
 
 To create the first shared server, give a coding agent this URL and say:
