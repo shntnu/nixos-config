@@ -145,6 +145,26 @@ in
     thumbnail-limit = lib.hm.gvariant.mkUint64 200;
   };
 
+  # Keep spirit's /work mounted over gvfs sftp so the FUSE path under
+  # $XDG_RUNTIME_DIR/gvfs exists at login for terminal tools (yazi, bat, ripgrep)
+  # and not just when a Files bookmark is clicked. Bound to graphical-session
+  # rather than a hostname check: oppy and spirit have no graphical session, so
+  # the unit simply never starts there and needs no per-host guard.
+  systemd.user.services.mount-spirit = {
+    Unit = {
+      Description = "Mount spirit over gvfs sftp";
+      After = [ "graphical-session.target" ];
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      Type = "oneshot";
+      RemainAfterExit = true;
+      ExecStart = "${pkgs.glib.bin}/bin/gio mount sftp://spirit/";
+      ExecStop = "${pkgs.glib.bin}/bin/gio mount -u sftp://spirit/";
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
+  };
+
   # Marked broken Oct 20, 2022; keep disabled for standalone Linux targets too.
   # https://github.com/nix-community/home-manager/issues/3344
   manual.manpages.enable = false;
