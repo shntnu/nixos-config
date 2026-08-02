@@ -229,7 +229,14 @@ in
       Type = "oneshot";
       RemainAfterExit = true;
       ExecStart = "${mountSpirit}";
-      ExecStop = "${pkgs.glib.bin}/bin/gio mount -u sftp://spirit/";
+      # No ExecStop. The user manager does not linger, so logout tears down
+      # /run/user/$UID with gvfsd-fuse and the mount inside it; an explicit
+      # unmount buys nothing at session end. What it did buy was a mid-session
+      # unmount on every stop or restart, including the restart home-manager
+      # performs on switch, which pulled the mount out from under whatever was
+      # using it - and out from under a Files bookmark the unit never created.
+      # Leaving it out makes restart a no-op over an existing mount, since
+      # ExecStart is idempotent.
     };
     Install.WantedBy = [ "graphical-session.target" ];
   };
