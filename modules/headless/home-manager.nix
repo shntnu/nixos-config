@@ -37,6 +37,28 @@ let
       exec "$uv_bin" tool run --python 3.13 --from "$lsp_source" marimo-lsp "$@"
     '';
   };
+
+  # `gio mount` exits 2 when the location is already mounted, which makes the
+  # oneshot unit below report failed even though the mount is present and fine.
+  # Anything else mounting sftp://spirit/ first (a Files bookmark, an earlier
+  # activation) therefore left a spurious failed unit after every switch or
+  # login. Tolerate only that one message; real errors still fail the unit,
+  # unlike a blanket SuccessExitStatus=2.
+  mountSpirit = pkgs.writeShellScript "mount-spirit" ''
+    if out=$(${pkgs.glib.bin}/bin/gio mount sftp://spirit/ 2>&1); then
+      exit 0
+    fi
+
+    case "$out" in
+      *"already mounted"*)
+        echo "sftp://spirit/ is already mounted"
+        exit 0
+        ;;
+    esac
+
+    echo "$out" >&2
+    exit 1
+  '';
 in
 {
   imports = [
@@ -206,7 +228,7 @@ in
     Service = {
       Type = "oneshot";
       RemainAfterExit = true;
-      ExecStart = "${pkgs.glib.bin}/bin/gio mount sftp://spirit/";
+      ExecStart = "${mountSpirit}";
       ExecStop = "${pkgs.glib.bin}/bin/gio mount -u sftp://spirit/";
     };
     Install.WantedBy = [ "graphical-session.target" ];
