@@ -82,6 +82,53 @@ in
 
         export EDITOR="nvim"
         export VISUAL="nvim"
+
+        # trash-cli will not move a file across filesystems, and it cannot create
+        # a volume trash dir under /work because that mount root is not writable.
+        # Deleting anything in /work/users/<user> therefore fails outright, which
+        # breaks the never-use-rm rule in the primary workspace on these servers.
+        # Route /work deletions to a trash on the same volume; leave every other
+        # path on the default home trash rather than relocating all XDG data.
+        _work_trash_data_home="/work/users/$USER/.local/share"
+
+        _work_trash_available() {
+          [[ -d "/work/users/$USER" ]]
+        }
+
+        trash() {
+          local arg
+          if _work_trash_available; then
+            for arg in "$@"; do
+              if [[ "''${arg:A}" == /work/* ]]; then
+                mkdir -p "$_work_trash_data_home"
+                XDG_DATA_HOME="$_work_trash_data_home" command trash "$@"
+                return $?
+              fi
+            done
+          fi
+          command trash "$@"
+        }
+
+        # Show both trashes, so nothing deleted under /work goes unnoticed.
+        trash-list() {
+          command trash-list "$@"
+          if _work_trash_available && [[ -d "$_work_trash_data_home/Trash" ]]; then
+            XDG_DATA_HOME="$_work_trash_data_home" command trash-list "$@"
+          fi
+        }
+
+        # Restore and empty act on the /work trash when run from under /work.
+        _trash_for_cwd() {
+          local cmd="$1"; shift
+          if _work_trash_available && [[ "$PWD" == /work/* ]]; then
+            XDG_DATA_HOME="$_work_trash_data_home" command "$cmd" "$@"
+          else
+            command "$cmd" "$@"
+          fi
+        }
+
+        trash-restore() { _trash_for_cwd trash-restore "$@"; }
+        trash-empty()   { _trash_for_cwd trash-empty "$@"; }
       '';
     };
 
