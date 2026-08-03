@@ -135,7 +135,7 @@ Set the bank's missions with:
 {
   "updates": {
     "reflect_mission": "Maintain durable technical knowledge about this Git repository across coding agents.",
-    "retain_mission": "Extract project decisions, architecture, conventions, user preferences, and useful failed approaches. Preserve exact non-secret technical identifiers verbatim, including hashes, hostnames, paths, flags, commands, versions, and configuration values. Never extract or retain credentials, private keys, authentication tokens, or other secrets. Ignore transient command output and routine chatter."
+    "retain_mission": "Extract project decisions, architecture, conventions, user preferences, and useful failed approaches. Preserve exact non-secret technical identifiers verbatim, including hashes, hostnames, paths, flags, commands, versions, and configuration values. Every explicit non-secret identifier and configuration value must appear verbatim in the extracted memory text, not only as an entity. Never extract or retain credentials, private keys, authentication tokens, or other secrets. Ignore transient command output and routine chatter."
   }
 }
 ```
@@ -197,6 +197,7 @@ Strip or skip content matching an explicit secret policy, including private-key 
 
 Hindsight's extraction model may paraphrase identifiers or decide that an arbitrary test token is not a durable fact.
 The explicit retain mission above materially improved preservation of hashes, flags, paths, and other exact values.
+Entity metadata alone cannot satisfy this contract because normal recall can return memory text without the entity's exact value.
 
 ## REST-only boundary
 
@@ -259,6 +260,7 @@ For any server deployment:
 - Run a native service under a dedicated account, or constrain a container to its declared data and secret mounts; the Hindsight process does not need an interactive user's home, `wheel`, or the Docker socket.
 - Define and test a backup and restore path with `hindsight-admin` or the corresponding pinned-version mechanism. Exercise restore against a fresh isolated temporary data path and verify the restored sentinel there; never overwrite or destructively restore the active data path without explicit user approval. Order the backup job after the service, make archives owner-only, and keep a copy outside the primary data path when the memories matter.
 - Test service restart and container recreation without losing a retained sentinel. Reboot as well when the user authorizes it.
+- Package-manager output identifies installed files only. After an in-place native-package upgrade, acceptance also requires a new managed daemon process started after the executable changed; after a container upgrade, require a replacement container using the pinned digest.
 
 ### Extraction provider and API authentication
 
@@ -389,11 +391,17 @@ Use the pinned upstream parser and validate it against the installed Codex relea
 Do not replace that logic with an untested transcript parser, and return valid `Stop` JSON such as `{"continue": true}` after a successful or intentional no-op run when the installed release requires JSON output.
 
 Codex can persist synthetic startup metadata as a user message before the real prompt.
-Older transcripts began that message with `# AGENTS.md instructions for <path>`.
-The current envelope can begin with a well-formed `<recommended_plugins>...</recommended_plugins>` block followed by `# AGENTS.md instructions` and `<INSTRUCTIONS>...</INSTRUCTIONS>`.
-Exclude only these anchored, well-formed startup envelopes from retention.
-Keep ordinary prompts that mention `AGENTS.md`, quoted instructions that do not begin the message, and malformed look-alike envelopes.
-Add regression fixtures for both startup formats and for normal discussion that must remain retainable.
+Older transcripts used one `# AGENTS.md instructions for <path>` section containing `<INSTRUCTIONS>...</INSTRUCTIONS>`.
+Current transcripts can emit these well-formed sections as separate synthetic user messages or concatenate them in this order:
+
+- `<recommended_plugins>...</recommended_plugins>`
+- `# AGENTS.md instructions` or `# AGENTS.md instructions for <path>`, followed by `<INSTRUCTIONS>...</INSTRUCTIONS>`
+- `<environment_context>...</environment_context>`
+
+Exclude a message only when its complete trimmed content consists of one or more anchored synthetic sections in that order.
+Keep malformed sections, ordinary prompts that discuss or quote these markers, and any message with real user text before or after the synthetic-looking content.
+Regression fixtures must cover the legacy envelope, plugin plus instructions plus environment, plugin plus environment, environment only, malformed sections, and a synthetic section followed by a real prompt.
+Also validate the parser against real affected rollout files, or sanitized fixtures with exactly the same message boundaries, while proving that nearby real user requests remain retainable.
 
 Codex asks the user to trust hook command definitions.
 That trust is tied to the hook definition hash, so changing the command or registration requires another review in `/hooks`.
@@ -470,6 +478,7 @@ It should verify:
 - On NixOS, the server, container, storage, startup, and backup declarations exist in managed Nix source; no imperative environment, hand-written user unit, or ad hoc wrapper owns the deployment.
 - The server starts independently of login, the image reference contains an immutable digest, backup and isolated restore have both been exercised without replacing active data, and a retained sentinel survives restart and container recreation.
 - Changing either mission value updates a bank already seen by each client; a boolean `mission set` cache is insufficient.
+- Exact identifiers appear verbatim in recalled memory text; an identifier present only in entity metadata does not pass.
 - Adapters time out and fail open when the server is unavailable.
 - Resolver, timeout, fail-open, retain, and recall checks run separately for Claude Code, Codex, and Pi rather than treating one adapter as representative of the others.
 - `SessionStart` performs the promised bounded health check instead of silently skipping it when an explicit API URL is configured.
@@ -485,9 +494,10 @@ It should verify:
 - The URL and bank policy match across clients.
 - The token directory and file permissions are `0700` and `0600`.
 - Authenticated REST can list or access banks.
+- The active server process or container was created from the pinned artifact; checking only the installed package version is insufficient after an upgrade.
 - Both login and non-login non-interactive shells can authenticate.
 - Hindsight MCP is absent from the server and all three clients, and no unnecessary Control Plane port is reachable.
-- Codex excludes both the legacy and current synthetic startup envelopes while retaining ordinary `AGENTS.md` discussion and malformed look-alikes.
+- Codex excludes the legacy, plugin-plus-instructions-plus-environment, plugin-plus-environment, and environment-only startup envelopes while retaining malformed sections and synthetic-looking content followed by real user text.
 - Adapter state files that contain recall or retention checkpoints are mode `0600` inside mode `0700` directories.
 
 ### Full cross-agent relay
@@ -506,6 +516,7 @@ Codex recalls C
 
 Use fresh agent sessions at every boundary.
 Give each identifier a short random value and describe it as durable project configuration.
+Require that exact value in recalled memory text; entity metadata or a vague memory that merely mentions an identifier does not pass.
 Do not include the value being recalled in the receiving agent's prompt or in the REST query used to poll for it; keep the expected value only in the out-of-band verifier.
 Use ordinary persisted Codex sessions for retention tests because an ephemeral session deliberately leaves no transcript for a Stop hook to retain.
 Poll recall for up to five minutes because retention only acknowledges the asynchronous job; it does not mean extraction has finished.
@@ -520,6 +531,7 @@ Delete only the temporary bank after success.
 Preserve the bank, transcripts, server logs, and test work directory on failure.
 
 Watch the server logs during the relay.
+Record a timestamp or error-count baseline immediately before the run, preserve older entries as history, and judge the run only by new errors in its window.
 The following can coexist with a successful `/health` response:
 
 - LLM authentication or credit failures
@@ -535,10 +547,10 @@ The requirements above came from observed failures and clean-room testing.
 The recurring patterns were:
 
 - Shared memory depends on identical bank identity, not merely a shared server; agent prefixes, worktrees, submodules, symlinks, and confusion over the `default` tenant namespace all split or obscure memory.
-- Retention missions need explicit exact-identifier instructions and caches keyed by the complete mission values; otherwise models paraphrase technical values and existing banks silently keep stale policy.
-- Adapter setup is release-sensitive; installers can replace unrelated hooks, plugins can bundle MCP, disabled hooks can look configured, repeated setup can duplicate registrations, and startup envelopes can change across agent releases.
+- Retention missions need explicit exact-identifier instructions and caches keyed by the complete mission values; otherwise models can keep a value only as entity metadata, paraphrase the recalled memory text, or leave existing banks on stale policy.
+- Adapter setup is release-sensitive; installers can replace unrelated hooks, plugins can bundle MCP, disabled hooks can look configured, repeated setup can duplicate registrations, and startup metadata can move into new standalone envelopes such as `environment_context`.
 - Agent lifecycles require product-specific handling; short sessions expose retention intervals, Claude Code needs synchronous Stop completion and compaction-aware checkpoints, Pi must select assistant-role content, and ephemeral Codex sessions do not exercise Stop retention.
-- A healthy process is not a durable server; imperative NixOS hybrids, anonymous storage, mutable images, login-bound services, startup image pulls, and untested restores can all pass an immediate health check and still fail or lose memory later.
+- A healthy process is not a durable or current server; imperative NixOS hybrids, anonymous storage, mutable images, login-bound services, startup image pulls, stale daemons after in-place upgrades, and untested restores can all pass an immediate health check and still fail or lose memory later.
 - Credentials and state must work outside an interactive terminal; SSH, GUI, hooks, and services expose missing environment propagation, locked Keychains, unsafe provider-key sharing, late secret filtering, and unwritable parent directories.
 - Provider and runtime behavior must be tested directly; health can stay green during extraction failures, macOS background GPU paths can crash, oversized completion allowances can fail affordability checks, and retention and consolidation limits are independent.
 - Acceptance requires fail-open adapters, polling asynchronous retention until recall succeeds, prompts that do not reveal the expected value, fresh real-agent sessions, server-log inspection, idempotence checks, and isolated persistence and restore tests.
