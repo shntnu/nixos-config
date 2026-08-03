@@ -527,6 +527,7 @@ It should verify:
 - Codex and Claude pair staged prompts with `last_assistant_message`, create one deterministic document per turn, and never read `transcript_path`.
 - Adapter state files that contain recall or retention checkpoints are mode `0600` inside mode `0700` directories.
 - Claude native auto memory is disabled when Hindsight is canonical, and pre-existing native memory files remain available as an audited archive until explicitly migrated or removed.
+- Pi can enumerate the exact provider and model used by the full relay with its active machine-local credential, without making an inference request.
 
 ### Full cross-agent relay
 
