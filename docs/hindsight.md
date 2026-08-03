@@ -316,17 +316,19 @@ HINDSIGHT_API_EMBEDDINGS_LOCAL_FORCE_CPU=true
 HINDSIGHT_API_RERANKER_LOCAL_FORCE_CPU=true
 ```
 
-Limiting all worker concurrency to one slot also made behavior easier to reason about during validation:
+Use one slot reserved for ordinary retention plus one shared slot for consolidation and other background work:
 
 ```text
-HINDSIGHT_API_WORKER_MAX_SLOTS=1
+HINDSIGHT_API_WORKER_MAX_SLOTS=2
+HINDSIGHT_API_WORKER_RETAIN_RESERVED_SLOTS=1
 HINDSIGHT_API_WORKER_CONSOLIDATION_RESERVED_SLOTS=0
 HINDSIGHT_API_CONSOLIDATION_LLM_PARALLELISM=1
 ```
 
-In `v0.8.6`, `HINDSIGHT_API_WORKER_CONSOLIDATION_RESERVED_SLOTS` is a reservation floor, not a concurrency ceiling, and its deprecated `...MAX_SLOTS` predecessor had the same counterintuitive behavior.
-With a one-slot global pool, leave that slot shared by setting the consolidation reservation to zero; reserving the only slot would prevent ordinary retain work from claiming it.
-Do not use the reservation setting alone to claim that consolidation is limited to a single worker.
+In `v0.8.6`, per-operation `...RESERVED_SLOTS` settings are reservation floors, not concurrency ceilings, and deprecated `...MAX_SLOTS` aliases had the same counterintuitive behavior.
+A one-slot shared pool allowed a slow recovered consolidation job to block ordinary retention beyond the five-minute relay window.
+Reserving one of two slots for `retain` prevents that starvation; the remaining shared slot lets consolidation and other operation types run, while `HINDSIGHT_API_CONSOLIDATION_LLM_PARALLELISM=1` bounds work inside consolidation.
+Do not use a reservation setting alone to claim that an operation type is capped at that value.
 
 Cold starts can take more than a minute because of migrations and model loading.
 Use readiness polling and service retries rather than treating the first failed health check as a broken installation.
@@ -495,6 +497,7 @@ It should verify:
 - The token directory and file permissions are `0700` and `0600`.
 - Authenticated REST can list or access banks.
 - The active server process or container was created from the pinned artifact; checking only the installed package version is insufficient after an upgrade.
+- The health check polls through the documented cold-start window instead of failing after one immediate request.
 - Both login and non-login non-interactive shells can authenticate.
 - Hindsight MCP is absent from the server and all three clients, and no unnecessary Control Plane port is reachable.
 - Codex excludes the legacy, plugin-plus-instructions-plus-environment, plugin-plus-environment, and environment-only startup envelopes while retaining malformed sections and synthetic-looking content followed by real user text.
@@ -552,7 +555,7 @@ The recurring patterns were:
 - Agent lifecycles require product-specific handling; short sessions expose retention intervals, Claude Code needs synchronous Stop completion and compaction-aware checkpoints, Pi must select assistant-role content, and ephemeral Codex sessions do not exercise Stop retention.
 - A healthy process is not a durable or current server; imperative NixOS hybrids, anonymous storage, mutable images, login-bound services, startup image pulls, stale daemons after in-place upgrades, and untested restores can all pass an immediate health check and still fail or lose memory later.
 - Credentials and state must work outside an interactive terminal; SSH, GUI, hooks, and services expose missing environment propagation, locked Keychains, unsafe provider-key sharing, late secret filtering, and unwritable parent directories.
-- Provider and runtime behavior must be tested directly; health can stay green during extraction failures, macOS background GPU paths can crash, oversized completion allowances can fail affordability checks, and retention and consolidation limits are independent.
+- Provider and runtime behavior must be tested directly; health can stay green during extraction failures, macOS background GPU paths can crash, oversized completion allowances can fail affordability checks, and a long consolidation can starve retention when worker reservations are wrong.
 - Acceptance requires fail-open adapters, polling asynchronous retention until recall succeeds, prompts that do not reveal the expected value, fresh real-agent sessions, server-log inspection, idempotence checks, and isolated persistence and restore tests.
 
 ## Scope and boundaries
