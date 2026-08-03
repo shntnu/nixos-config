@@ -56,18 +56,35 @@ If the user directed you here to set this up, treat this document as an implemen
 Read it completely, then implement and test the setup rather than returning a summary or plan.
 
 - Determine the requested role from the user's instruction before checking prerequisites: first server, client, or both.
-- If the role is ambiguous, inspect managed configuration and the environment for an existing Hindsight REST endpoint, then stop and ask whether this host should become the server or connect as a client. For a client, ask for the endpoint and token-delivery method; do not silently install a server.
+- If the role is ambiguous, inspect managed configuration and the environment for an existing Hindsight REST endpoint, then stop and ask whether this host should become the server or connect as a client.
+  For a client, ask for the endpoint and token-delivery method; do not silently install a server.
 - Inspect the operating system, shell, service manager, existing configuration management, and relevant existing Hindsight or coding-agent installations before changing anything.
-- Preserve the machine's configuration model. For example, update managed Nix or chezmoi sources instead of hand-editing their generated files.
+- Preserve the machine's configuration model.
+  For example, update managed Nix or chezmoi sources instead of hand-editing their generated files.
+- Resolve the exact managed-source revisions and flake inputs that the activation command will evaluate.
+  A successful switch can still activate an older locked input when the desired changes exist only in another working tree.
+- Treat a local input override as temporary validation rather than a durable deployment.
+  Prove that the override reaches the inner build and activation commands; wrapper applications that do not forward `"$@"` can silently drop it.
 - Before server side effects, verify that a funded extraction-provider credential is available, outbound downloads work, required ports are free, and the host has enough durable storage and memory.
-- Before client side effects, verify that Claude Code, Codex, and Pi are installed, authenticated, and can each complete a harmless one-shot request with the model that will be used for testing. Also verify that hook approval and authenticated access to the shared REST endpoint are available.
-- A host serving both roles must pass both prerequisite sets. Stop and ask about any missing prerequisite rather than installing coding agents, inventing credentials, reusing the extraction-provider credential, or silently weakening the test.
-- Pin a Hindsight release and source revision. Verify version-sensitive flags, API fields, package contents, and integration files against the source and versioned documentation at that exact revision; use current documentation only to choose a newer release.
-- Preserve server state explicitly. Pin container images by version and digest, use a declared persistent data path or named volume, authenticate PostgreSQL when it is separate, order separate services by readiness, arrange backups, and make startup independent of an interactive login.
-- On NixOS, implement the server in the managed Nix configuration. If the active flake or module source cannot be located and updated, stop before side effects and ask where it is managed. Do not leave an imperative `uv` environment, ad hoc Docker container, anonymous volume, mutable image tag, or wrapper containing hard-coded Nix store paths as the final deployment.
-- Configure direct REST recall and retention for Claude Code, Codex, and Pi. Do not configure MCP, install an MCP proxy, or install a plugin that implicitly starts one.
+- Before client side effects, verify that Claude Code, Codex, and Pi are installed, authenticated, and can each complete a harmless one-shot request with the model that will be used for testing.
+  Also verify that hook approval and authenticated access to the shared REST endpoint are available.
+- A host serving both roles must pass both prerequisite sets.
+  Stop and ask about any missing prerequisite rather than installing coding agents, inventing credentials, reusing the extraction-provider credential, or silently weakening the test.
+- Pin a Hindsight release and source revision.
+  Verify version-sensitive flags, API fields, package contents, and integration files against the source and versioned documentation at that exact revision; use current documentation only to choose a newer release.
+- Preserve server state explicitly.
+  Pin container images by version and digest, use a declared persistent data path or named volume, authenticate PostgreSQL when it is separate, order separate services by readiness, arrange backups, and make startup independent of an interactive login.
+- On NixOS, implement the server in the managed Nix configuration.
+  If the active flake or module source cannot be located and updated, stop before side effects and ask where it is managed.
+  Do not leave an imperative `uv` environment, ad hoc Docker container, anonymous volume, mutable image tag, or wrapper containing hard-coded Nix store paths as the final deployment.
+- Configure direct REST recall and retention for Claude Code, Codex, and Pi.
+  Do not configure MCP, install an MCP proxy, or install a plugin that implicitly starts one.
 - Merge hooks and settings without replacing unrelated user configuration, including entries on the same lifecycle event; append only missing Hindsight entries and deduplicate this integration's own entries.
-- Keep secrets out of Git, declarative build stores, logs, and command output. Ask only for credentials or consequential choices that cannot be discovered safely. Do not reuse the Hindsight extraction-provider credential to authenticate a coding agent without explicit user approval.
+- Keep secrets out of Git, declarative build stores, logs, and command output.
+  Ask only for credentials or consequential choices that cannot be discovered safely.
+  Do not reuse the Hindsight extraction-provider credential to authenticate a coding agent without explicit user approval.
+- Do not describe the deployment as durable while required changes exist only in uncommitted managed-source working trees or temporary input overrides.
+  Report that state explicitly; when authorized, commit and push the managed sources, refresh dependent locks, repeat the ordinary activation without overrides, and rerun verification.
 - Finish by applying the setup twice, proving that the second run creates no duplicate hooks or settings, then running the structural checks and real cross-agent relay test below.
 - Report the exact agent, server, database, and container versions; source revisions and image digests; every changed path including system-wide paths; credential-delivery method; boot and trust state; test results; and every deviation from this design.
 
@@ -112,7 +129,7 @@ A representative retain body is:
   "items": [
     {
       "content": "User:\n...\n\nAssistant:\n...",
-      "document_id": "stable-or-unique-session-document-id",
+      "document_id": "deterministic-session-plus-turn-document-id",
       "context": "claude-code",
       "metadata": {
         "agent": "claude-code",
@@ -125,9 +142,9 @@ A representative retain body is:
 }
 ```
 
-Use a stable document ID only when the payload contains the complete cumulative session and replacement is intentional.
-Use a unique session-plus-sequence document ID for per-turn or suffix retention.
-Reusing one document ID for only the latest turn replaces earlier document content.
+The adapters in this design use one deterministic session-plus-turn document ID for each paired prompt and final assistant message.
+Replaying the same turn is therefore idempotent, while a later turn cannot replace earlier content.
+Use a stable session-level document ID only when the payload contains the complete cumulative session and replacement is intentional.
 
 Set the bank's missions with:
 
@@ -158,7 +175,8 @@ The resolver should follow this order:
 1. Honor an explicit `HINDSIGHT_BANK_ID` override, which is useful for testing.
 2. Resolve `<cwd>` through symlinks, then run `git -C <real-cwd> rev-parse --path-format=absolute --git-common-dir`.
 3. For a normal checkout or linked worktree, use the basename of the directory containing that common Git directory.
-4. If the returned path is inside `.git/modules`, this is a submodule. Use the basename of `git -C <cwd> rev-parse --show-toplevel` instead.
+4. If the returned path is inside `.git/modules`, this is a submodule.
+   Use the basename of `git -C <cwd> rev-parse --show-toplevel` instead.
 5. Outside Git, fall back to the basename of the real current directory.
 
 Using `--git-common-dir` is important.
@@ -237,7 +255,10 @@ Manually extending `LD_LIBRARY_PATH`, adding `/usr/share/zoneinfo`, and moving o
 
 For a new NixOS server, use one of these durable paths:
 
-1. Declare the version- and digest-pinned API-only image `ghcr.io/vectorize-io/hindsight-api:<version>@sha256:<digest>` in NixOS, including its embedded database, stable worker ID, explicit persistent `/home/hindsight/.pg0` storage, health check, authenticated REST endpoint, restart ordering, and backup job. The broader `ghcr.io/vectorize-io/hindsight` image also starts the web Control Plane and is unnecessary for a REST-only server. Treat that broader image as diagnostic-only on NixOS, never as the accepted final deployment. If diagnosis requires it, disable the Control Plane explicitly, verify that its port is unreachable even through the container bridge, and replace it with the API-only image before acceptance.
+1. Declare the version- and digest-pinned API-only image `ghcr.io/vectorize-io/hindsight-api:<version>@sha256:<digest>` in NixOS, including its embedded database, stable worker ID, explicit persistent `/home/hindsight/.pg0` storage, health check, authenticated REST endpoint, restart ordering, and backup job.
+   The broader `ghcr.io/vectorize-io/hindsight` image also starts the web Control Plane and is unnecessary for a REST-only server.
+   Treat that broader image as diagnostic-only on NixOS, never as the accepted final deployment.
+   If diagnosis requires it, disable the Control Plane explicitly, verify that its port is unreachable even through the container bridge, and replace it with the API-only image before acceptance.
 2. Package Hindsight and PostgreSQL/pgvector properly in Nix and keep every runtime dependency and service relationship in the managed configuration.
 
 The clean NixOS review used Hindsight `v0.8.6` at source revision [`08995e3`](https://github.com/vectorize-io/hindsight/commit/08995e3013858e705fb4ca27c0ade3a286ef4750) and the portable multi-architecture image pin `ghcr.io/vectorize-io/hindsight-api:0.8.6@sha256:3db1536d84a14a10afbd08cc8f82bf4eec03c123d950705226c999bea14ca0f0`.
@@ -255,12 +276,17 @@ For any server deployment:
 - Use an explicit named volume or host data path that survives container recreation, and verify ownership before first start.
 - Set a stable `HINDSIGHT_API_WORKER_ID` so interrupted work remains recoverable across container replacement.
 - Authenticate PostgreSQL when it is a separate service; loopback binding does not make `POSTGRES_HOST_AUTH_METHOD=trust` a good durable configuration.
-- When PostgreSQL is separate, make Hindsight depend on database readiness. With embedded pg0, make readiness polling cover full API and database initialization.
+- When PostgreSQL is separate, make Hindsight depend on database readiness.
+  With embedded pg0, make readiness polling cover full API and database initialization.
 - Ensure a user service has linger enabled, or prefer a system service, if it must be available before login.
 - Run a native service under a dedicated account, or constrain a container to its declared data and secret mounts; the Hindsight process does not need an interactive user's home, `wheel`, or the Docker socket.
-- Define and test a backup and restore path with `hindsight-admin` or the corresponding pinned-version mechanism. Exercise restore against a fresh isolated temporary data path and verify the restored sentinel there; never overwrite or destructively restore the active data path without explicit user approval. Order the backup job after the service, make archives owner-only, and keep a copy outside the primary data path when the memories matter.
-- Test service restart and container recreation without losing a retained sentinel. Reboot as well when the user authorizes it.
-- Package-manager output identifies installed files only. After an in-place native-package upgrade, acceptance also requires a new managed daemon process started after the executable changed; after a container upgrade, require a replacement container using the pinned digest.
+- Define and test a backup and restore path with `hindsight-admin` or the corresponding pinned-version mechanism.
+  Exercise restore against a fresh isolated temporary data path and verify the restored sentinel there; never overwrite or destructively restore the active data path without explicit user approval.
+  Order the backup job after the service, make archives owner-only, and keep a copy outside the primary data path when the memories matter.
+- Test service restart and container recreation without losing a retained sentinel.
+  Reboot as well when the user authorizes it.
+- Package-manager output identifies installed files only.
+  After an in-place native-package upgrade, acceptance also requires a new managed daemon process started after the executable changed; after a container upgrade, require a replacement container using the pinned digest.
 
 ### Extraction provider and API authentication
 
@@ -387,23 +413,11 @@ Merge these entries into the user's existing hook file rather than replacing the
 Enable Codex's hook feature in its managed configuration as well as registering the hooks.
 In Codex `0.146.0` the current setting is `[features].hooks = true`; the older `[features].codex_hooks` spelling is deprecated.
 Check the installed Codex version and use its current feature name rather than assuming that a valid hook file is enough.
-Follow the installed release's [hook contract](https://developers.openai.com/codex/config-advanced#hooks).
-Its `Stop` input includes `last_assistant_message` and may include `transcript_path`; the transcript format is explicitly unstable.
-Use the pinned upstream parser and validate it against the installed Codex release, or cache the `UserPromptSubmit` prompt and pair it with `last_assistant_message` for per-turn retention.
-Do not replace that logic with an untested transcript parser, and return valid `Stop` JSON such as `{"continue": true}` after a successful or intentional no-op run when the installed release requires JSON output.
-
-Codex can persist synthetic startup metadata as a user message before the real prompt.
-Older transcripts used one `# AGENTS.md instructions for <path>` section containing `<INSTRUCTIONS>...</INSTRUCTIONS>`.
-Current transcripts can emit these well-formed sections as separate synthetic user messages or concatenate them in this order:
-
-- `<recommended_plugins>...</recommended_plugins>`
-- `# AGENTS.md instructions` or `# AGENTS.md instructions for <path>`, followed by `<INSTRUCTIONS>...</INSTRUCTIONS>`
-- `<environment_context>...</environment_context>`
-
-Exclude a message only when its complete trimmed content consists of one or more anchored synthetic sections in that order.
-Keep malformed sections, ordinary prompts that discuss or quote these markers, and any message with real user text before or after the synthetic-looking content.
-Regression fixtures must cover the legacy envelope, plugin plus instructions plus environment, plugin plus environment, environment only, malformed sections, and a synthetic section followed by a real prompt.
-Also validate the parser against real affected rollout files, or sanitized fixtures with exactly the same message boundaries, while proving that nearby real user requests remain retainable.
+Follow the installed release's [hook contract](https://developers.openai.com/codex/config-advanced#hooks). Its `UserPromptSubmit` input includes `session_id`, `turn_id`, and `prompt`; its `Stop` input includes the same identifiers and `last_assistant_message`.
+Cache the prompt by session and turn, then pair it with `last_assistant_message` for per-turn retention.
+Use one deterministic document ID per turn so repeated Stop delivery is idempotent.
+Do not read `transcript_path`; Codex explicitly documents that transcript format as unstable.
+Return valid `Stop` JSON such as `{"continue": true}` after a successful or intentional no-op run when the installed release requires JSON output.
 
 Codex asks the user to trust hook command definitions.
 That trust is tied to the hook definition hash, so changing the command or registration requires another review in `/hooks`.
@@ -412,7 +426,7 @@ Recommended behavior:
 
 - Recall only from the repository bank.
 - Retain user and assistant messages every turn.
-- Use full-session mode and a stable session document ID where supported.
+- Use one stable document ID per turn.
 - Set `retainEveryNTurns` to `1`.
 - Exclude tool calls unless there is a demonstrated reason to store them.
 - Tag retained material with `agent:codex`.
@@ -441,14 +455,16 @@ Run the `Stop` hook synchronously.
 Claude Code cancelled asynchronous Stop hooks when a one-shot process exited, which made retention appear configured while it never completed.
 The hook only waits for Hindsight to accept the request because the retain payload uses `"async": true`; extraction remains asynchronous on the server.
 
-Claude's transcript is cumulative and can be compacted.
-Repeated Stop hooks therefore need explicit progress tracking.
-Retain only the unprocessed suffix, use a new chunk document ID for later suffixes, and detect a transcript that shrank after compaction.
-Reusing one document ID replaces the server-side document, while blindly resending the full transcript can create duplicate extraction work.
-Advance the suffix checkpoint only after Hindsight accepts the retain request, and write that checkpoint owner-only.
-A failed request must leave the suffix eligible for a later retry.
+Claude's `UserPromptSubmit` event supplies `session_id` and `prompt`, and `Stop` supplies the same session plus `last_assistant_message`.
+Claude does not document a turn ID, so assign an owner-only per-session sequence when staging each prompt.
+Pair the staged prompt with the final assistant message and use one deterministic document ID per sequence.
+Repeated Stop delivery then becomes an idempotent no-op after the successful retain is marked complete.
+Do not parse Claude's cumulative transcript or track compaction offsets.
+A failed request must leave the staged turn eligible for a later retry.
 
 Tag retained material with `agent:claude-code`, and make recall failures non-fatal.
+Disable Claude native auto memory when Hindsight is canonical.
+Audit existing `MEMORY.md` files before disabling it, preserve any unique legacy content as an archive or migrate it through the same local secret policy, and do not synchronize either product's private native memory directory.
 
 ### Pi
 
@@ -477,6 +493,12 @@ It should verify:
 - Normal repositories, linked worktrees, submodules, directories outside Git, symlinked working directories, spaces, and non-ASCII paths are covered by resolver tests.
 - Hook and extension files exist and their registrations were merged successfully; seed unrelated hooks on the same events in a fixture and prove they survive unchanged.
 - A second setup run produces an empty configuration diff and exactly one registration for each Hindsight hook.
+- The installed hook and extension symlinks resolve to the immutable artifacts produced by the intended configuration.
+  Assertions inspect those installed artifacts rather than only the source checkout or an earlier build result.
+- When activation uses a local flake input override, the override reaches the actual inner build and switch commands.
+  A successful wrapper exit is insufficient evidence because a launcher can consume or drop arguments.
+- The final ordinary activation uses committed managed sources and refreshed input locks and produces the same verified behavior without a temporary override.
+  If the user has not authorized those persistence operations, report durability as outstanding instead of claiming completion.
 - On NixOS, the server, container, storage, startup, and backup declarations exist in managed Nix source; no imperative environment, hand-written user unit, or ad hoc wrapper owns the deployment.
 - The server starts independently of login, the image reference contains an immutable digest, backup and isolated restore have both been exercised without replacing active data, and a retained sentinel survives restart and container recreation.
 - Changing either mission value updates a bank already seen by each client; a boolean `mission set` cache is insufficient.
@@ -485,7 +507,8 @@ It should verify:
 - Resolver, timeout, fail-open, retain, and recall checks run separately for Claude Code, Codex, and Pi rather than treating one adapter as representative of the others.
 - `SessionStart` performs the promised bounded health check instead of silently skipping it when an explicit API URL is configured.
 - A Pi session ending in a tool result does not retain that raw tool result as assistant text.
-- Held-out synthetic fake-secret fixtures cover at least a PEM private-key block, bearer token, common API-token prefix, shell assignment, and JSON credential field. Keep those fixtures outside the filter implementation, verify that each causes both recall and retention to be skipped before any request reaches Hindsight, and verify that its unique marker appears in neither outbound requests nor adapter, setup, or server logs.
+- Held-out synthetic fake-secret fixtures cover at least a PEM private-key block, bearer token, common API-token prefix, shell assignment, and JSON credential field.
+  Keep those fixtures outside the filter implementation, verify that each causes both recall and retention to be skipped before any request reaches Hindsight, and verify that its unique marker appears in neither outbound requests nor adapter, setup, or server logs.
 
 ### Per-machine quick check
 
@@ -493,6 +516,7 @@ Run a quick structural and connectivity test on every machine after installation
 It should verify:
 
 - Hook and extension files exist and the expected registrations are active.
+- Installed client files resolve to the intended active generation, and the assertions below run against those installed files rather than the source checkout.
 - The URL and bank policy match across clients.
 - The token directory and file permissions are `0700` and `0600`.
 - Authenticated REST can list or access banks.
@@ -500,8 +524,9 @@ It should verify:
 - The health check polls through the documented cold-start window instead of failing after one immediate request.
 - Both login and non-login non-interactive shells can authenticate.
 - Hindsight MCP is absent from the server and all three clients, and no unnecessary Control Plane port is reachable.
-- Codex excludes the legacy, plugin-plus-instructions-plus-environment, plugin-plus-environment, and environment-only startup envelopes while retaining malformed sections and synthetic-looking content followed by real user text.
+- Codex and Claude pair staged prompts with `last_assistant_message`, create one deterministic document per turn, and never read `transcript_path`.
 - Adapter state files that contain recall or retention checkpoints are mode `0600` inside mode `0700` directories.
+- Claude native auto memory is disabled when Hindsight is canonical, and pre-existing native memory files remain available as an audited archive until explicitly migrated or removed.
 
 ### Full cross-agent relay
 
@@ -521,7 +546,7 @@ Use fresh agent sessions at every boundary.
 Give each identifier a short random value and describe it as durable project configuration.
 Require that exact value in recalled memory text; entity metadata or a vague memory that merely mentions an identifier does not pass.
 Do not include the value being recalled in the receiving agent's prompt or in the REST query used to poll for it; keep the expected value only in the out-of-band verifier.
-Use ordinary persisted Codex sessions for retention tests because an ephemeral session deliberately leaves no transcript for a Stop hook to retain.
+Use fresh Codex sessions for retention tests; per-turn event pairing does not require a persisted transcript.
 Poll recall for up to five minutes because retention only acknowledges the asynchronous job; it does not mean extraction has finished.
 Inspect the agent's recorded recall context as well as its natural-language answer so the test distinguishes hook failure from model behavior.
 Directly invoking an adapter or hook is a structural test, not a cross-agent relay.
@@ -552,7 +577,9 @@ The recurring patterns were:
 - Shared memory depends on identical bank identity, not merely a shared server; agent prefixes, worktrees, submodules, symlinks, and confusion over the `default` tenant namespace all split or obscure memory.
 - Retention missions need explicit exact-identifier instructions and caches keyed by the complete mission values; otherwise models can keep a value only as entity metadata, paraphrase the recalled memory text, or leave existing banks on stale policy.
 - Adapter setup is release-sensitive; installers can replace unrelated hooks, plugins can bundle MCP, disabled hooks can look configured, repeated setup can duplicate registrations, and startup metadata can move into new standalone envelopes such as `environment_context`.
-- Agent lifecycles require product-specific handling; short sessions expose retention intervals, Claude Code needs synchronous Stop completion and compaction-aware checkpoints, Pi must select assistant-role content, and ephemeral Codex sessions do not exercise Stop retention.
+- Agent lifecycles require product-specific handling; Claude Code needs synchronous `Stop` completion, Codex and Claude must pair stable prompt and final-message events without parsing transcripts, and Pi must select assistant-role content when a session ends in a tool result.
+- Declarative activation can report success while deploying an older input; uncommitted sibling repositories, stale flake locks, wrapper applications that drop arguments, and checks against a source checkout instead of the installed artifact all create false confidence.
+  A local override validates behavior but is not durable until the managed sources and locks are persisted and an ordinary activation passes the same checks.
 - A healthy process is not a durable or current server; imperative NixOS hybrids, anonymous storage, mutable images, login-bound services, startup image pulls, stale daemons after in-place upgrades, and untested restores can all pass an immediate health check and still fail or lose memory later.
 - Credentials and state must work outside an interactive terminal; SSH, GUI, hooks, and services expose missing environment propagation, locked Keychains, unsafe provider-key sharing, late secret filtering, and unwritable parent directories.
 - Provider and runtime behavior must be tested directly; health can stay green during extraction failures, macOS background GPU paths can crash, oversized completion allowances can fail affordability checks, and a long consolidation can starve retention when worker reservations are wrong.
