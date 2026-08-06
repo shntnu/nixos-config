@@ -293,10 +293,8 @@ in
     };
   };
 
-  # Backs allowedSignersFile above, which git expects but never creates. Every
-  # machine signs with this one key. On rotation append the new key and keep
-  # this line, scoped with valid-before, or commits signed with it stop
-  # verifying - this file is a ledger, not current state.
+  # Backs allowedSignersFile above, which git expects but never creates.
+  # A ledger: on rotation append the new key, keep this line (valid-before).
   home.file.".ssh/allowed_signers".text =
     "${email} ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB/6FQiQUwpJ6TJyPolx+B4oB/b8wBvLQ08Bgm4VUAKs\n";
 }
