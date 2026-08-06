@@ -292,4 +292,13 @@ in
         '';
     };
   };
+
+  # git points allowedSignersFile here but will not create it, so verification
+  # fell back to "Unable to open allowed keys file" on every `--show-signature`
+  # even though the signatures were good. Every machine signs with the same
+  # ed25519 key, so one principal-to-key line covers all of them; rotating the
+  # key means editing this line, or verification silently starts failing.
+  home.file.".ssh/allowed_signers".text = ''
+    ${email} ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIB/6FQiQUwpJ6TJyPolx+B4oB/b8wBvLQ08Bgm4VUAKs
+  '';
 }
