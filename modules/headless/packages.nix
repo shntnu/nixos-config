@@ -15,6 +15,7 @@ with pkgs; [
 
   ghostty  # only useful on karkinos (it has a display); dead weight on oppy/spirit
   google-chrome  # ditto: karkinos has a display. Unfree (allowUnfree is on in shared/nixpkgs.nix)
+  vscode  # ditto
 
   ranger
 

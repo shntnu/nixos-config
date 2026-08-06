@@ -151,6 +151,24 @@ in
 
         trash-restore() { _trash_for_cwd trash-restore "$@"; }
         trash-empty()   { _trash_for_cwd trash-empty "$@"; }
+
+        # `code file` from a plain ssh or tmux shell. The VS Code integrated
+        # terminal puts the Remote-SSH server's CLI on PATH and exports
+        # VSCODE_IPC_HOOK_CLI; any other shell gets neither. Resolve both at
+        # call time, not at shell startup, since a long-lived tmux shell
+        # outlives any one window. An attached window beats the locally
+        # installed app, and a closed window can leave a stale socket behind -
+        # probe each socket for a live listener if that ever bites.
+        code() {
+          local cli=(~/.vscode-server/cli/servers/*/server/bin/remote-cli/code(N.om))
+          # An exported hook wins, else the newest socket.
+          local sock=($VSCODE_IPC_HOOK_CLI /run/user/$UID/vscode-ipc-*.sock(N=om))
+          if (( $#cli && $#sock )); then
+            VSCODE_IPC_HOOK_CLI="$sock[1]" "$cli[1]" "$@"
+          else
+            command code "$@"
+          fi
+        }
       '';
     };
 
@@ -212,6 +230,13 @@ in
   dconf.settings."org/gnome/nautilus/preferences" = {
     show-image-thumbnails = "always";
     thumbnail-limit = lib.hm.gvariant.mkUint64 200;
+  };
+
+  # Screenshots, same karkinos-only story. GNOME binds these to Print and
+  # Shift+Print, which a NuPhy Air75 V2 does not have. See LEARNING_LOG.md.
+  dconf.settings."org/gnome/shell/keybindings" = {
+    show-screenshot-ui = [ "<Shift><Super>s" ];
+    screenshot = [ "<Shift><Super>f" ];
   };
 
   # Keep spirit's /work mounted over gvfs sftp so the FUSE path under

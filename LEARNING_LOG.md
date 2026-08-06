@@ -172,6 +172,12 @@ The marimo extension launches its bundled uv environment outside project `direnv
 
 Claude Desktop for Linux ships only as a `.deb` from Anthropic's apt repo, and nixpkgs has no `claude-desktop` (request #366213 closed unpackaged). The route that worked was `github:aaddrick/claude-desktop-debian` (repackages that official `.deb`): flake input, overlay entry beside `msgvault`, one line in `modules/headless/packages.nix`. Built and ran on karkinos, then reverted - updates ride `nix flake update` instead of the nixpkgs bump, and it lands in the shared headless profile so oppy and spirit inherit it too. Before adding a flake input for a GUI app: what does it do that the CLI can't, and who bumps it in six months?
 
+## 2026-08-06: GNOME 49 Screenshots Are Shortcut-Only
+
+**Key Insight:** On GNOME 49 Wayland there is no scriptable screenshot path, so a keybinding is the fix and a CLI tool is not a substitute.
+
+`org.gnome.Shell.Screenshot.Screenshot` over D-Bus returns `AccessDenied` - GNOME 49 allowlists that interface to the media-keys daemon and the desktop portal, so a plain shell caller is refused. `gnome-screenshot` 41.0 builds fine but Shell 49 rejects it too ("resorting to fallback X11") and writes no file, and `grim`/`slurp` are wlroots tools that Mutter does not serve. The portal works but pops a confirmation dialog, which rules out unattended capture. That leaves the shell keybindings, rebound in `modules/headless/home-manager.nix` because the Air75 V2 has no PrtSc key; `gsettings set org.gnome.shell.keybindings ...` takes effect immediately, no restart.
+
 ---
 
 ## Entry Guidelines
