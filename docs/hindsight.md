@@ -96,10 +96,15 @@ The clients call these endpoints directly:
 
 ```text
 GET   /health
+GET   /v1/default/banks
 PATCH /v1/default/banks/<bank-id>/config
 POST  /v1/default/banks/<bank-id>/memories/recall
 POST  /v1/default/banks/<bank-id>/memories
+PATCH /v1/default/banks/<bank-id>/memories/<memory-id>
+POST  /v1/default/banks/<bank-id>/memories/dry-run-extract
 ```
+
+The last three are operator endpoints rather than per-turn adapter calls.
 
 In these paths, `default` is the tenant or API namespace.
 It is not a bank named `default`.
@@ -216,6 +221,42 @@ Strip or skip content matching an explicit secret policy, including private-key 
 Hindsight's extraction model may paraphrase identifiers or decide that an arbitrary test token is not a durable fact.
 The explicit retain mission above materially improved preservation of hashes, flags, paths, and other exact values.
 Entity metadata alone cannot satisfy this contract because normal recall can return memory text without the entity's exact value.
+
+### Bank policy ownership
+
+Two groups of bank configuration behave differently, and confusing them wastes a repair.
+
+`reflect_mission` and `retain_mission` are effectively owned by the clients.
+Each adapter re-sends them to `PATCH /v1/default/banks/<bank-id>/config` on essentially every turn, gated only by a per-machine cache of the values it last sent.
+A server-side edit to either field therefore survives only until the next session on any other machine.
+Change them where the client settings are generated, not on the server.
+
+`retain_extraction_mode` and `retain_custom_instructions` are never written by any adapter.
+They are the durable per-bank lever, and the clients' mission writes cannot clobber them.
+`retain_custom_instructions` is read only when `retain_extraction_mode` is `custom`, and an empty value silently falls back to the default mode.
+
+One global mission stops being correct as soon as the banks are not all repositories.
+A mission written for source control tells the extractor to preserve exact identifiers verbatim; applied to a bank of people and conversations, it writes human beings down in the register of a hostname.
+Give such banks their own extraction instructions.
+
+Verify any extraction-policy change before committing it.
+`POST /v1/default/banks/<bank-id>/memories/dry-run-extract` accepts `retain_extraction_mode`, `retain_custom_instructions`, and `retain_mission` as request parameters and returns the facts that would be extracted without writing anything.
+Test with the bank's real mission still attached, because the mission preamble is ranked above the extraction guidelines and can override them.
+
+### Curating a contaminated bank
+
+Curation is soft and reversible.
+`PATCH /v1/default/banks/<bank-id>/memories/<memory-id>` accepts `state: "invalidated"`, which retires a memory from recall and consolidation and prunes its derived observations.
+There is no hard per-memory delete.
+Rewriting `text` on the same endpoint re-embeds the memory and triggers re-consolidation.
+
+Observations are derived from world and experience facts rather than authored beside them, so they carry source memory IDs, cannot be curated directly, and regenerate from their parents.
+Fix the parent and the derived record follows.
+`enable_observations` gates consolidation only and deletes nothing.
+
+Two operations to avoid.
+`DELETE /v1/default/banks/<bank-id>/config` resets the whole configuration object and takes both mission strings with it.
+`GET /v1/default/banks/<bank-id>/config` returns 200 for any bank ID, including one that never existed, so it cannot be used to test whether a bank exists; enumerate `GET /v1/default/banks` instead.
 
 ## REST-only boundary
 
@@ -586,6 +627,18 @@ The recurring patterns were:
 - Credentials and state must work outside an interactive terminal; SSH, GUI, hooks, and services expose missing environment propagation, locked Keychains, unsafe provider-key sharing, late secret filtering, and unwritable parent directories.
 - Provider and runtime behavior must be tested directly; health can stay green during extraction failures, macOS background GPU paths can crash, oversized completion allowances can fail affordability checks, and a long consolidation can starve retention when worker reservations are wrong.
 - Acceptance requires fail-open adapters, polling asynchronous retention until recall succeeds, prompts that do not reveal the expected value, fresh real-agent sessions, server-log inspection, idempotence checks, and isolated persistence and restore tests.
+- Extraction has no polarity handling, so a turn that states a memory is false can yield that memory again as a new fact.
+  Correcting a bad memory inside a session that is itself being retained manufactures fresh copies of the error alongside meta-records about the correction, and the copies then outrank the correction at recall.
+  Curate with an explicit invalidation and constrain extraction instead of arguing with the bank in-session.
+- Inference, secondhand report, and hedged speech collapse into the same confident register as direct observation unless extraction is told otherwise.
+  Causal connectives, attributions, and qualifiers are dropped by default, so a guess reads later as a settled fact with no provenance.
+- Shared memory propagates unverified assistant claims quickly and durably.
+  A mistaken technical detail asserted in one agent's session was recalled verbatim into a different agent's session minutes later, and a mission that demands exact identifiers makes a wrong identifier look maximally credible.
+  The value of cross-agent memory and its main hazard are the same mechanism.
+- Reflect-time dispositions do not affect retention; `disposition_skepticism`, `disposition_literalism`, and `disposition_empathy` are read only by reflect prompts, so raising skepticism does not change what gets written.
+  Extraction behavior changes only through the mission and the extraction mode.
+- Test banks accumulate when cleanup is conditional on success.
+  A smoke test that preserves its bank for inspection on failure or interruption leaks one bank per failed run, so reap prior runs by prefix at startup rather than relying on the exit path.
 
 ## Scope and boundaries
 
