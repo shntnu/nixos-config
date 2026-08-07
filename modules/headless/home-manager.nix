@@ -111,46 +111,51 @@ in
         # breaks the never-use-rm rule in the primary workspace on these servers.
         # Route /work deletions to a trash on the same volume; leave every other
         # path on the default home trash rather than relocating all XDG data.
-        _work_trash_data_home="/work/users/$USER/.local/share"
+        # Each function below must be self-contained. Agent shells (Claude Code,
+        # Codex) restore this file's functions from a snapshot that omits helper
+        # functions named with a single leading underscore and does not carry
+        # plain shell variables, so a shared _helper silently disappears there and
+        # leaves the wrapper broken in exactly the shells that need it most.
 
-        _work_trash_available() {
-          [[ -d "/work/users/$USER" ]]
-        }
-
+        # ponytail: one call mixing /work and home paths routes all of them to the
+        # /work trash, so the home-side paths fail loudly and are left in place.
+        # Nothing is lost, so split the args by volume only if that starts to bite.
         trash() {
           local arg
-          if _work_trash_available; then
-            for arg in "$@"; do
-              if [[ "''${arg:A}" == /work/* ]]; then
-                mkdir -p "$_work_trash_data_home"
-                XDG_DATA_HOME="$_work_trash_data_home" command trash "$@"
-                return $?
-              fi
-            done
-          fi
+          for arg in "$@"; do
+            if [[ "''${arg:A}" == /work/* && -d "/work/users/$USER" ]]; then
+              mkdir -p "/work/users/$USER/.local/share"
+              XDG_DATA_HOME="/work/users/$USER/.local/share" command trash "$@"
+              return $?
+            fi
+          done
           command trash "$@"
         }
 
         # Show both trashes, so nothing deleted under /work goes unnoticed.
         trash-list() {
           command trash-list "$@"
-          if _work_trash_available && [[ -d "$_work_trash_data_home/Trash" ]]; then
-            XDG_DATA_HOME="$_work_trash_data_home" command trash-list "$@"
+          if [[ -d "/work/users/$USER/.local/share/Trash" ]]; then
+            XDG_DATA_HOME="/work/users/$USER/.local/share" command trash-list "$@"
           fi
         }
 
         # Restore and empty act on the /work trash when run from under /work.
-        _trash_for_cwd() {
-          local cmd="$1"; shift
-          if _work_trash_available && [[ "$PWD" == /work/* ]]; then
-            XDG_DATA_HOME="$_work_trash_data_home" command "$cmd" "$@"
+        trash-restore() {
+          if [[ "$PWD" == /work/* && -d "/work/users/$USER/.local/share/Trash" ]]; then
+            XDG_DATA_HOME="/work/users/$USER/.local/share" command trash-restore "$@"
           else
-            command "$cmd" "$@"
+            command trash-restore "$@"
           fi
         }
 
-        trash-restore() { _trash_for_cwd trash-restore "$@"; }
-        trash-empty()   { _trash_for_cwd trash-empty "$@"; }
+        trash-empty() {
+          if [[ "$PWD" == /work/* && -d "/work/users/$USER/.local/share/Trash" ]]; then
+            XDG_DATA_HOME="/work/users/$USER/.local/share" command trash-empty "$@"
+          else
+            command trash-empty "$@"
+          fi
+        }
 
         # `code file` from a plain ssh or tmux shell. The VS Code integrated
         # terminal puts the Remote-SSH server's CLI on PATH and exports
