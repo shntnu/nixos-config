@@ -38,6 +38,7 @@ with pkgs; [
 
   # Workflow management
   jdk17  # Java runtime for Nextflow
+  (callPackage ./kata.nix { })
   nextflow  # Bioinformatics workflow manager, works with Docker Desktop
   nf-test  # Testing framework for Nextflow pipelines
 
