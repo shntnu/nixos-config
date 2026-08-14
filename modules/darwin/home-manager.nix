@@ -56,6 +56,15 @@ in
         "Library/Application Support/com.mitchellh.ghostty/config".text = ''
           shell-integration-features = cursor,sudo,title,ssh-env,ssh-terminfo
         '';
+
+        # agent-browser (Homebrew, see brews above) launches Chrome headless by
+        # default, so agents drive a browser the user cannot see. The flag is
+        # sticky to the per-session daemon: once it starts headless, a later
+        # --headed is silently ignored until `agent-browser close`. Default it
+        # to headed here; pass `--headed false` for anything that must be
+        # headless. Config file, not AGENT_BROWSER_HEADED, because the env var
+        # has no documented off-switch.
+        ".agent-browser/config.json".text = builtins.toJSON { headed = true; };
       };
     };
 
@@ -73,6 +82,20 @@ in
 
       # User-managed tools installed outside Nix land here.
       export PATH="$HOME/.local/bin:$PATH"
+
+      # agent-browser daemons never exit on their own (auto-shutdown is off by
+      # default), so a stale one outlives its browser and silently ignores the
+      # launch options of the next `open`. Let them expire instead.
+      export AGENT_BROWSER_IDLE_TIMEOUT_MS=3600000
+
+      # Without this every agent lands in the session literally named
+      # "default", so two concurrent Claude conversations drive one browser and
+      # fight over the active tab. Give each conversation its own session, which
+      # also makes `agent-browser close` safe: the caller provably owns it.
+      # Plain human shells have no session id and keep "default".
+      if [ -n "$CLAUDE_CODE_SESSION_ID" ]; then
+        export AGENT_BROWSER_SESSION="cc-''${CLAUDE_CODE_SESSION_ID%%-*}"
+      fi
 
       # Obsidian CLI (v1.12+, installed via Homebrew cask)
       if [ -d "/Applications/Obsidian.app/Contents/MacOS" ]; then
