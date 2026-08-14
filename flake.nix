@@ -69,6 +69,13 @@
             home-manager.darwinModules.home-manager
             nix-homebrew.darwinModules.nix-homebrew
             {
+              # Home Manager aborts the WHOLE file-linking phase on the first
+              # pre-existing file it would clobber, so one stray hand-edited
+              # dotfile silently discards every home.file change while the
+              # build still reports success. Rename the offender instead.
+              home-manager.backupFileExtension = "hm-bak";
+            }
+            {
               nix-homebrew = {
                 inherit user;
                 enable = true;
