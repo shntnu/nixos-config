@@ -12,7 +12,8 @@ Pick the workflow that matches where you are:
 
 ### macOS (caladan / laptop)
 
-This flake owns the full system. One command rebuilds everything (system + Home Manager):
+This flake owns the full system.
+One command rebuilds everything (system + Home Manager):
 
 ```bash
 nix run .#build-switch
@@ -20,7 +21,8 @@ nix run .#build-switch
 
 ### Lab servers (oppy / spirit / karkinos) — neusis-managed NixOS
 
-On these machines, [neusis](https://github.com/shntnu/neusis) owns the **system configuration** (NixOS, user accounts, SSH keys). This flake only manages **your Home Manager profile** (dotfiles, shell, programs).
+On these machines, [neusis](https://github.com/shntnu/neusis) owns the **system configuration** (NixOS, user accounts, SSH keys).
+This flake only manages **your Home Manager profile** (dotfiles, shell, programs).
 
 ```bash
 # 1. Make your changes and stage them (flake only sees tracked files)
@@ -32,7 +34,8 @@ home-manager switch --flake '.#shsingh@spirit'    # on spirit
 home-manager switch --flake '.#shsingh@karkinos'   # on karkinos
 ```
 
-> **Do not** run `nix run .#build-switch` on these machines — that would attempt a full NixOS system rebuild from this flake, which is not what you want. System changes go through neusis, which has a separate configuration per machine (`sudo nixos-rebuild switch --flake /path/to/neusis#<host>`).
+> **Do not** run `nix run .#build-switch` on these machines — that would attempt a full NixOS system rebuild from this flake, which is not what you want.
+System changes go through neusis, which has a separate configuration per machine (`sudo nixos-rebuild switch --flake /path/to/neusis#<host>`).
 
 To test-build without activating:
 
@@ -95,18 +98,10 @@ On the NixOS machines, the two repos are independent - run either in any order, 
 
 ## Headless Home Manager
 
-`modules/headless/home-manager.nix` is the personal, non-GUI Home Manager
-module for lab servers and other SSH-first Linux machines. It imports the
-shared shell/git/tmux/SSH setup, adds server-oriented packages from
-`modules/headless/packages.nix`, and is exported as
-`homeModules.shsingh-headless` for external flakes.
+`modules/headless/home-manager.nix` is the personal, non-GUI Home Manager module for lab servers and other SSH-first Linux machines.
+It imports the shared shell/git/tmux/SSH setup, adds server-oriented packages from `modules/headless/packages.nix`, and is exported as `homeModules.shsingh-headless` for external flakes.
 
-The standalone `homeConfigurations.shsingh@oppy`,
-`homeConfigurations.shsingh@spirit`, and
-`homeConfigurations.shsingh@karkinos` targets let this repo build the same
-profile directly for lab servers, while a shared repo such as `neusis` can skip
-only the `shsingh` Home Manager profile without changing other users'
-home-manager workflows.
+The standalone `homeConfigurations.shsingh@oppy`, `homeConfigurations.shsingh@spirit`, and `homeConfigurations.shsingh@karkinos` targets let this repo build the same profile directly for lab servers, while a shared repo such as `neusis` can skip only the `shsingh` Home Manager profile without changing other users' home-manager workflows.
 
 ## Development Commands
 
@@ -122,3 +117,4 @@ nix shell nixpkgs#<pkg>   # Try a package without installing
 - [`CLAUDE.md`](./CLAUDE.md) — architecture details and module organization (for Claude Code)
 - [`LEARNING_LOG.md`](./LEARNING_LOG.md) — Nix/Homebrew/system learnings and gotchas
 - [Shared repository memory with Hindsight](./docs/hindsight.md) - public setup specification for Claude Code, Codex, and Pi over REST, with no Hindsight MCP
+- [Text a local Codex agent through Telegram](./docs/codex-telegram.md) - tested single-user gateway specification using outbound long polling
