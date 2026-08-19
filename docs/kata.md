@@ -695,4 +695,11 @@ The corrected wrapper produced owner-only append-only local and off-host snapsho
 One off-host copy completed a round trip, imported into a fresh owner-only database, passed `PRAGMA quick_check`, matched every logical count exactly, served a known project from an isolated loopback daemon, and retained the same integrity and counts across an explicit service restart.
 The disposable daemon and scratch state were stopped and moved to trash while the production PID, cgroup, database, and listener remained unchanged.
 
-This qualified the exact manual backup and restore path, not timer scheduling, production Home Manager activation, declarative reapplication, zero-session behavior, managed-service crash recovery, host reboot, browser credential use, or recurring restore execution.
+This qualified the exact manual backup and restore path before production conversion.
+
+A subsequent explicitly authorized production cutover ran the ordinary locked Home Manager switch after a fresh checksummed local and off-host snapshot.
+The enabled foreground user service retained the exact listener, schemas, database integrity, and logical counts; hardened the SQLite files to owner-only modes; passed an explicit restart and forced-failure recovery; survived Home Manager reapplication; and remained healthy after the launching SSH session ended.
+The installed backup service then produced another owner-only local and off-host snapshot whose off-host round trip passed fresh import, exact logical-count comparison, `PRAGMA quick_check`, known-project resolution, and isolated-daemon restart before cleanup.
+The persistent daily timer is enabled and active, but its first natural scheduled trigger has not yet been observed.
+The production exercise was an in-place conversion of an existing configured deployment, not a first installation, fresh-user bootstrap, fresh-host bootstrap, or clean-room replay from only this document.
+Host reboot, browser credential use, browser mutation, tab-session behavior, automated pruning, and recurring restore execution remain outside the completed evidence.
