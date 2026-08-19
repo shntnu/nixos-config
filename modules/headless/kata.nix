@@ -89,10 +89,12 @@ let
         off_host_directory=${lib.escapeShellArg cfg.backup.offHost.directory}
         identity_file=${lib.escapeShellArg cfg.backup.offHost.identityFile}
         ssh_options=(
+          -F /dev/null
           -o BatchMode=yes
           -o ConnectTimeout=15
           -o IdentitiesOnly=yes
           -o StrictHostKeyChecking=yes
+          -o "UserKnownHostsFile=$HOME/.ssh/known_hosts"
           -i "$identity_file"
         )
 

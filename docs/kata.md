@@ -148,7 +148,7 @@ It also does not guess an off-host destination or retention deletion policy.
 The deployment owner must declare those choices separately, keep transfer credentials outside Nix, and qualify restore before deleting any retained copy.
 The backup wrapper does not load the bearer token.
 It unsets client routing, creates an empty temporary `KATA_HOME`, and points `KATA_DSN` directly at the live SQLite database so the host-local export cannot select the named remote daemon.
-When SSH transfer is enabled, the reusable wrapper uses strict host-key checking and a declared runtime identity path, removes the SSH agent socket from transfer-child environments, retries every unpublished local snapshot, uploads under a staging name, compares SHA-256 checksums, and only then publishes the owner-only remote copy.
+When SSH transfer is enabled, the reusable wrapper ignores user SSH configuration, uses strict host-key checking with explicit runtime identity and known-host paths, removes the SSH agent socket from transfer-child environments, retries every unpublished local snapshot, uploads under a staging name, compares SHA-256 checksums, and only then publishes the owner-only remote copy.
 
 ## Server configuration
 
