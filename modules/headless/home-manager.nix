@@ -105,58 +105,6 @@ in
         export EDITOR="nvim"
         export VISUAL="nvim"
 
-        # trash-cli will not move a file across filesystems, and it cannot create
-        # a volume trash dir under /work because that mount root is not writable.
-        # Deleting anything in /work/users/<user> therefore fails outright, which
-        # breaks the never-use-rm rule in the primary workspace on these servers.
-        # Route /work deletions to a trash on the same volume; leave every other
-        # path on the default home trash rather than relocating all XDG data.
-        # Each function below must be self-contained. Agent shells (Claude Code,
-        # Codex) restore this file's functions from a snapshot that omits helper
-        # functions named with a single leading underscore and does not carry
-        # plain shell variables, so a shared _helper silently disappears there and
-        # leaves the wrapper broken in exactly the shells that need it most.
-
-        # ponytail: one call mixing /work and home paths routes all of them to the
-        # /work trash, so the home-side paths fail loudly and are left in place.
-        # Nothing is lost, so split the args by volume only if that starts to bite.
-        trash() {
-          local arg
-          for arg in "$@"; do
-            if [[ "''${arg:A}" == /work/* && -d "/work/users/$USER" ]]; then
-              mkdir -p "/work/users/$USER/.local/share"
-              XDG_DATA_HOME="/work/users/$USER/.local/share" command trash "$@"
-              return $?
-            fi
-          done
-          command trash "$@"
-        }
-
-        # Show both trashes, so nothing deleted under /work goes unnoticed.
-        trash-list() {
-          command trash-list "$@"
-          if [[ -d "/work/users/$USER/.local/share/Trash" ]]; then
-            XDG_DATA_HOME="/work/users/$USER/.local/share" command trash-list "$@"
-          fi
-        }
-
-        # Restore and empty act on the /work trash when run from under /work.
-        trash-restore() {
-          if [[ "$PWD" == /work/* && -d "/work/users/$USER/.local/share/Trash" ]]; then
-            XDG_DATA_HOME="/work/users/$USER/.local/share" command trash-restore "$@"
-          else
-            command trash-restore "$@"
-          fi
-        }
-
-        trash-empty() {
-          if [[ "$PWD" == /work/* && -d "/work/users/$USER/.local/share/Trash" ]]; then
-            XDG_DATA_HOME="/work/users/$USER/.local/share" command trash-empty "$@"
-          else
-            command trash-empty "$@"
-          fi
-        }
-
         # `code file` from a plain ssh or tmux shell. The VS Code integrated
         # terminal puts the Remote-SSH server's CLI on PATH and exports
         # VSCODE_IPC_HOOK_CLI; any other shell gets neither. Resolve both at
