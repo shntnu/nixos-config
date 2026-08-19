@@ -42,13 +42,16 @@ let
       set -euo pipefail
       umask 077
 
-      kata_auth_token="''${KATA_AUTH_TOKEN:?KATA_AUTH_TOKEN is missing}"
-      unset KATA_AUTH_TOKEN
+      # Export is host-local and must not inherit client routing or credentials.
+      unset KATA_AUTH_TOKEN KATA_SERVER
 
       backup_dir=${lib.escapeShellArg cfg.backup.directory}
+      database_path=${lib.escapeShellArg "${cfg.homeDirectory}/kata.db"}
       install -d -m 0700 "$backup_dir"
 
       staging_dir="$(mktemp -d "$backup_dir/.kata-backup.XXXXXXXX")"
+      export_home="$staging_dir/home"
+      install -d -m 0700 "$export_home"
       cleanup() {
         if [[ -d "$staging_dir" ]]; then
           trash-put -- "$staging_dir" >/dev/null
@@ -64,9 +67,11 @@ let
         exit 1
       fi
 
-      KATA_AUTH_TOKEN="$kata_auth_token" \
-        kata export --allow-running-daemon --output "$export_file"
-      unset kata_auth_token
+      (
+        cd "$staging_dir"
+        KATA_HOME="$export_home" KATA_DSN="$database_path" \
+          kata export --allow-running-daemon --output "$export_file"
+      )
       if [[ ! -s "$export_file" ]]; then
         echo "Kata export did not create a nonempty backup" >&2
         exit 1
@@ -319,11 +324,8 @@ in
           Type = "simple";
           Environment = [
             "HOME=%h"
-            "KATA_HOME=${cfg.homeDirectory}"
             "KATA_TELEMETRY_ENABLED=0"
-            "KATA_TRUST_PRIVATE_NETWORK=1"
           ];
-          EnvironmentFile = cfg.server.environmentFile;
           WorkingDirectory = config.home.homeDirectory;
           ExecStart = "${cfg.package}/bin/kata daemon start --foreground --listen ${cfg.server.listen}";
           Restart = "on-failure";

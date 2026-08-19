@@ -146,7 +146,8 @@ The external environment file contains the token, while non-secret private-netwo
 The reference module does not create or enable linger because that is privileged host state outside a standalone Home Manager profile.
 It also does not guess an off-host destination or retention deletion policy.
 The deployment owner must declare those choices separately, keep transfer credentials outside Nix, and qualify restore before deleting any retained copy.
-The backup wrapper scopes the bearer token to the `kata export` child rather than exposing it to filesystem or transfer utilities.
+The backup wrapper does not load the bearer token.
+It unsets client routing, creates an empty temporary `KATA_HOME`, and points `KATA_DSN` directly at the live SQLite database so the host-local export cannot select the named remote daemon.
 When SSH transfer is enabled, the reusable wrapper uses strict host-key checking and a declared runtime identity path, removes the SSH agent socket from transfer-child environments, retries every unpublished local snapshot, uploads under a staging name, compares SHA-256 checksums, and only then publishes the owner-only remote copy.
 
 ## Server configuration
@@ -482,15 +483,16 @@ Create a managed backup script or equivalent service that:
 
 1. sets `umask 077`;
 2. runs outside any Kata workspace so `.kata.local.toml` cannot select a remote;
-3. loads only the Kata server environment file;
-4. writes a timestamped full JSONL export with `kata export --allow-running-daemon --output <path>`;
-5. verifies that the new file is nonempty and owner-only; and
-6. transfers it to a distinct authenticated off-host destination without logging the token or export contents.
+3. unsets `KATA_SERVER` and the bearer-token environment variable;
+4. creates an empty temporary `KATA_HOME` and sets `KATA_DSN` to the daemon's live database path;
+5. writes a timestamped full JSONL export with `kata export --allow-running-daemon --output <path>`;
+6. verifies that the new file is nonempty and owner-only; and
+7. transfers it to a distinct authenticated off-host destination without logging the export contents.
 
 Run it from a user systemd timer at an interval appropriate to the ledger's recovery-point objective.
-The backup unit should use the same managed Kata binary and `KATA_HOME` as the daemon.
-Do not set `KATA_SERVER` in it.
-`kata export` is host-local and refuses a configured remote target.
+The backup unit should use the same managed Kata binary and database as the daemon, but a routing-neutral temporary `KATA_HOME`.
+It does not need the daemon's authentication environment file.
+`kata export` is host-local and refuses `KATA_SERVER`, a workspace remote, `--daemon`, or `active_daemon` in its effective `KATA_HOME`.
 
 Retention and off-host deletion policy are consequential choices.
 Agree them with the user rather than silently removing old snapshots.
@@ -615,7 +617,7 @@ Move only disposable qualification artifacts to trash after the checks pass, and
 - A live `kata.db` file is not a complete backup when WAL data exists.
   Use host-local JSONL export and qualify restore.
 - A remote workspace target makes `kata export` fail because export is intentionally host-local.
-  Run the backup service from outside a workspace with no `KATA_SERVER`.
+  Run the backup service from outside a workspace with no `KATA_SERVER`, an empty temporary `KATA_HOME`, and an explicit `KATA_DSN` for the live database.
 - Import is replacement into a fresh target, not incremental merge.
 - On a host with another active Kata daemon, `v0.14.3` can reject an otherwise fresh explicit import target unless the qualification also sets an isolated `KATA_HOME`.
 - On macOS, import can create a mode-0644 database under the caller's default umask.
