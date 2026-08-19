@@ -324,8 +324,11 @@ in
           Type = "simple";
           Environment = [
             "HOME=%h"
+            "KATA_HOME=${cfg.homeDirectory}"
             "KATA_TELEMETRY_ENABLED=0"
+            "KATA_TRUST_PRIVATE_NETWORK=1"
           ];
+          EnvironmentFile = cfg.server.environmentFile;
           WorkingDirectory = config.home.homeDirectory;
           ExecStart = "${cfg.package}/bin/kata daemon start --foreground --listen ${cfg.server.listen}";
           Restart = "on-failure";
@@ -348,11 +351,8 @@ in
           Type = "oneshot";
           Environment = [
             "HOME=%h"
-            "KATA_HOME=${cfg.homeDirectory}"
             "KATA_TELEMETRY_ENABLED=0"
-            "KATA_TRUST_PRIVATE_NETWORK=1"
           ];
-          EnvironmentFile = cfg.server.environmentFile;
           WorkingDirectory = config.home.homeDirectory;
           ExecStart = "${backupScript}/bin/kata-backup";
           UMask = "0077";
