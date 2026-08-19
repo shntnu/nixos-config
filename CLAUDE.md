@@ -105,6 +105,7 @@ Trade-off: rebuilds are slightly slower due to upgrade checks. To revert to manu
 
 Host-specific services, endpoints, credentials, and operational notes belong in the private flake input.
 Keep this repository limited to shared declarative configuration and consult the matching private host module when changing host-specific behavior.
+Before changing Kata, read the tested public specification in [`docs/kata.md`](./docs/kata.md) and keep deployment-specific facts in the private overlay.
 
 ## Python Development
 

@@ -2,7 +2,7 @@
 
 [Kata](https://www.katatracker.com/) is a lightweight issue tracker designed for coding-agent work.
 This specification defines one durable Linux Kata server with a SQLite database, CLI clients on the same or other machines, and the built-in web UI over a trusted private network.
-Repositories carry only a stable project binding and machine-local routing.
+Repositories always carry a stable project binding, while clients choose either one user-level named daemon or a portable per-workspace routing override.
 Issue state remains on the server, so agents on several machines see and update one work ledger.
 
 This specification records a tested design for Kata `v0.14.3`, commit `410ee88`.
@@ -74,6 +74,8 @@ Resolve and record these values without printing a secret:
 - `<browser-hostname>`: the exact private DNS name users will enter in the browser;
 - `<kata-port>`: normally `7777`;
 - `<kata-binary>`: the absolute path installed by the host's managed package system;
+- `<daemon-name>`: a stable non-secret name for the shared daemon on one client account;
+- `<token-env>`: the environment-variable name referenced by the named daemon, not the token itself;
 - `<project-name>`: a stable, non-secret project name shared by every checkout;
 - `<workspace>`: the repository root on each client;
 - `<actor>`: the stable actor identity used on that client, with the same handle for the same human across machines; and
@@ -234,20 +236,6 @@ Before switching an existing unmanaged daemon, export and qualify the live datab
 ## Client and workspace configuration
 
 Install the pinned CLI and the private-network client on every client machine.
-Use the literal private IP for CLI routing:
-
-```toml
-# <workspace>/.kata.local.toml - ignored
-version = 1
-
-[server]
-url = "http://<private-ip>:<kata-port>"
-```
-
-Do not set `allow_insecure` for this literal private-IP URL.
-Do not use the browser hostname for a plaintext token-bearing CLI target.
-Kata `v0.14.3` rejects bearer authentication to a non-loopback HTTP hostname unless the client separately weakens the target with `KATA_ALLOW_INSECURE=1` or `allow_insecure = true`.
-
 Commit only the stable project binding:
 
 ```toml
@@ -260,6 +248,80 @@ name = "<project-name>"
 
 The project name must be identical in every checkout and worktree intended to share the ledger.
 Run `kata init --project <project-name>` when creating it, then inspect its changes before committing.
+
+### Shared named daemon for one operator and several workspaces
+
+Use one named daemon when one account on a machine connects several workspaces to the same shared server.
+Create one owner-only Kata client directory and environment file:
+
+```text
+~/.config/kata/                         0700
+~/.config/kata/<daemon-name>.env        0600
+```
+
+The environment file contains only the selected daemon's client values:
+
+```text
+<token-env>=<same-static-token>
+KATA_TRUST_PRIVATE_NETWORK=1
+KATA_AUTHOR=<actor>
+```
+
+Do not set `KATA_SERVER` in this file because it would take precedence over `active_daemon`.
+Do not combine the Kata values with AWS, cloud-provider, application, database, or other project credentials.
+If a repository runs untrusted project processes, prefer a small managed wrapper or operating-system secret launcher that gives these variables only to the Kata process instead of exporting the token to the whole direnv environment.
+
+Configure the user-level daemon catalog without storing the token in TOML:
+
+```toml
+# ~/.kata/config.toml - mode 0600
+active_daemon = "<daemon-name>"
+
+[[daemon]]
+name = "<daemon-name>"
+url = "http://<private-ip>:<kata-port>"
+token_env = "<token-env>"
+```
+
+The environment variable named by `token_env` must exist when the client runs.
+Use the literal private IP and do not set `allow_insecure` for this target.
+Kata `v0.14.3` rejects bearer authentication to a non-loopback HTTP hostname unless the client separately weakens the target with `KATA_ALLOW_INSECURE=1` or `allow_insecure = true`.
+
+Preserve every existing `.envrc` entry and add the shared Kata environment exactly once:
+
+```bash
+# <workspace>/.envrc - tracked
+kata_env_file="${XDG_CONFIG_HOME:-$HOME/.config}/kata/<daemon-name>.env"
+dotenv_if_exists "$kata_env_file"
+```
+
+Approve the `.envrc` through the client's normal direnv trust flow.
+Each repository then needs only its secret-free `.kata.toml` for Kata project binding; it does not duplicate the token in `.env.kata` or the daemon URL in `.kata.local.toml`.
+The shared environment and named catalog also make target changes a user-level operation rather than a repeated cross-repository edit.
+
+After the user authorizes the repository commit, verify the binding and environment loader are tracked and inspect the scoped state:
+
+```bash
+git ls-files --error-unmatch .kata.toml .envrc
+git status --short -- .kata.toml .envrc .kata.local.toml .env.kata
+```
+
+### Portable per-workspace alternative
+
+Use the per-workspace pattern when different workspaces on the same account need different targets or when user-level daemon configuration is unavailable.
+Route the CLI with the literal private IP:
+
+```toml
+# <workspace>/.kata.local.toml - ignored
+version = 1
+
+[server]
+url = "http://<private-ip>:<kata-port>"
+```
+
+Do not set `allow_insecure` for this literal private-IP URL.
+Do not use the browser hostname for a plaintext token-bearing CLI target.
+Kata `v0.14.3` rejects bearer authentication to a non-loopback HTTP hostname unless the client separately weakens the target with `KATA_ALLOW_INSECURE=1` or `allow_insecure = true`.
 
 For the reference direnv workflow, preserve every existing `.envrc` entry and add this line exactly once:
 
@@ -296,8 +358,9 @@ git status --short -- .kata.toml .envrc .gitignore .kata.local.toml .env.kata
 
 After the user authorizes the repository commit, `git ls-files --error-unmatch .kata.toml .envrc .gitignore` must succeed, while the two local files remain untracked and ignored.
 
-`KATA_SERVER` overrides `.kata.local.toml`.
-Remove an accidental global `KATA_SERVER` before concluding that workspace routing is wrong.
+Kata resolves a daemon target in this order: an explicit `--daemon <name>`, `KATA_SERVER`, `.kata.local.toml` `[server].url`, `active_daemon` in `~/.kata/config.toml`, then local discovery or auto-start.
+Remove an accidental `KATA_SERVER` or `.kata.local.toml` before concluding that user-level named-daemon routing is wrong.
+Use `--daemon <name>` for an intentional one-command override.
 A configured remote is authoritative: if it is unavailable, the command must fail instead of silently starting or using a local daemon.
 
 ## Browser UI
@@ -458,6 +521,14 @@ A transient unit can qualify foreground execution, restart policy, and survival 
 
 ### Authentication and routing checks
 
+On every client using the shared named-daemon pattern:
+
+1. Confirm `~/.config/kata` is mode `0700`, its Kata-only environment file is mode `0600`, and `~/.kata/config.toml` is owner-only.
+2. Confirm `active_daemon` names exactly one `[[daemon]]` entry whose literal private-IP URL is correct and whose `token_env` names the variable in the shared environment without printing its value.
+3. Confirm the shared environment does not set `KATA_SERVER` and each participating workspace has no `.kata.local.toml` or `.env.kata` shadowing or duplicating the user-level configuration.
+4. From at least two workspaces, run `kata whoami --agent` and `kata projects list --agent`, then prove each secret-free `.kata.toml` selects its intended project through the same daemon.
+5. Use `--daemon <daemon-name>` once to prove the named entry resolves explicitly, then repeat without the flag to prove `active_daemon` selects it.
+
 From both a same-host workspace and a separate client:
 
 1. With the correct token and client-side `KATA_TRUST_PRIVATE_NETWORK=1`, run `kata health --json` and `kata projects list --agent`.
@@ -511,6 +582,12 @@ Move only disposable qualification artifacts to trash after the checks pass, and
   Require a loaded managed unit, an owned cgroup, linger, restart, logout, and an authorized reboot check.
 - A client configured for a remote daemon does not fall back locally when the tunnel or daemon disappears.
   Use the stable direct private path and treat daemon-unavailable as a real failure.
+- `KATA_SERVER` or `.kata.local.toml` can silently take precedence over `active_daemon`.
+  Audit the full target order before editing the named catalog.
+- A named daemon whose `token_env` variable is absent or whose shared environment was not loaded reaches the intended target without authenticating.
+  Match the variable names exactly and use a protected command for the check.
+- Copying `.env.kata` and `.kata.local.toml` into every repository duplicates secrets and routing that one single-user named daemon can own once.
+  Keep the per-workspace pair only where its portability or distinct target is intentional.
 - `KATA_TRUST_PRIVATE_NETWORK=1` is required on clients that attach a bearer token to private plaintext HTTP as well as on the server.
 - A plaintext DNS hostname is rejected for bearer authentication unless `allow_insecure` weakens that client target.
   Keep CLI routing on the literal private IP.
@@ -578,6 +655,9 @@ The reference investigation established the current deployment and the failures 
 - an online JSONL export copied off-host with an identical checksum, restored with exact logical counts and `PRAGMA quick_check=ok`, served from an isolated loopback daemon, and survived restart;
 - an isolated user-systemd service automatically recovered from process failure and survived the SSH session that launched it; and
 - disposable graph tests proved the parent, blocking, related, readiness, and parent-close behavior recorded above.
+
+A later read-only deployment audit verified the shared named-daemon structure on the existing Linux client: one owner-only user environment, one `active_daemon` catalog entry using `token_env`, and several workspaces whose `.kata.toml` files select projects without per-repository routing or token files.
+That audit did not read or transmit the token and did not rerun the credential-bearing authentication checks.
 
 The first fresh-agent run reproduced both release-asset hashes, server and client health, literal-address binding, permissions, protected authentication, client trust refusal, fail-closed routing, idempotent workspace initialization, cross-client comments and graph state, crash recovery, explicit service restart, SSH-session independence, browser-style HTML and host rejection, online backup, off-host checksum, exact restore counts, database integrity, and restored-daemon restart.
 It exposed four missing instructions: import inherited a permissive macOS umask, authentication negatives did not name a protected command, JSONL and logical-label counting were underspecified, and a raw HTTP request did not negotiate HTML.
