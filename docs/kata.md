@@ -685,4 +685,14 @@ It completed without an acceptance failure.
 In particular, import with `umask 077` produced a mode-0600 database without manual repair; every JSONL record had a string `kind`; `.data.label` matched `count(distinct label)` from `issue_labels`; protected absent and wrong token requests failed; the browser-style request returned HTML; all graph, restart, restore, and cleanup checks passed; and the production daemon's PID, start time, listener, database path, and unmanaged service state stayed unchanged.
 
 The fresh tests did not exercise a previously unconfigured host's managed package installation, an enabled persistent unit, ordinary Nix or Home Manager activation and reapplication, a zero-login-session state, host reboot, durable backup scheduling or retention, durable off-host storage, firewall or overlay ACL changes, production service conversion, browser token exchange, browser mutation, or tab-session behavior.
-Those boundaries remain untested and must not be inferred from the transient-service and HTML-probe results.
+Those boundaries were not established by the fresh tests and must not be inferred from their transient-service and HTML-probe results.
+
+A later production-data pre-cutover qualification built the ordinary locked Home Manager activation without switching it and ran the exact generated backup wrapper manually.
+It exposed two deployment integration defects before activation: a shared `active_daemon` made host-local export fail, and the pinned OpenSSH rejected the managed user SSH-config symlink's target ownership.
+The wrapper was corrected to export through an empty temporary `KATA_HOME` with explicit `KATA_DSN`, to omit the server token environment entirely, and to ignore user SSH configuration while supplying explicit identity and known-host paths.
+
+The corrected wrapper produced owner-only append-only local and off-host snapshots with independently matching SHA-256 checksums.
+One off-host copy completed a round trip, imported into a fresh owner-only database, passed `PRAGMA quick_check`, matched every logical count exactly, served a known project from an isolated loopback daemon, and retained the same integrity and counts across an explicit service restart.
+The disposable daemon and scratch state were stopped and moved to trash while the production PID, cgroup, database, and listener remained unchanged.
+
+This qualified the exact manual backup and restore path, not timer scheduling, production Home Manager activation, declarative reapplication, zero-session behavior, managed-service crash recovery, host reboot, browser credential use, or recurring restore execution.
