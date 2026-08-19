@@ -64,6 +64,7 @@ modules/
     emacs/                       init.el + config.org
   headless/
     home-manager.nix            lab-server HM: imports shared, adds server deltas
+    kata.nix                    reusable Kata config, user service, and backup timer
     packages.nix                server-only package list
 ```
 
@@ -102,6 +103,7 @@ On the NixOS machines, the two repos are independent - run either in any order, 
 It imports the shared shell/git/tmux/SSH setup, adds server-oriented packages from `modules/headless/packages.nix`, and is exported as `homeModules.shsingh-headless` for external flakes.
 
 The standalone `homeConfigurations.shsingh@oppy`, `homeConfigurations.shsingh@spirit`, and `homeConfigurations.shsingh@karkinos` targets let this repo build the same profile directly for lab servers, while a shared repo such as `neusis` can skip only the `shsingh` Home Manager profile without changing other users' home-manager workflows.
+Each standalone target also imports a matching `private.homeModules.<host>` when that output exists, following the same public-behavior/private-facts split used by the Darwin host modules.
 
 ## Development Commands
 

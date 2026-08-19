@@ -91,16 +91,20 @@
             hostModule
           ];
         };
-      mkHeadlessHomeConfiguration = system: home-manager.lib.homeManagerConfiguration {
+      mkHeadlessHomeConfiguration = host: system: home-manager.lib.homeManagerConfiguration {
         pkgs = nixpkgs.legacyPackages.${system};
-        modules = [
-          ./modules/headless/home-manager.nix
-          private.homeModules.default
-          {
-            home.homeDirectory = "/home/${user}";
-          }
-        ];
-        extraSpecialArgs = inputs // { inherit user; };
+        modules =
+          [
+            ./modules/headless/home-manager.nix
+            private.homeModules.default
+            {
+              home.homeDirectory = "/home/${user}";
+            }
+          ]
+          ++ nixpkgs.lib.optional
+            (builtins.hasAttr host private.homeModules)
+            private.homeModules.${host};
+        extraSpecialArgs = inputs // { inherit host user; };
       };
     in
     {
@@ -121,7 +125,10 @@
     # shntnu/neusis. See README.md for workflows.
     homeConfigurations = nixpkgs.lib.genAttrs
       (builtins.map (host: "${user}@${host}") [ "oppy" "spirit" "karkinos" ])
-      (_: mkHeadlessHomeConfiguration "x86_64-linux");
+      (name:
+        mkHeadlessHomeConfiguration
+          (nixpkgs.lib.removePrefix "${user}@" name)
+          "x86_64-linux");
 
   };
 }

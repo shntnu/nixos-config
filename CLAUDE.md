@@ -26,12 +26,12 @@ On neusis-managed lab servers (oppy, karkinos, spirit), this flake only manages 
 
 The `flake.nix` defines:
 - **darwinConfigurations**: per-host macOS configurations (`caladan`, `laptop`) — each loads `hosts/darwin/default.nix` (shared base) plus a host-specific file that imports a `darwinModules.<host>` from the `private` input
-- **homeConfigurations**: standalone Home Manager for the lab servers — `shsingh@oppy`, `shsingh@spirit`, `shsingh@karkinos`, all built via `mkHeadlessHomeConfiguration` from `modules/headless/`
+- **homeConfigurations**: standalone Home Manager for the lab servers - `shsingh@oppy`, `shsingh@spirit`, `shsingh@karkinos`, all built via `mkHeadlessHomeConfiguration` from `modules/headless/` and an optional matching `private.homeModules.<host>`
 - **homeModules**: exposes `shsingh-headless` (= `modules/headless/home-manager.nix`) for downstream consumers (neusis)
 - **Apps** (`aarch64-darwin` only): `build`, `build-switch`, `rollback` — all dispatch on `scutil --get LocalHostName`
 - **DevShells**: a minimal dev shell (used by `.envrc`)
 
-`user`, `msgvault`, and the other flake inputs are passed to every module via `specialArgs`/`extraSpecialArgs` (`inputs // { inherit user; }`), so modules take them as function args rather than redefining `let user = ...`.
+`user`, `host`, `msgvault`, and the other flake inputs are passed to every module via `specialArgs`/`extraSpecialArgs`, so modules take them as function args rather than redefining those values.
 
 Notable flake inputs:
 - `private` (`git+ssh://git@github.com/shntnu/nixos-config-private`) — provides per-host darwinModules (caladan, laptop) and other private config. Required for darwin builds.
@@ -55,7 +55,7 @@ NixOS system-level configuration is not managed here - lab servers (oppy, karkin
     - `casks.nix`: Homebrew casks (all Macs); per-host casks live in `hosts/darwin/{caladan,laptop}.nix`
     - `dock/`: declarative dock module
     - `emacs/`: `init.el` + `config.org`
-  - `headless/`: Home Manager profile for lab servers (oppy/spirit/karkinos). Imports `../shared/nixpkgs.nix` and `../shared/home-manager.nix`, adds headless-only packages from `headless/packages.nix`, and layers server-specific program configs. It also manages the remote VS Code language-server wrapper and git SSH signing. Also re-exported as `homeModules.shsingh-headless`.
+  - `headless/`: Home Manager profile for lab servers (oppy/spirit/karkinos). Imports `../shared/nixpkgs.nix`, `../shared/home-manager.nix`, and the reusable Kata user-service module, adds headless-only packages from `headless/packages.nix`, and layers server-specific program configs. It also manages the remote VS Code language-server wrapper and git SSH signing. Also re-exported as `homeModules.shsingh-headless`.
 
 - **`apps/aarch64-darwin/`**: `build`, `build-switch`, `rollback` (Apple Silicon only)
 

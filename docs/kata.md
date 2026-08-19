@@ -133,6 +133,22 @@ The accepted reference reports `v0.14.3` and commit `410ee88`.
 Confirm the operating-system and architecture fields as well.
 A temporary profile install or local flake override can qualify the binary, but it is not the final deployment.
 
+### Home Manager reference module
+
+This repository includes a reusable Linux Home Manager implementation at `modules/headless/kata.nix`.
+It is disabled by default and contains no deployment endpoint, hostname, token, backup destination, or retention choice.
+A deployment-specific module supplies those values and enables the client, server, and backup roles it needs.
+
+The module installs the non-secret TOML as a mode-`0600` regular file rather than a world-readable Nix-store symlink and enforces mode `0600` on existing SQLite database, WAL, and shared-memory files during activation.
+It declares the foreground user service, restart policy, exact listener, runtime secret-file reference, a scheduled local online-export job, and an optional atomic checksummed SSH copy of each export.
+The external environment file contains the token, while non-secret private-network trust and telemetry settings remain declarative in the unit.
+
+The reference module does not create or enable linger because that is privileged host state outside a standalone Home Manager profile.
+It also does not guess an off-host destination or retention deletion policy.
+The deployment owner must declare those choices separately, keep transfer credentials outside Nix, and qualify restore before deleting any retained copy.
+The backup wrapper scopes the bearer token to the `kata export` child rather than exposing it to filesystem or transfer utilities.
+When SSH transfer is enabled, the reusable wrapper uses strict host-key checking and a declared runtime identity path, removes the SSH agent socket from transfer-child environments, retries every unpublished local snapshot, uploads under a staging name, compares SHA-256 checksums, and only then publishes the owner-only remote copy.
+
 ## Server configuration
 
 ### Data and non-secret configuration

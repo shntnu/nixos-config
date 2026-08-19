@@ -62,6 +62,7 @@ let
 in
 {
   imports = [
+    ./kata.nix
     ../shared/nixpkgs.nix
     ../shared/home-manager.nix
   ];
