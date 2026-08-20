@@ -32,12 +32,12 @@ in
   home-manager.users.${user} = { config, pkgs, lib, ... }: {
     imports = [
       ../shared/home-manager.nix
-      ../shared/msgvault-replication.nix
+      ../shared/msgvault-remote.nix
     ];
 
     home = {
       enableNixpkgsReleaseCheck = false;
-      packages = import ../shared/packages.nix { inherit pkgs; } ++ [ pkgs.msgvault ];
+      packages = import ../shared/packages.nix { inherit pkgs; };
       stateVersion = "23.11";
       file = {
         "emacs-launcher.command".source = myEmacsLauncher;

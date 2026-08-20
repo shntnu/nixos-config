@@ -63,7 +63,7 @@ in
 {
   imports = [
     ./kata.nix
-    ../shared/msgvault-replication.nix
+    ../shared/msgvault-remote.nix
     ../shared/nixpkgs.nix
     ../shared/home-manager.nix
   ];

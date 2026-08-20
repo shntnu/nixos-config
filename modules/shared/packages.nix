@@ -128,5 +128,3 @@ with pkgs; [
   texliveMedium
   whisper-cpp
 ]
-# msgvault is added by the platform modules that use it: the Darwin profile and
-# the opt-in replication module on read-only mirror hosts.
