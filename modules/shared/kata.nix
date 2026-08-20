@@ -1,14 +1,14 @@
 { fetchurl, lib, stdenvNoCC }:
 
 let
-  version = "0.14.3";
+  version = "0.15.1";
   sources = {
     aarch64-darwin = {
-      hash = "sha256-b3t3WoZAHAx93XgFI9UV9A3ofk4A+yrVKUP8rXWCNEw=";
+      hash = "sha256-90hrGVf+0A6X1nIBYhCPPwj4TBQ0fN8rKUV6KygQz/I=";
       suffix = "darwin_arm64";
     };
     x86_64-linux = {
-      hash = "sha256-1Wnu/3D7b6n2fbPFHEO7OnraqgzTECdKS9CkLKL/PsA=";
+      hash = "sha256-kxyM3hzrBbDPvtNomkIQ9M6KXcXD9klvVsiaa88mCmE=";
       suffix = "linux_amd64";
     };
   };
