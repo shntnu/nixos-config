@@ -53,6 +53,12 @@ in
         # Disable Claude AI cloud MCP servers (Gmail, Slack, etc.)
         export ENABLE_CLAUDEAI_MCP_SERVERS=false
 
+        # Kata client credentials for the shared spirit daemon; the file is
+        # provisioned outside Nix and absent on machines without access.
+        if [[ -f "$HOME/.config/kata/spirit.env" ]]; then
+          set -a; source "$HOME/.config/kata/spirit.env"; set +a
+        fi
+
         # nix shortcuts
         shell() {
             nix-shell '<nixpkgs>' -A "$1"
