@@ -7,7 +7,7 @@ let
   '';
   client = pkgs.writeShellApplication {
     name = "msgvault-caladan";
-    runtimeInputs = with pkgs; [ coreutils gnused openssh trash-cli msgvault ];
+    runtimeInputs = with pkgs; [ coreutils gnused openssh msgvault ];
     text = ''
       source_host=${lib.escapeShellArg cfg.sourceHost}
       case "''${1:-}" in
@@ -38,31 +38,43 @@ let
       # The keyless daemon validates the HTTP Host port against its listener
       # port, so the local end of the tunnel must use that same port.
       local_port="$remote_port"
-      runtime_dir="$(mktemp -d /tmp/msgvault-caladan.XXXXXX)"
-      control_socket="$runtime_dir/ssh"
-      config_file="$runtime_dir/config.toml"
+      tunnel_pid=
       cleanup() {
-        ssh "''${ssh_options[@]}" -S "$control_socket" -O exit \
-          "$source_host" >/dev/null 2>&1 || true
-        trash "$runtime_dir" >/dev/null 2>&1 || true
+        if [ -n "$tunnel_pid" ]; then
+          kill "$tunnel_pid" >/dev/null 2>&1 || true
+          wait "$tunnel_pid" >/dev/null 2>&1 || true
+        fi
       }
       trap cleanup EXIT
 
-      {
-        echo '[remote]'
-        echo "url = \"http://127.0.0.1:$local_port\""
-        echo 'allow_insecure = true'
-      } > "$config_file"
-      chmod 600 "$config_file"
-
-      ssh -M -S "$control_socket" -fNT \
+      ssh -NT \
         "''${ssh_options[@]}" \
         -o ExitOnForwardFailure=yes \
         -o ServerAliveInterval=30 \
         -L "127.0.0.1:$local_port:127.0.0.1:$remote_port" \
-        "$source_host"
+        "$source_host" &
+      tunnel_pid=$!
 
-      msgvault --config "$config_file" --no-log-file "$@"
+      tunnel_ready=false
+      for _ in {1..50}; do
+        if ! kill -0 "$tunnel_pid" 2>/dev/null; then
+          wait "$tunnel_pid"
+        fi
+        if (exec 3<>"/dev/tcp/127.0.0.1/$local_port") 2>/dev/null; then
+          tunnel_ready=true
+          break
+        fi
+        sleep 0.1
+      done
+      if ! "$tunnel_ready"; then
+        echo "Timed out opening the tunnel to Caladan" >&2
+        exit 1
+      fi
+
+      msgvault --config <(
+        printf '[remote]\nurl = "http://127.0.0.1:%s"\nallow_insecure = true\n' \
+          "$local_port"
+      ) --no-log-file "$@"
     '';
   };
 in

@@ -119,7 +119,7 @@ msgvault-caladan show-message MESSAGE_ID
 msgvault-caladan tui
 ```
 
-The wrapper discovers Caladan's loopback-only daemon port over SSH, creates a temporary loopback tunnel and keyless remote config, runs the requested command, then closes the tunnel and trashes the temporary directory.
+The wrapper discovers Caladan's loopback-only daemon port over SSH, creates a temporary loopback tunnel and pipe-backed keyless remote config, runs the requested command, then closes the tunnel.
 It permits remote read, export, and TUI commands only.
 No archive data or reusable msgvault credential is left on the client.
 
