@@ -22,6 +22,11 @@ let
     }
     // lib.optionalAttrs cfg.server.enable {
       listen = cfg.server.listen;
+      # The daemon already opts in through KATA_TRUST_PRIVATE_NETWORK=1 in its
+      # unit, but CLI clients on the server host read this same config.toml and
+      # reject the non-loopback web.public_origin unless the shared file also
+      # carries the non-secret opt-in.
+      auth.trust_private_network = true;
       web = {
         public_origin = cfg.server.publicOrigin;
         allowed_hosts = cfg.server.allowedHosts;
