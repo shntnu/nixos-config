@@ -61,7 +61,7 @@ with pkgs; [
   pi-coding-agent  # trails npm by days; if needed: npm install -g @mariozechner/pi-coding-agent
 
   # Terminal support (Linux only; macOS uses Ghostty cask which ships its own terminfo)
-] ++ lib.optionals (!pkgs.stdenv.isDarwin) [
+] ++ lib.optionals (!pkgs.stdenv.hostPlatform.isDarwin) [
   ghostty.terminfo
 ] ++ [
   # Dotfile management
@@ -125,7 +125,7 @@ with pkgs; [
   mermaid-cli
   pandoc
   poppler-utils
-  texlive.combined.scheme-medium
+  texliveMedium
   whisper-cpp
 ]
 # msgvault (email archive) is macOS-only on purpose: its sync launchd agent and

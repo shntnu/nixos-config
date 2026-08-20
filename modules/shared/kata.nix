@@ -4,7 +4,7 @@ let
   version = "0.14.3";
   sources = {
     aarch64-darwin = {
-      hash = "sha256-auloMBtpbJBa1jHP8gtURWeBWidTLsLrJx2RzyTBKQY=";
+      hash = "sha256-b3t3WoZAHAx93XgFI9UV9A3ofk4A+yrVKUP8rXWCNEw=";
       suffix = "darwin_arm64";
     };
     x86_64-linux = {

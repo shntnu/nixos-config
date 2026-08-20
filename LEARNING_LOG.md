@@ -178,6 +178,13 @@ Claude Desktop for Linux ships only as a `.deb` from Anthropic's apt repo, and n
 
 `org.gnome.Shell.Screenshot.Screenshot` over D-Bus returns `AccessDenied` - GNOME 49 allowlists that interface to the media-keys daemon and the desktop portal, so a plain shell caller is refused. `gnome-screenshot` 41.0 builds fine but Shell 49 rejects it too ("resorting to fallback X11") and writes no file, and `grim`/`slurp` are wlroots tools that Mutter does not serve. The portal works but pops a confirmation dialog, which rules out unattended capture. That leaves the shell keybindings, rebound in `modules/headless/home-manager.nix` because the Air75 V2 has no PrtSc key; `gsettings set org.gnome.shell.keybindings ...` takes effect immediately, no restart.
 
+## 2026-08-20: Signed Release Assets Can Change Without a Version Bump
+
+**Key Insight:** A versioned GitHub release asset can still be replaced after publication, so validate a new digest before updating a Nix fixed-output hash.
+
+Kata's `v0.14.3` macOS ARM archive was replaced when its binary received a Developer ID signature, changing the archive hash while its reported version, commit, platform, and build timestamp remained the same.
+GitHub's release API digest and the binary's version and code-signing metadata provided independent checks before the package and documentation hashes were updated.
+
 ---
 
 ## Entry Guidelines

@@ -93,7 +93,7 @@ Do not rely on `kata update` or an unpinned mutable download.
 | Platform | Release asset | SHA-256 |
 | --- | --- | --- |
 | Linux amd64 | `kata_0.14.3_linux_amd64.tar.gz` | `d569eeff70fb6fa9f67db3c51c43bb3a7adaaa0cd310274a4bd0a42ca2ff3ec0` |
-| macOS arm64 | `kata_0.14.3_darwin_arm64.tar.gz` | `6ae968301b696c905ad631cff20b544567815a27532ec2eb271d91cf24c12906` |
+| macOS arm64 | `kata_0.14.3_darwin_arm64.tar.gz` | `6f7b775a86401c0c7ddd780523d515f40de87e4e00fb2ad52943fcad7582344c` |
 
 Verify the archive before installing it.
 Other platforms are unqualified until they pass the complete acceptance suite.

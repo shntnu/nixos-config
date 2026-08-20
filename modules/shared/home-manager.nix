@@ -199,11 +199,9 @@ in
       enable = true;
       enableDefaultConfig = false;
       includes = [ "${config.home.homeDirectory}/.ssh/config_external" ];
-      matchBlocks."*" = {
-        extraOptions = {
-          "AddKeysToAgent" = "yes";
-          "IdentityFile" = "~/.ssh/id_ed25519";
-        };
+      settings."*" = {
+        AddKeysToAgent = "yes";
+        IdentityFile = "~/.ssh/id_ed25519";
       };
     };
 

@@ -7,3 +7,4 @@ scratch/
 .specstory
 .remember/
 .direnv/
+.kata.local.toml

@@ -130,7 +130,8 @@ in
       enable = true;
       enableZshIntegration = true;
       defaultOptions = [ "--style full" ];
-      fileWidgetOptions = [ "--preview='bat --color=always {}'" ];
+      fileWidget.options = [ "--preview='bat --color=always {}'" ];
+      historyWidget.command = "";
     };
 
     delta = {
