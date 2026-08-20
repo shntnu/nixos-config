@@ -34,7 +34,7 @@ let user = "shsingh"; in
   services.tailscale.enable = true;
 
   environment.systemPackages = with pkgs; [
-    emacs30  # Pinned to Emacs 30.x stable (Darwin only - NixOS config TBD)
+    emacs30 # Pinned to Emacs 30.x stable (Darwin only - NixOS config TBD)
   ] ++ (import ../../modules/shared/packages.nix { inherit pkgs; });
 
   launchd.user.agents.emacs.path = [ config.environment.systemPath ];
@@ -47,23 +47,6 @@ let user = "shsingh"; in
     ];
     StandardErrorPath = "/tmp/emacs.err.log";
     StandardOutPath = "/tmp/emacs.out.log";
-  };
-
-  # Incremental Gmail sync every 15 minutes (syncs all configured accounts)
-  # msgvault is managed via Nix flake input; update with: nix flake update msgvault
-  launchd.user.agents.msgvault-sync.serviceConfig = {
-    ProgramArguments = [
-      "${pkgs.msgvault}/bin/msgvault"
-      "sync"
-    ];
-    StartCalendarInterval = [
-      { Minute = 0; }
-      { Minute = 15; }
-      { Minute = 30; }
-      { Minute = 45; }
-    ];
-    StandardErrorPath = "/tmp/msgvault-sync.err.log";
-    StandardOutPath = "/tmp/msgvault-sync.out.log";
   };
 
   # Hourly qmd re-index + embed (refreshes configured collections)

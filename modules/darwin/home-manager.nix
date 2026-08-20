@@ -9,7 +9,7 @@ let
 in
 {
   imports = [
-   ./dock
+    ./dock
   ];
 
   # It me
@@ -30,7 +30,10 @@ in
 
   home-manager.useGlobalPkgs = true;
   home-manager.users.${user} = { config, pkgs, lib, ... }: {
-    imports = [ ../shared/home-manager.nix ];
+    imports = [
+      ../shared/home-manager.nix
+      ../shared/msgvault-replication.nix
+    ];
 
     home = {
       enableNixpkgsReleaseCheck = false;

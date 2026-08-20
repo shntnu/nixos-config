@@ -63,6 +63,7 @@ in
 {
   imports = [
     ./kata.nix
+    ../shared/msgvault-replication.nix
     ../shared/nixpkgs.nix
     ../shared/home-manager.nix
   ];
@@ -165,7 +166,7 @@ in
     yazi = {
       enable = true;
       enableZshIntegration = true;
-      shellWrapperName = "yy";  # keep legacy default; new default becomes "y" at stateVersion 26.05
+      shellWrapperName = "yy"; # keep legacy default; new default becomes "y" at stateVersion 26.05
       settings = {
         mgr.show_hidden = true;
         preview = {

@@ -37,10 +37,10 @@ with pkgs; [
   just-lsp
 
   # Workflow management
-  jdk17  # Java runtime for Nextflow
+  jdk17 # Java runtime for Nextflow
   (callPackage ./kata.nix { })
-  nextflow  # Bioinformatics workflow manager, works with Docker Desktop
-  nf-test  # Testing framework for Nextflow pipelines
+  nextflow # Bioinformatics workflow manager, works with Docker Desktop
+  nf-test # Testing framework for Nextflow pipelines
 
   # Media-related packages
   emacs-all-the-icons-fonts
@@ -48,7 +48,7 @@ with pkgs; [
   ffmpeg
   fd
   sox
-  chafa  # Inline images in terminal (auto-detects kitty graphics protocol in Ghostty)
+  chafa # Inline images in terminal (auto-detects kitty graphics protocol in Ghostty)
   font-awesome
   hack-font
   noto-fonts
@@ -58,7 +58,7 @@ with pkgs; [
   # Node.js development tools
   nodejs_24
   aws-cdk-cli
-  pi-coding-agent  # trails npm by days; if needed: npm install -g @mariozechner/pi-coding-agent
+  pi-coding-agent # trails npm by days; if needed: npm install -g @mariozechner/pi-coding-agent
 
   # Terminal support (Linux only; macOS uses Ghostty cask which ships its own terminfo)
 ] ++ lib.optionals (!pkgs.stdenv.hostPlatform.isDarwin) [
@@ -73,11 +73,11 @@ with pkgs; [
   iftop
   jq
   parallel
-  procps  # watch, ps, top, free, kill - macOS has BSD ps but no watch
+  procps # watch, ps, top, free, kill - macOS has BSD ps but no watch
   ripgrep
   tree
-  eza  # Modern ls/tree replacement with colors and icons
-  yazi  # Terminal file manager
+  eza # Modern ls/tree replacement with colors and icons
+  yazi # Terminal file manager
   tldr
   unrar
   unzip
@@ -86,7 +86,7 @@ with pkgs; [
   zoxide
 
   # Theorem proving
-  elan  # Lean 4 toolchain manager (provides lean, lake)
+  elan # Lean 4 toolchain manager (provides lean, lake)
 
   # Python packages
   python3
@@ -105,7 +105,7 @@ with pkgs; [
   # obsidian — moved to Homebrew cask (modules/darwin/casks.nix) for v1.12+ CLI support
 
   # AI Coding tools
-  ollama  # local LLM runtime; daemon: `ollama serve`, models: `ollama pull <name>`
+  ollama # local LLM runtime; daemon: `ollama serve`, models: `ollama pull <name>`
   # claude-code installed imperatively:
   #   Install: nix profile install github:sadjow/claude-code-nix
   #   Upgrade: nix profile upgrade claude-code-nix --refresh
@@ -128,6 +128,5 @@ with pkgs; [
   texliveMedium
   whisper-cpp
 ]
-# msgvault (email archive) is macOS-only on purpose: its sync launchd agent and
-# local DB live on the Macs, so the binary is dead weight on the servers. It's
-# added to home.packages in modules/darwin/home-manager.nix.
+# msgvault is added by the platform modules that use it: the Darwin profile and
+# the opt-in replication module on read-only mirror hosts.

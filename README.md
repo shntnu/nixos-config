@@ -105,6 +105,31 @@ It imports the shared shell/git/tmux/SSH setup, adds server-oriented packages fr
 The standalone `homeConfigurations.shsingh@oppy`, `homeConfigurations.shsingh@spirit`, and `homeConfigurations.shsingh@karkinos` targets let this repo build the same profile directly for lab servers, while a shared repo such as `neusis` can skip only the `shsingh` Home Manager profile without changing other users' home-manager workflows.
 Each standalone target also imports a matching `private.homeModules.<host>` when that output exists, following the same public-behavior/private-facts split used by the Darwin host modules.
 
+## Msgvault archive replication
+
+Caladan is the only Gmail, IMAP, Slack, and iMessage archive writer.
+Its private host module creates a transactionally consistent `msgvault backup` snapshot every day at 04:10, restores it with analytics into alternating publication slots on the attached backup volume, and exposes only the credential-free restored archive over SSH.
+
+The laptop and all three lab-server Home Manager profiles pull the published archive hourly at minute 40.
+Each client updates its inactive slot, checks SQLite integrity and the message, attachment, and source counts, confirms that credential paths are absent, and only then atomically switches `~/.local/share/msgvault-mirror/current`.
+Interrupted or invalid transfers leave the previous local mirror active.
+
+Use the local mirror without Caladan:
+
+```bash
+msgvault-mirror stats
+msgvault-mirror search "incident review"
+msgvault-mirror show-message MESSAGE_ID
+```
+
+The wrapper permits read and export commands only.
+Run `msgvault-mirror-status` to report the active snapshot and freshness; it exits nonzero when a client has not completed in three hours or the publisher has not completed in 36 hours.
+Client failures are also visible in the user service journal on Linux and `/tmp/msgvault-pull-mirror.err.log` on macOS.
+Publisher failures are logged to `/tmp/msgvault-publish-snapshot.err.log` on Caladan.
+
+The backup repository is append-only because the current msgvault backup format does not yet support pruning.
+Do not add `--include-config`, `--include-tokens`, or `--allow-plaintext-secrets` to the publisher.
+
 ## Development Commands
 
 ```bash
