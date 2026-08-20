@@ -108,7 +108,7 @@ Each standalone target also imports a matching `private.homeModules.<host>` when
 ## Remote msgvault access
 
 Caladan is the only Gmail, IMAP, Slack, and iMessage archive host and writer.
-The laptop and lab servers do not store the msgvault database, attachments, credentials, API keys, or background replication state.
+The remote-access configuration does not create a msgvault database, attachment store, credential, API key, or background replication state on the laptop or lab servers.
 
 Use Caladan's archive from another managed machine:
 
