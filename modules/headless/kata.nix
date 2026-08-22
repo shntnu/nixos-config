@@ -114,7 +114,10 @@ let
           local finalize_command
 
           file_name="$(basename "$local_file")"
-          remote_staging="$off_host_directory/.$file_name.partial.$(date -u +%s).$$"
+          # Reuse one staging path per immutable backup. If a transfer is
+          # interrupted, the next attempt overwrites the partial instead of
+          # leaking a new remote file on every retry.
+          remote_staging="$off_host_directory/.$file_name.partial"
           remote_final="$off_host_directory/$file_name"
 
           if env -u KATA_AUTH_TOKEN -u SSH_AUTH_SOCK \
@@ -123,7 +126,7 @@ let
             return
           fi
 
-          prepare_command="umask 077; mkdir -p '$off_host_directory' && chmod 0700 '$off_host_directory' && test ! -e '$remote_staging' && test ! -e '$remote_final'"
+          prepare_command="umask 077; mkdir -p '$off_host_directory' && chmod 0700 '$off_host_directory' && test ! -d '$remote_staging' && test ! -e '$remote_final'"
           env -u KATA_AUTH_TOKEN -u SSH_AUTH_SOCK \
             ssh "''${ssh_options[@]}" "$off_host" "$prepare_command"
 
@@ -351,7 +354,7 @@ in
       kata-backup = lib.mkIf cfg.backup.enable {
         Unit = {
           Description = "Export the live Kata ledger to owner-only JSONL";
-          Requires = [ "kata.service" ];
+          Wants = [ "kata.service" ];
           After = [ "kata.service" ];
         };
         Service = {
