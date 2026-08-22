@@ -4,12 +4,13 @@
 This specification builds one durable Linux Kata server, same-host and remote CLI clients, stable repository project bindings, scheduled off-host backups, and the built-in browser UI over a trusted private network.
 It is written as a portable handoff for a coding agent and can be implemented with Nix or translated into another managed configuration system.
 
-The tested baseline is Kata `v0.14.3`, commit `410ee88`.
+The current pinned package is Kata `v0.15.1`, commit `c31c2a8`; the audited live Linux deployment also runs that build.
+The original fresh-install qualification used Kata `v0.14.3`, commit `410ee88`, and remains historical evidence rather than a qualification of the current binary.
 In August 2026, coding agents used this document to set up a fresh server/client deployment successfully and independently reproduced the core server, client, authentication, lifecycle, and restore contract.
 A later production deployment used the reference Nix implementation for an in-place conversion and passed managed activation, restart, crash recovery, Home Manager reapplication, SSH-session independence, and off-host restore qualification.
-Those are separate claims: the specification has worked for a fresh setup, while the recorded production conversion was not itself a clean-room installation.
+That production record predates the v0.15.1 package bump and was not a clean-room installation; the current live checks recorded at the end of this document are separate evidence.
 
-Version-sensitive upstream references are the Kata [`v0.14.3` release](https://github.com/kenn-io/kata/releases/tag/v0.14.3), [remote-daemon guide](https://www.katatracker.com/operations/remote-daemon/), [configuration reference](https://www.katatracker.com/reference/configuration/), [agent workflow](https://www.katatracker.com/workflows/agents/), and [backup and restore guide](https://www.katatracker.com/operations/backup-restore/).
+Version-sensitive upstream references are the Kata [`v0.15.1` release](https://github.com/kenn-io/kata/releases/tag/v0.15.1), the historical [`v0.14.3` release](https://github.com/kenn-io/kata/releases/tag/v0.14.3), [remote-daemon guide](https://www.katatracker.com/operations/remote-daemon/), [configuration reference](https://www.katatracker.com/reference/configuration/), [agent workflow](https://www.katatracker.com/workflows/agents/), and [backup and restore guide](https://www.katatracker.com/operations/backup-restore/).
 
 ## Give this specification to a coding agent
 
@@ -92,8 +93,8 @@ Do not rely on `kata update` or an unpinned mutable download.
 
 | Platform | Release asset | SHA-256 |
 | --- | --- | --- |
-| Linux amd64 | `kata_0.14.3_linux_amd64.tar.gz` | `d569eeff70fb6fa9f67db3c51c43bb3a7adaaa0cd310274a4bd0a42ca2ff3ec0` |
-| macOS arm64 | `kata_0.14.3_darwin_arm64.tar.gz` | `6f7b775a86401c0c7ddd780523d515f40de87e4e00fb2ad52943fcad7582344c` |
+| Linux amd64 | `kata_0.15.1_linux_amd64.tar.gz` | `931c8cde1ceb05b0cfbed3689a4210f4ce8a5dc5c3f6496f56c89a6bcf260a61` |
+| macOS arm64 | `kata_0.15.1_darwin_arm64.tar.gz` | `f7486b1957fed00e97d6720162108f3f08f84c14347cdf2b29457a2b2810cff2` |
 
 Verify the archive before installing it.
 Other platforms are unqualified until they pass the complete acceptance suite.
@@ -104,7 +105,7 @@ Run this on every server and client:
 kata version --json
 ```
 
-The result must report `v0.14.3`, commit `410ee88`, and the expected operating system and architecture.
+The result must report `v0.15.1`, commit `c31c2a8`, and the expected operating system and architecture for the current deployment.
 
 ## Configure the server
 
@@ -321,7 +322,8 @@ Exercise a backup before calling it recoverable:
 6. Start the restored database on a unique loopback port, verify health and a known project, restart it, and repeat the checks.
 7. Stop the isolated daemon and move only disposable qualification state to trash.
 
-In `v0.14.3`, JSONL record classes use `.kind`, labels use `.data.label`, and restored logical labels are `count(distinct label)` from `issue_labels`.
+The original `v0.14.3` qualification used `.kind` JSONL record classes and `.data.label` label records, with restored logical labels counted as `count(distinct label)` from `issue_labels`.
+Those are historical implementation details; rerun the isolated restore checks against the installed binary before treating them as current `v0.15.1` behavior.
 Import creates a target database and is not an incremental merge.
 A live database replacement is a separate destructive recovery action that requires exact authorization while every daemon using the target is stopped.
 
@@ -348,8 +350,8 @@ Test installed artifacts and the active managed service.
 
 ### Structure and lifecycle
 
-1. Confirm `kata version --json` reports `v0.14.3`, commit `410ee88`, and the expected platform on every machine.
-2. Confirm `kata health --json` reports healthy status, database schema `25`, and API schema `0.10.0`.
+1. Confirm `kata version --json` reports `v0.15.1`, commit `c31c2a8`, and the expected platform on every machine.
+2. Confirm `kata health --json` reports healthy status, database schema `25`, and API schema `0.11.0`.
 3. Confirm the service is loaded, enabled, active, and owns the daemon PID and service cgroup.
 4. Confirm linger is enabled and the daemon is the only process listening on the exact private address and port.
 5. Confirm all state, configuration, token, and backup paths have their intended owner-only modes.
@@ -371,7 +373,8 @@ If it is not performed, report reboot durability as untested.
 5. Verify the named daemon works once with `--daemon <daemon-name>` and then through `active_daemon` without the flag.
 6. Configure a disposable unreachable remote and prove the client fails closed without local fallback.
 
-`kata health` is public in `v0.14.3` and cannot prove authentication rejection.
+The `/api/v1/health` endpoint is public in `v0.15.1` and cannot prove authentication rejection.
+The CLI may still require the configured daemon `token_env` before it contacts a named target, even for this public endpoint.
 Never print the real token while performing negative tests.
 
 ### Cross-client ledger behavior
@@ -415,24 +418,28 @@ The upstream [agent workflow](https://www.katatracker.com/workflows/agents/) con
 - The browser session is tab-scoped and in memory.
 - `KATA_SERVER` and `.kata.local.toml` override `active_daemon` and commonly explain routing surprises.
 - Token-bearing private HTTP requires `KATA_TRUST_PRIVATE_NETWORK=1` on the client as well as the server.
-- A plaintext DNS hostname needs an insecure override in `v0.14.3`; the accepted CLI baseline avoids that by using the literal private IP.
+- A plaintext DNS hostname needs an insecure override in `v0.15.1`; the accepted CLI baseline avoids that by using the literal private IP.
 - `allowed_hosts` can make the page visible while a wrong `public_origin` still breaks token exchange.
 - A raw database copy can omit WAL state; use online export and qualified restore.
 - Export must bypass workspace and named-daemon routing through an empty temporary `KATA_HOME` and explicit `KATA_DSN`.
 - Import is replacement into a fresh target, not merge, and must use an isolated `KATA_HOME` during qualification.
 - `umask 077` is required because import can otherwise create a mode-`0644` database.
 - A timer definition does not prove that a scheduled run or off-host recovery has succeeded.
+- A stale process holding the configured listener can make the managed unit restart repeatedly; inspect listener ownership and the service cgroup before accepting service health.
 - A foreground process, transient unit, or successful build does not prove enabled service, login independence, declarative reapplication, or reboot durability.
 
 Upgrading Kata, changing the authentication model, adding another human, exposing the service beyond the trusted private network, or replacing systemd requires a new design review and the complete acceptance suite.
 
 ## Evidence and remaining boundaries
 
-The fresh setup exercise used this specification on an empty server/client deployment and completed the pinned artifact, private listener, authentication, routing, cross-client ledger, browser-page, managed-service, and backup/restore checks.
+The fresh setup exercise used this specification on an empty server/client deployment with `v0.14.3` and completed the pinned artifact, private listener, authentication, routing, cross-client ledger, browser-page, managed-service, and backup/restore checks.
 Independent reruns exposed and then validated fixes for import umask, protected authentication negatives, JSONL label counting, browser content negotiation, routing-neutral host-local export, and SSH configuration isolation.
 
-The later production conversion used the repository's Nix implementation and qualified managed activation, explicit restart, forced-failure recovery, Home Manager reapplication, launching-session independence, an installed backup service, checksummed off-host storage, and isolated restored-daemon restart.
+The later production conversion, also before the v0.15.1 package bump, used the repository's Nix implementation and qualified managed activation, explicit restart, forced-failure recovery, Home Manager reapplication, launching-session independence, an installed backup service, checksummed off-host storage, and isolated restored-daemon restart.
 That production exercise was an in-place conversion, not the fresh-install test described above.
+
+A non-credential-bearing live check on 2026-08-22 found the current installed `v0.15.1` daemon healthy with database schema `25` and API schema `0.11.0`, and confirmed user linger, an enabled active managed service, an enabled active backup timer, a single listener, the expected service cgroup, and the secret-free `nixos-config` project binding.
+The same check observed historical failed starts caused by a competing process already holding the listener; the managed service eventually became the sole listener, but this does not establish a clean restart history.
 
 The production record did not establish host reboot, credential-bearing browser login, browser mutation, a naturally triggered timer run, automated pruning, or recurring restore execution.
 Do not infer those results from the declarative configuration.

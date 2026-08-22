@@ -236,6 +236,14 @@ GitHub's release API digest and the binary's version and code-signing metadata p
 Each retry created another local export, and a timestamped remote partial name leaked a new file whenever the destination ran out of space.
 Using `Wants=kata.service` lets an in-progress export finish independently, and one staging name per immutable backup bounds an interrupted transfer to one partial file.
 
+## 2026-08-22: Verify Listener Ownership Before Accepting a Managed Kata Service
+
+**Key Insight:** A healthy endpoint does not prove that the managed Kata unit has always owned its configured listener.
+
+During a non-destructive audit, systemd repeatedly restarted the managed unit because another Kata process already held the listener.
+After the competing process released it, the unit became healthy and the listener belonged to the service cgroup.
+Check the listener PID and cgroup, not only `systemctl is-active` or `kata health`, when qualifying a deployment or diagnosing restart loops.
+
 ---
 
 ## Entry Guidelines
