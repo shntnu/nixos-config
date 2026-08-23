@@ -225,24 +225,6 @@ in
              set -g @tmux_power_theme 'gold'
           '';
         }
-        {
-          plugin = resurrect; # Used by tmux-continuum
-
-          # Use XDG data directory
-          # https://github.com/tmux-plugins/tmux-resurrect/issues/348
-          extraConfig = ''
-            set -g @resurrect-dir '$HOME/.cache/tmux/resurrect'
-            set -g @resurrect-capture-pane-contents 'on'
-            set -g @resurrect-pane-contents-area 'visible'
-          '';
-        }
-        {
-          plugin = continuum;
-          extraConfig = ''
-            set -g @continuum-restore 'on'
-            set -g @continuum-save-interval '5' # minutes
-          '';
-        }
       ];
       terminal = "screen-256color";
       prefix = "C-x";

@@ -244,6 +244,27 @@ During a non-destructive audit, systemd repeatedly restarted the managed unit be
 After the competing process released it, the unit became healthy and the listener belonged to the service cgroup.
 Check the listener PID and cgroup, not only `systemctl is-active` or `kata health`, when qualifying a deployment or diagnosing restart loops.
 
+## 2026-08-23: tmux Session Restore Replays a Snapshot That Can Never Update
+
+**Key Insight:** tmux-continuum restores on every server start but can only save while a client is attached, so a server whose sessions are never attached replays one frozen snapshot forever.
+
+Caladan kept reopening shells in the admin and career folders long after the work in them had ended.
+The sessions came from a Remote Control experiment: a launchd agent (May 2026) and later the `launch-remote-control` skill started `claude --remote-control` inside tmux sessions named `rc-<slug>`.
+The agent was dropped on 2026-07-02 precisely because it "produced ghost sessions via tmux-resurrect", yet twelve days later a new `tmux-server` login agent reintroduced restore and its commit treated the returning sessions as a benefit.
+
+Two mechanics made it permanent.
+First, `@continuum-restore 'on'` fires whenever a fresh server starts, so simply typing `tmux` replays the file, and resurrect records only a pane's directory and command name, never the `claude` process that was running, which is why every restored pane was a bare shell.
+Second, continuum's save hook lives in `status-right`, which redraws only for an attached client, so the detached ghosts could never write a newer save and `last` stayed pinned to a snapshot from six days earlier.
+
+The login agent was not even the trigger: `launchctl print` showed `runs = 1` and `last exit reason = OS_REASON_CODESIGNING` with empty logs, so it had never once succeeded.
+Diagnose the plugin that reacts to server startup, not the unit that appears to start it.
+Both plugins were removed repo-wide and the agent deleted; the deliberate trade is that servers no longer restore sessions after a reboot, which was preferred over surprise resumption.
+
+```bash
+launchctl print gui/$(id -u)/org.nixos.<agent>   # "runs" and "last exit reason" reveal a unit that never worked
+tmux show-options -g | grep -E 'continuum|resurrect'
+```
+
 ---
 
 ## Entry Guidelines
