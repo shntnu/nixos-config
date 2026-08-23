@@ -189,4 +189,4 @@ Do not use `skills update -p` or `experimental_install`; in 1.5.20 the latter re
 Prose in this repository follows [`WRITING.md`](./WRITING.md).
 It is a vendored copy of the `plain-writing` skill body, committed so that this file can import it and the rules are always in context rather than waiting for the skill to trigger.
 The installed skill at `.agents/skills/plain-writing/` is gitignored, so it cannot be imported from a fresh clone; the vendored copy exists for that reason and still carries its MIT notice and source hash.
-Keep the two in step: after replaying the install command above, copy the new skill body back into `WRITING.md` below its provenance header.
+Keep the two in step: after replaying the install command above, copy the new skill body back into `WRITING.md`, above the provenance footer.

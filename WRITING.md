@@ -1,22 +1,3 @@
-# Writing constitution
-
-Prose in this repository follows the rules below. The rules load automatically
-because `AGENTS.md` imports this file and `CLAUDE.md` is a symlink to
-`AGENTS.md`, so they apply without anyone invoking a skill.
-
-The content is a verbatim copy of the `plain-writing` skill, vendored here so it
-is committed and always in context. The installer-tracked twin lives at
-`.agents/skills/plain-writing/SKILL.md`, which is gitignored and therefore
-cannot be imported from a fresh clone. When the skill is updated, replay the
-install command in `AGENTS.md` and copy the new body back into this file.
-
-Source: https://github.com/docwriter-org/plain-writing-skill (`skills/plain-writing/SKILL.md`)
-License: MIT
-Content hash at copy time: `5b43fb0d6c83defe1950469dfa57e75f90eb03fc72249a3bcb2b91067476214a`
-Copied: 2026-08-23
-
----
-
 # Plain writing
 
 The plain writing skill captures how the user wants writing to read: plain,
@@ -279,3 +260,10 @@ the reader needs (standardize on existing well-known terminology, not new
 terminology), and define unfamiliar terms.
 
 Follow the plain-writing rules above.
+
+---
+
+Copied from the `plain-writing` skill at
+https://github.com/docwriter-org/plain-writing-skill (`skills/plain-writing/SKILL.md`), MIT licensed.
+Content hash at copy time: `5b43fb0d6c83defe1950469dfa57e75f90eb03fc72249a3bcb2b91067476214a`.
+Copied 2026-08-23.
