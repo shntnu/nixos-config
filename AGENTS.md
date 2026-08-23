@@ -176,3 +176,10 @@ npx skills@1.5.20 add docwriter-org/plain-writing-skill \
 The `skills` version is pinned because install and link behavior changes between releases.
 Upgrade only after testing install, reinstall, and link behavior in an isolated repository.
 Do not use `skills update -p` or `experimental_install`; in 1.5.20 the latter restores every entry under `.agents/skills` only, which loses the Claude Code links.
+
+## Writing
+
+Prose in this repository follows [`WRITING.md`](./WRITING.md).
+It is a vendored copy of the `plain-writing` skill body, committed so that `CLAUDE.md` can import it and the rules are always in context rather than waiting for the skill to trigger.
+The installed skill at `.agents/skills/plain-writing/` is gitignored, so it cannot be imported from a fresh clone; the vendored copy exists for that reason and still carries its MIT notice and source hash.
+Keep the two in step: after replaying the install command above, copy the new skill body back into `WRITING.md` below its provenance header.
