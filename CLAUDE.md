@@ -1,3 +1,1 @@
-# Claude
-
-@CONSTITUTION.md @AGENTS.md @WRITING.md
+AGENTS.md

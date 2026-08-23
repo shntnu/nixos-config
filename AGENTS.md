@@ -1,6 +1,13 @@
 # AGENTS.md
 
 This file provides guidance to coding agents when working with code in this repository.
+`CLAUDE.md` is a symlink to this file, so both agents read the same guidance.
+
+Read and follow `CONSTITUTION.md` for baseline operating principles and `WRITING.md` for prose style.
+Direct user instructions and the more specific guidance in this file override both.
+
+@CONSTITUTION.md
+@WRITING.md
 
 ## Repository Context
 
@@ -180,6 +187,6 @@ Do not use `skills update -p` or `experimental_install`; in 1.5.20 the latter re
 ## Writing
 
 Prose in this repository follows [`WRITING.md`](./WRITING.md).
-It is a vendored copy of the `plain-writing` skill body, committed so that `CLAUDE.md` can import it and the rules are always in context rather than waiting for the skill to trigger.
+It is a vendored copy of the `plain-writing` skill body, committed so that this file can import it and the rules are always in context rather than waiting for the skill to trigger.
 The installed skill at `.agents/skills/plain-writing/` is gitignored, so it cannot be imported from a fresh clone; the vendored copy exists for that reason and still carries its MIT notice and source hash.
 Keep the two in step: after replaying the install command above, copy the new skill body back into `WRITING.md` below its provenance header.

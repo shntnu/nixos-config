@@ -1,8 +1,8 @@
 # Writing constitution
 
 Prose in this repository follows the rules below. The rules load automatically
-because `CLAUDE.md` imports this file, so they apply without anyone invoking a
-skill.
+because `AGENTS.md` imports this file and `CLAUDE.md` is a symlink to
+`AGENTS.md`, so they apply without anyone invoking a skill.
 
 The content is a verbatim copy of the `plain-writing` skill, vendored here so it
 is committed and always in context. The installer-tracked twin lives at
