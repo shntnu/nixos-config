@@ -153,3 +153,26 @@ When working a kata-tracked issue, keep its `work.*` metadata truthful
 - Coordinators read `work.*` on issues they delegated; only the working agent
   writes them. `work.*` on closed issues is meaningless.
 <!-- END KATA -->
+
+## Third-party skills
+
+Third-party skills are installed per project, never globally.
+The canonical policy is `~/.local/share/chezmoi/AGENTS.md`; the procedures are `~/.agents/docs/skills.md`.
+
+`skills-lock.json` is tracked as an inventory and drift record.
+The installer owns `.agents/skills/<name>/` and the matching `.claude/skills/<name>` link, so both are ignored rather than committed.
+`skills-lock.json` records a content hash but does not pin an upstream revision, so it is not a reproducible lock.
+
+To restore the skills in a fresh clone, replay the exact install command:
+
+```bash
+npx skills@1.5.20 add docwriter-org/plain-writing-skill \
+  -s plain-writing \
+  -a claude-code \
+  -a codex \
+  -y
+```
+
+The `skills` version is pinned because install and link behavior changes between releases.
+Upgrade only after testing install, reinstall, and link behavior in an isolated repository.
+Do not use `skills update -p` or `experimental_install`; in 1.5.20 the latter restores every entry under `.agents/skills` only, which loses the Claude Code links.

@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "plain-writing": {
+      "source": "docwriter-org/plain-writing-skill",
+      "sourceType": "github",
+      "skillPath": "skills/plain-writing/SKILL.md",
+      "computedHash": "5b43fb0d6c83defe1950469dfa57e75f90eb03fc72249a3bcb2b91067476214a"
+    }
+  }
+}

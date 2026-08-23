@@ -8,3 +8,7 @@ scratch/
 .remember/
 .direnv/
 .kata.local.toml
+
+# Third-party skills installed by `npx skills` (see AGENTS.md).
+# The installer owns these directories; skills-lock.json is the tracked inventory.
+.agents/skills/plain-writing/
