@@ -137,6 +137,60 @@ let
     '';
   };
 
+  # Off-site (cloud) backup freshness. Generic: reads a last-success date out
+  # of whatever plist the configured agent maintains, so the module carries no
+  # account identity. Test overrides:
+  #   OFFSITE_CHECK_PLIST        alternate plist path
+  #   OFFSITE_CHECK_MAX_AGE_SEC  alternate staleness threshold in seconds
+  offsiteFreshness = pkgs.writeShellApplication {
+    name = "offsite-freshness";
+    runtimeInputs = [ pkgs.coreutils ];
+    text = ''
+      set -euo pipefail
+
+      log_file="$HOME/Library/Logs/offsite-freshness.log"
+      mkdir -p "$(dirname "$log_file")"
+
+      log() {
+        printf '%s %s\n' "$(date '+%Y-%m-%dT%H:%M:%S%z')" "$1" >> "$log_file"
+      }
+
+      notify() {
+        log "ALERT $1"
+        /usr/bin/osascript -e "display notification \"$1\" with title \"Off-site Backup Check\"" \
+          || log "osascript notification failed"
+      }
+
+      plist="''${OFFSITE_CHECK_PLIST:-${toString cfg.offsite.successPlist}}"
+      max_age_sec="''${OFFSITE_CHECK_MAX_AGE_SEC:-${toString (cfg.offsite.maxAgeHours * 3600)}}"
+
+      if [ ! -f "$plist" ]; then
+        notify "Off-site backup state file is missing: $plist"
+        exit 0
+      fi
+
+      raw="$(/usr/bin/plutil -extract '${cfg.offsite.successKey}' raw -o - "$plist" 2>/dev/null || true)"
+      if [ -z "$raw" ]; then
+        notify "Off-site backup has no recorded success in $plist"
+        exit 0
+      fi
+
+      epoch="$(date -d "$raw" +%s 2>/dev/null || echo 0)"
+      if [ "$epoch" -eq 0 ]; then
+        notify "Cannot parse off-site backup success time: $raw"
+        exit 0
+      fi
+
+      age_sec="$(( $(date +%s) - epoch ))"
+      age_hours="$(( age_sec / 3600 ))"
+      if [ "$age_sec" -gt "$max_age_sec" ]; then
+        notify "Last successful off-site backup is ''${age_hours}h old"
+      else
+        log "last off-site success ''${age_hours}h ago (fresh)"
+      fi
+    '';
+  };
+
   wrapped = script: name: [
     "/bin/sh"
     "-c"
@@ -189,6 +243,30 @@ in
         description = "Alert when the latest completed backup is older than this many hours.";
       };
     };
+
+    offsite = {
+      successPlist = lib.mkOption {
+        type = lib.types.nullOr lib.types.str;
+        default = null;
+        description = ''
+          Path to a plist whose successKey date records the last successful
+          off-site (cloud) backup. Null disables the check. The value usually
+          names an account, so set it from the private repo.
+        '';
+      };
+
+      successKey = lib.mkOption {
+        type = lib.types.str;
+        default = "BackupSuccessTime";
+        description = "PlistBuddy key holding the last-success date.";
+      };
+
+      maxAgeHours = lib.mkOption {
+        type = lib.types.ints.positive;
+        default = 30;
+        description = "Alert when the last off-site backup success is older than this many hours.";
+      };
+    };
   };
 
   config = lib.mkIf cfg.enable {
@@ -219,6 +297,21 @@ in
       ];
       StandardErrorPath = "/tmp/tm-freshness.err.log";
       StandardOutPath = "/tmp/tm-freshness.out.log";
+    };
+
+    launchd.user.agents.offsite-freshness = lib.mkIf (cfg.offsite.successPlist != null) {
+      serviceConfig = {
+        ProgramArguments = wrapped offsiteFreshness "offsite-freshness";
+        EnvironmentVariables.HOME = "/Users/${user}";
+        StartCalendarInterval = [
+          {
+            Hour = 9;
+            Minute = 10;
+          }
+        ];
+        StandardErrorPath = "/tmp/offsite-freshness.err.log";
+        StandardOutPath = "/tmp/offsite-freshness.out.log";
+      };
     };
   };
 }
