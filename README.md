@@ -142,4 +142,3 @@ nix shell nixpkgs#<pkg>   # Try a package without installing
 - [Shared repository memory with Hindsight](./docs/hindsight.md) - public setup specification for Claude Code, Codex, and Pi over REST, with no Hindsight MCP
 - [Text a local Codex agent through Telegram](./docs/codex-telegram.md) - tested single-user gateway specification using outbound long polling
 - [Share one Kata work ledger across coding agents and private machines](./docs/kata.md) - tested single-user remote-ledger specification with named-daemon and per-workspace client patterns
-- [Run a persistent Headlong agent in a pinned Docker container](./docs/headlong.md) - portable setup and lifecycle specification for a localhost-only autonomous agent
