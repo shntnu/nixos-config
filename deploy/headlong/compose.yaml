@@ -1,0 +1,50 @@
+name: "${HEADLONG_PROJECT_NAME:-headlong}"
+
+services:
+  headlong:
+    build:
+      context: .
+      args:
+        HEADLONG_REV: 87d4e7916b4b2fbb2cf1601fd8cfd20b32191ddc
+        HEADLONG_SHA256: d254d1662f6ee139dc85134827a80ec5a3b4ad05c7bd0e478455cc70d6b0017a
+        UV_VERSION: 0.12.5
+        UV_AARCH64_SHA256: 9bf43b4d1a07665bf64d4c4e710930b382321a785e0eb10aac07f46471f86a31
+        UV_X86_64_SHA256: 68a509da24b06b4223a1c0175fb5eb5bc79342b76cbeff0cfe51ac3f5b17b6b2
+    image: "${HEADLONG_IMAGE:-headlong-local:87d4e7916b4}"
+    container_name: "${HEADLONG_CONTAINER_NAME:-headlong}"
+    init: true
+    restart: unless-stopped
+    stop_grace_period: 30s
+    environment:
+      HEADLONG_KEY_ENV: "${HEADLONG_KEY_ENV:?set HEADLONG_KEY_ENV}"
+      LLM_API_URL: "${HEADLONG_LLM_API_URL:?set HEADLONG_LLM_API_URL}"
+      SHELLM_API_URL: "${HEADLONG_SHELLM_API_URL:?set HEADLONG_SHELLM_API_URL}"
+      SHELLM_MODEL: "${HEADLONG_MODEL:?set HEADLONG_MODEL}"
+    ports:
+      - name: dashboard
+        target: 8080
+        published: "${HEADLONG_HOST_PORT:-8080}"
+        host_ip: "127.0.0.1"
+        protocol: tcp
+    volumes:
+      - type: volume
+        source: state
+        target: /root/.headlong
+    secrets:
+      - llm_api_key
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://127.0.0.1:8080/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    security_opt:
+      - no-new-privileges:true
+
+secrets:
+  llm_api_key:
+    file: "${HEADLONG_SECRET_FILE:?set HEADLONG_SECRET_FILE}"
+
+volumes:
+  state:
+    name: "${HEADLONG_VOLUME_NAME:-headlong-data}"

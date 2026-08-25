@@ -255,11 +255,11 @@
     },
     "private": {
       "locked": {
-        "lastModified": 1787625034,
-        "narHash": "sha256-q7yYBA6EPFkLMawqjDd+VCo+7o6n2bLi3ZmmANwO2XM=",
+        "lastModified": 1787625146,
+        "narHash": "sha256-zfXVhHLmkl8aoSbqMWL/cocqxj2X/HSxQtjW4XRlNtw=",
         "ref": "refs/heads/main",
-        "rev": "e71e1df22d0cc4c7d708a045c60c8ca38345a431",
-        "revCount": 65,
+        "rev": "3d397d109d0447894bbfb6a46598495556033d10",
+        "revCount": 66,
         "type": "git",
         "url": "ssh://git@github.com/shntnu/nixos-config-private"
       },
