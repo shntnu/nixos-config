@@ -33,8 +33,8 @@ for required in SHELLM_MODEL LLM_API_URL SHELLM_API_URL; do
 done
 
 umask 077
-mkdir -p "$state_home" "$state_home/identities" "$state_home/logs" "$state_home/run"
-chmod 700 "$state_home" "$state_home/identities"
+mkdir -p "$state_home" "$state_home/.identities" "$state_home/logs" "$state_home/run"
+chmod 700 "$state_home" "$state_home/.identities"
 
 env_tmp="$(mktemp "$state_home/.env.XXXXXX")"
 trap 'find "$env_tmp" -maxdepth 0 -delete 2>/dev/null || true' EXIT

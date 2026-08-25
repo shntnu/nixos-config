@@ -6,7 +6,7 @@ The container in this specification confines those commands to Docker and expose
 
 The tested source is Headlong commit [`87d4e7916b4b2fbb2cf1601fd8cfd20b32191ddc`](https://github.com/laude-institute/headlong/tree/87d4e7916b4b2fbb2cf1601fd8cfd20b32191ddc) from August 24, 2026.
 Headlong had no release or tag at qualification time, so the full commit and the source archive SHA-256 are part of the deployment contract.
-The repository includes the [Compose definition](../deploy/headlong/compose.yaml), [image build](../deploy/headlong/Dockerfile), [container entry point](../deploy/headlong/entrypoint.sh), and [identity lifecycle helper](../deploy/headlong/lifecycle.sh) used by this specification.
+The repository includes the [Compose definition](../deploy/headlong/compose.yaml), [image build](../deploy/headlong/Dockerfile), [container entry point](../deploy/headlong/entrypoint.sh), [identity lifecycle helper](../deploy/headlong/lifecycle.sh), and [dashboard wrapper](../deploy/headlong/web-wrapper.sh) used by this specification.
 
 ## Give this specification to a coding agent
 
@@ -124,7 +124,9 @@ The following parts remain mutable:
 - Identity memory, trajectory, thinker state, logs, generated environment, and dashboard files live in the named volume.
 
 The image stores Headlong at `/opt/headlong`.
-The entry point maps `/opt/headlong/.identities` to `/root/.headlong/identities` in the volume and records `/opt/headlong` as the active application directory.
+The entry point maps `/opt/headlong/.identities` to `/root/.headlong/.identities` in the volume and records `/opt/headlong` as the active application directory.
+The container's `headlong-web` wrapper makes the dashboard scan `/root/.headlong`, where `.identities` is a real directory rather than a symlink.
+Upstream dashboard discovery skips symlinked directories, so serving `/opt/headlong` would return HTTP 200 while showing no identities.
 On restart, it starts both the monolith and responder because the pinned upstream `persona start` command starts only the monolith.
 The source is absent from the mutable volume, which prevents an installer update from silently changing the deployed revision.
 
@@ -288,13 +290,20 @@ Confirm that `bash`, `curl`, `git`, `jq`, `node`, `npm`, `uv`, and the Headlong 
 
 ### Dashboard and direct model health
 
-The dashboard must return HTTP 200 through loopback:
+The dashboard must return HTTP 200 through loopback and must discover the selected identity:
 
 ```bash
 curl --fail --silent --show-error --output /dev/null \
   --write-out 'dashboard_status=%{http_code}\n' \
   http://127.0.0.1:<host-port>/
+curl --fail --silent --show-error \
+  http://127.0.0.1:<host-port>/api/identities \
+  | jq --exit-status --arg name <identity-name> \
+    'any(.[]; .name == $name)' >/dev/null
 ```
+
+The first request proves that the web process is reachable.
+The second request proves that it scans the persistent identity root.
 
 Run one minimal direct request inside the container without printing the key:
 
@@ -314,7 +323,7 @@ Read the active dispatcher environment by name and redact the key value:
 ```bash
 docker exec <container-name> bash -lc '
   identity_name=<identity-name>
-  pid=$(cat "/root/.headlong/identities/$identity_name/run/dispatcher.pid")
+  pid=$(cat "/root/.headlong/.identities/$identity_name/run/dispatcher.pid")
   for name in SHELLM_MODEL LLM_API_URL SHELLM_API_URL <key-variable>; do
     value=$(tr "\0" "\n" < "/proc/$pid/environ" | sed -n "s/^$name=//p")
     if [[ "$name" == "<key-variable>" ]]; then
@@ -337,7 +346,7 @@ Wait for a durable step from that wake instead of accepting a live dispatcher as
 ```bash
 docker exec <container-name> bash -lc '
   identity_name=<identity-name>
-  trajectory=$(find "/root/.headlong/identities/$identity_name/trajectories" \
+  trajectory=$(find "/root/.headlong/.identities/$identity_name/trajectories" \
     -path "*-root/trajectory.jsonl" -type f -print -quit)
   for attempt in $(seq 1 60); do
     if tail -n 40 "$trajectory" | jq -e \
@@ -472,7 +481,7 @@ If state changed incompatibly, restore the pre-upgrade backup instead of attachi
 
 The original imperative Docker deployment may retain a checkout and identity under `/root/.headlong/app` during migration.
 Keep that tree until the declarative deployment and an isolated restore pass.
-Its presence is a rollback copy, while `/root/.headlong/identities` is the active declarative identity root.
+Its presence is a rollback copy, while `/root/.headlong/.identities` is the active declarative identity root.
 
 ## Uninstall
 
@@ -507,8 +516,8 @@ Read the durable trajectory and sanitized thinker logs when `persona status` sho
 The pinned upstream `persona start` command starts the monolith but not the responder.
 The container entry point starts the responder separately, and the responder acceptance check detects any regression in that restart path.
 
-A dashboard HTTP 200 does not prove model access or responder behavior.
-Run the direct model, monolith, and responder checks separately.
+A dashboard HTTP 200 does not prove identity discovery, model access, or responder behavior.
+Require a nonempty identity result from `/api/identities`, and run the direct model, monolith, and responder checks separately.
 
 A recreated container can start with no identity when it uses the wrong or empty volume.
 Stop it before initialization, inspect the resolved volume name, and attach the intended state instead of creating a second identity.
@@ -531,7 +540,7 @@ Record and retain the accepted image digest if identical deployment bytes are re
 The deployment uses one root user inside the container.
 The container boundary, lack of host mounts, lack of Docker socket, and loopback port reduce host exposure, but they do not make arbitrary model-generated shell commands safe.
 
-The Compose health check covers the dashboard only.
+The Compose health check covers the dashboard and requires at least one discovered identity.
 Provider authentication, monolith progress, and responder behavior require the operational checks in this document.
 
 The state volume holds its own provider-key copy because upstream Headlong loads a shell environment file.
@@ -558,7 +567,12 @@ Direct model health, both configured endpoint paths, key presence without disclo
 All disposable qualification containers, volumes, networks, images, and listeners were removed.
 Temporary qualification directories and the disposable pre-migration archive were moved to Trash.
 The forbidden macOS host paths remained absent.
-The production volume retains the original imperative application tree as a rollback copy, while the declarative identity tree is active.
+The production volume retains the original imperative application and identity trees under an ignored legacy directory, while the declarative identity tree is active.
+
+A live browser check after the first acceptance run found that HTTP health still passed when the dashboard discovered zero identities.
+The corrective run moved the dashboard scan root from `/opt/headlong` to `/root/.headlong`, moved active state to the real `/root/.headlong/.identities` directory, and changed Compose health to require a nonempty `/api/identities` response.
+The corrected production image ID was `sha256:c9a0d1dda78f7522a718f865729bb261a093f741adb36a7b69994f128bedc228`.
+An isolated synthetic identity test passed, and the production API then returned exactly one discovered identity with the container healthy.
 
 The unresolved limits are the alpha upstream source, the beta and low-traffic status of the tested Tinker-compatible interface, changing Debian package repositories, root execution inside the container, and the absence of a specification-wide backup retention destination.
 A deployment owner must still select a canonical off-host backup root and retention policy.

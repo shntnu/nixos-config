@@ -33,7 +33,11 @@ services:
     secrets:
       - llm_api_key
     healthcheck:
-      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://127.0.0.1:8080/"]
+      test:
+        - CMD-SHELL
+        - >-
+          curl --fail --silent --show-error http://127.0.0.1:8080/api/identities
+          | jq --exit-status 'length > 0' >/dev/null
       interval: 30s
       timeout: 5s
       retries: 3

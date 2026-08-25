@@ -41,10 +41,12 @@ RUN curl -fsSL -o /tmp/headlong.tar.gz \
     && printf '%s\n' "$HEADLONG_REV" > /opt/headlong/.headlong-revision \
     && find /tmp -mindepth 1 -delete \
     && bash /opt/headlong/install.sh --symlinks --prefix /usr/local/bin \
-    && ln -s /root/.headlong/identities /opt/headlong/.identities
+    && ln -s /root/.headlong/.identities /opt/headlong/.identities \
+    && mv /opt/headlong/tools/headlong-web /opt/headlong/tools/headlong-web-upstream
 
 COPY entrypoint.sh /usr/local/bin/headlong-container-entrypoint
 COPY lifecycle.sh /usr/local/bin/headlong-identity
+COPY web-wrapper.sh /opt/headlong/tools/headlong-web
 
 EXPOSE 8080
 VOLUME ["/root/.headlong"]
