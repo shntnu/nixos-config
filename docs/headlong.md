@@ -9,10 +9,10 @@ The image also contains a local dashboard path fix, so this note is a record of 
 
 ## Tinker configuration
 
-The installation uses [Tinker's API that is compatible with the OpenAI API](https://tinker-docs.thinkingmachines.ai/tinker/compatible-apis/openai/) and the `openai/gpt-oss-20b` model.
+The installation uses [Tinker's API that is compatible with the OpenAI API](https://tinker-docs.thinkingmachines.ai/tinker/compatible-apis/openai/) and [Inkling](https://tinker-docs.thinkingmachines.ai/cookbook/inkling/), Thinking Machines Lab's model for Tinker.
 
 ```dotenv
-SHELLM_MODEL=openai/gpt-oss-20b
+SHELLM_MODEL=thinkingmachines/Inkling
 LLM_API_URL=https://tinker.thinkingmachines.dev/services/tinker-prod/oai/api/v1/chat/completions
 SHELLM_API_URL=https://tinker.thinkingmachines.dev/services/tinker-prod/oai/api/v1/chat/completions
 OPENROUTER_API_KEY=<Tinker API key>
