@@ -55,9 +55,17 @@ in
 
         # Kata client credentials for the shared spirit daemon; the file is
         # provisioned outside Nix and absent on machines without access.
-        if [[ -f "$HOME/.config/kata/spirit.env" ]]; then
-          set -a; source "$HOME/.config/kata/spirit.env"; set +a
-        fi
+        # Scoped to this function's subshell so ordinary child processes of
+        # the interactive shell (and unrelated commands typed at the prompt)
+        # never inherit KATA_AUTH_TOKEN.
+        kata() {
+          local env_file="$HOME/.config/kata/spirit.env"
+          if [[ -f "$env_file" ]]; then
+            ( set -a; source "$env_file"; set +a; command kata "$@" )
+          else
+            command kata "$@"
+          fi
+        }
 
         # nix shortcuts
         shell() {
