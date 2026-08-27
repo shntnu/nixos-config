@@ -87,6 +87,7 @@ with pkgs; [
 
   # Theorem proving
   elan # Lean 4 toolchain manager (provides lean, lake)
+  lean-lsp-mcp
 
   # Python packages
   python3
