@@ -25,6 +25,7 @@ let
     name = "disk-guard";
     runtimeInputs = [
       pkgs.coreutils
+      pkgs.curl
       pkgs.gawk
       pkgs.uv
       config.nix.package
@@ -45,6 +46,15 @@ let
       if [ "''${DISK_GUARD_REMOTE_NOTIFY+x}" = x ]; then
         remote_notifier="$DISK_GUARD_REMOTE_NOTIFY"
       fi
+
+      heartbeat_url_file=${
+        lib.escapeShellArg (if cfg.heartbeatDir == null then "" else "${cfg.heartbeatDir}/disk-guard.url")
+      }
+      ping_heartbeat() {
+        if [ -n "$heartbeat_url_file" ] && [ -r "$heartbeat_url_file" ]; then
+          curl -fsS --retry 3 --max-time 10 "$(cat "$heartbeat_url_file")" >/dev/null 2>&1 || true
+        fi
+      }
 
       persistence_warning_emitted=false
       warn_persistence() {
@@ -342,6 +352,9 @@ APPLESCRIPT
       fi
 
       log "category=$category previous=''${previous_category:-none}"
+      if [ "$category" = healthy ]; then
+        ping_heartbeat
+      fi
 
       # Cleanup uses its own six-hour stamp instead of the alert state.
       cleanup_throttle_ok() {
@@ -864,7 +877,7 @@ APPLESCRIPT
   #   OFFSITE_CHECK_COVERAGE     coverage executable; nonzero means incomplete
   offsiteFreshness = pkgs.writeShellApplication {
     name = "offsite-freshness";
-    runtimeInputs = [ pkgs.coreutils ];
+    runtimeInputs = [ pkgs.coreutils pkgs.curl ];
     text = ''
             set -euo pipefail
             umask 077
@@ -887,6 +900,15 @@ APPLESCRIPT
             if [ "''${OFFSITE_CHECK_COVERAGE+x}" = x ]; then
               coverage_checker="$OFFSITE_CHECK_COVERAGE"
             fi
+
+            heartbeat_url_file=${
+              lib.escapeShellArg (if cfg.heartbeatDir == null then "" else "${cfg.heartbeatDir}/offsite-freshness.url")
+            }
+            ping_heartbeat() {
+              if [ -n "$heartbeat_url_file" ] && [ -r "$heartbeat_url_file" ]; then
+                curl -fsS --retry 3 --max-time 10 "$(cat "$heartbeat_url_file")" >/dev/null 2>&1 || true
+              fi
+            }
 
             persistence_warning_emitted=false
             warn_persistence() {
@@ -1167,6 +1189,7 @@ APPLESCRIPT
 
             if [ "$category" = healthy ]; then
               log "category=healthy age_hours=$age_hours"
+              ping_heartbeat
             else
               log "category=$category previous=''${previous_category:-none}"
             fi
