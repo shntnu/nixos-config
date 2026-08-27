@@ -440,7 +440,7 @@ APPLESCRIPT
   #                         remote notification executable, message on stdin
   tmFreshness = pkgs.writeShellApplication {
     name = "tm-freshness";
-    runtimeInputs = [ pkgs.coreutils ];
+    runtimeInputs = [ pkgs.coreutils pkgs.curl ];
     text = ''
             set -euo pipefail
             umask 077
@@ -455,6 +455,15 @@ APPLESCRIPT
             if [ "''${TM_CHECK_REMOTE_NOTIFY+x}" = x ]; then
               remote_notifier="$TM_CHECK_REMOTE_NOTIFY"
             fi
+
+            heartbeat_url_file=${
+              lib.escapeShellArg (if cfg.heartbeatDir == null then "" else "${cfg.heartbeatDir}/tm-freshness.url")
+            }
+            ping_heartbeat() {
+              if [ -n "$heartbeat_url_file" ] && [ -r "$heartbeat_url_file" ]; then
+                curl -fsS --retry 3 --max-time 10 "$(cat "$heartbeat_url_file")" >/dev/null 2>&1 || true
+              fi
+            }
 
             persistence_warning_emitted=false
             warn_persistence() {
@@ -825,6 +834,7 @@ APPLESCRIPT
 
             if [ "$category" = healthy ]; then
               log "category=healthy age_hours=$age_hours reachable=true"
+              ping_heartbeat
             else
               log "category=$category previous=''${previous_category:-none}"
             fi
@@ -1181,6 +1191,20 @@ in
         backup guardrail passes one fixed alert line on standard input. A
         failed send leaves a small pending token so the next run retries the
         remote delivery without repeating the local macOS notification.
+      '';
+    };
+
+    heartbeatDir = lib.mkOption {
+      type = lib.types.nullOr lib.types.str;
+      default = null;
+      description = ''
+        Optional absolute path to a directory of per-job dead-man's-switch
+        ping URLs (e.g. Healthchecks.io), one owner-only file per job named
+        "<job>.url" - never in Nix or Git, since the URL itself is a
+        capability token. A guardrail pings its own file's URL only from the
+        same code path that already decided its outcome is healthy, and
+        silently does nothing if the file for its job is absent, so this is
+        safe to enable before every check-generating job has a file yet.
       '';
     };
 
