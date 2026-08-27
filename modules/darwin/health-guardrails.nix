@@ -8,6 +8,7 @@
 let
   cfg = config.services.healthGuardrails;
   user = config.system.primaryUser;
+  inherit (import ./stable-bin.nix { inherit lib; }) stableBin;
 
   kbPerGib = 1024 * 1024;
 
@@ -830,6 +831,15 @@ APPLESCRIPT
     '';
   };
 
+  # tm-freshness reads a system Time Machine preferences file that macOS gates
+  # by the calling binary's TCC identity. That identity is the resolved real
+  # path (Nix store paths and symlinks to them both change on every rebuild,
+  # which silently drops a Full Disk Access grant); see stable-bin.nix.
+  tmFreshnessStable = stableBin {
+    name = "tm-freshness";
+    package = tmFreshness;
+  };
+
   # Off-site (cloud) backup freshness. Generic: reads a last-success date out
   # of whatever plist the configured agent maintains, so the module carries no
   # account identity. Deterministic test overrides:
@@ -1279,8 +1289,14 @@ in
       StandardOutPath = "/Users/${user}/Library/Logs/disk-guard.launchd.out.log";
     };
 
+    system.activationScripts.postActivation.text = tmFreshnessStable.activationScript;
+
     launchd.user.agents.tm-freshness.serviceConfig = {
-      ProgramArguments = wrapped tmFreshness "tm-freshness";
+      ProgramArguments = [
+        "/bin/sh"
+        "-c"
+        "/bin/wait4path ${tmFreshnessStable.stablePath} && exec ${tmFreshnessStable.stablePath}"
+      ];
       EnvironmentVariables.HOME = "/Users/${user}";
       StartInterval = 3600;
       RunAtLoad = true;
