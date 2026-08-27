@@ -49,8 +49,13 @@ in
         "work/GitHub".source =
           config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/Documents/GitHub";
 
-        # Emacs bootstraps org-mode then tangles ~/.config/emacs/config.org
+        # Emacs bootstraps org-mode then tangles ~/.config/emacs/config.org.
+        # config.org was never wired here, so init.el's file-exists-p check
+        # always failed and every activation silently fell back to
+        # downloading and running a generic default config instead of this
+        # one - discovered while diagnosing kata admin#q7zt.
         ".emacs.d/init.el".source = ./emacs/init.el;
+        ".config/emacs/config.org".source = ./emacs/config.org;
 
         # ssh-terminfo auto-installs xterm-ghostty terminfo on remote hosts on
         # first SSH, so SSHing into caladan / oppy / spirit / etc. doesn't warn

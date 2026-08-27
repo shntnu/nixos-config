@@ -697,6 +697,7 @@ These are templates used to create new notes.
                :branch "main"
                :files (:defaults "extensions/*")
     :build (:not compile))
+    :demand t
     :init
       (setq org-roam-v2-ack t) ;; Turn off v2 warning
       (setq org-roam-mode-section-functions
