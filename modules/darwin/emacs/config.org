@@ -689,8 +689,13 @@ These are templates used to create new notes.
 
 **** Org Roam
 ***** Install package
+Disabled (:tangle no) since org-roam and emacsql are both pinned to
+:branch "main" and have drifted out of sync: org-roam-db.el still calls
+an emacsql-sqlite constructor upstream emacsql renamed away. Re-enable
+by removing :tangle no once both are pinned to a compatible commit
+pair (kata nixos-config#q7zt).
 #+NAME::org-roam-package
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no
   (require 'ucs-normalize)
   (use-package org-roam
     :straight (:host github :repo "org-roam/org-roam"
