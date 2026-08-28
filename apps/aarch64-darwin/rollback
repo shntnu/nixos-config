@@ -17,7 +17,7 @@ case "$LOCAL_HOSTNAME" in
 esac
 
 echo "${YELLOW}Available generations:${NC}"
-/run/current-system/sw/bin/darwin-rebuild --list-generations
+sudo /run/current-system/sw/bin/darwin-rebuild --list-generations
 
 echo "${YELLOW}Enter the generation number for rollback:${NC}"
 read GEN_NUM
@@ -28,6 +28,6 @@ if [ -z "$GEN_NUM" ]; then
 fi
 
 echo "${YELLOW}Rolling back to generation $GEN_NUM...${NC}"
-/run/current-system/sw/bin/darwin-rebuild switch --flake .#$FLAKE --switch-generation $GEN_NUM
+sudo /run/current-system/sw/bin/darwin-rebuild switch --flake ".#$FLAKE" --switch-generation "$GEN_NUM"
 
 echo "${GREEN}Rollback to generation $GEN_NUM complete!${NC}"
