@@ -8,9 +8,50 @@
 let
   cfg = config.services.healthGuardrails;
   user = config.system.primaryUser;
-  inherit (import ./stable-bin.nix { inherit lib; }) stableBin;
 
   kbPerGib = 1024 * 1024;
+
+  healthcheckPing = pkgs.writeShellApplication {
+    name = "healthcheck-ping";
+    runtimeInputs = [ pkgs.curl ];
+    text = ''
+      if [ "$#" -ne 1 ]; then
+        echo "usage: healthcheck-ping URL_FILE" >&2
+        exit 2
+      fi
+
+      url_file="$1"
+      if [ ! -f "$url_file" ] || [ ! -r "$url_file" ]; then
+        echo "healthcheck URL file is missing or unreadable" >&2
+        exit 1
+      fi
+
+      urls=()
+      if ! mapfile -t urls < "$url_file" || [ "''${#urls[@]}" -ne 1 ]; then
+        echo "healthcheck URL file must contain exactly one line" >&2
+        exit 1
+      fi
+
+      url="''${urls[0]}"
+      safe_url='^https://[A-Za-z0-9._~:/?#@!$&()*+,;=%-]+$'
+      if [[ ! "$url" =~ $safe_url ]]; then
+        echo "healthcheck URL must be a safe HTTPS URL" >&2
+        exit 1
+      fi
+
+      printf 'url = "%s"\n' "$url" \
+        | curl --config - \
+          --fail \
+          --silent \
+          --show-error \
+          --retry 3 \
+          --retry-all-errors \
+          --max-time 10 \
+          --proto '=https' \
+          --proto-redir '=https' \
+          --output /dev/null
+    '';
+  };
 
   # Deterministic tests can replace every external input:
   #   DISK_GUARD_FREE_KB       fake free space in KiB; skips real cleanup
@@ -25,10 +66,10 @@ let
     name = "disk-guard";
     runtimeInputs = [
       pkgs.coreutils
-      pkgs.curl
       pkgs.gawk
       pkgs.uv
       config.nix.package
+      healthcheckPing
     ];
     text = ''
       set -euo pipefail
@@ -47,17 +88,15 @@ let
         remote_notifier="$DISK_GUARD_REMOTE_NOTIFY"
       fi
 
+      run_failed=false
+
       heartbeat_url_file=${
         lib.escapeShellArg (if cfg.heartbeatDir == null then "" else "${cfg.heartbeatDir}/disk-guard.url")
-      }
-      ping_heartbeat() {
-        if [ -n "$heartbeat_url_file" ] && [ -r "$heartbeat_url_file" ]; then
-          curl -fsS --retry 3 --max-time 10 "$(cat "$heartbeat_url_file")" >/dev/null 2>&1 || true
-        fi
       }
 
       persistence_warning_emitted=false
       warn_persistence() {
+        run_failed=true
         if [ "$persistence_warning_emitted" = false ]; then
           printf '%s\n' \
             "Disk Guard persistence unavailable; notifications will continue without durable suppression" \
@@ -242,6 +281,7 @@ APPLESCRIPT
 
       if [ "$measurement_ok" = false ]; then
         category=check-failed
+        run_failed=true
         alert_message="Disk space check failed: free space on caladan could not be measured. Check the disk and Disk Guard."
         log "free-space measurement failed"
       elif [ "$free_kb" -lt "${toString (cfg.disk.urgentFreeGb * kbPerGib)}" ]; then
@@ -264,9 +304,9 @@ APPLESCRIPT
       previous_pending=none
       if [ -f "$state_file" ]; then
         if ! {
-          IFS= read -r previous_category || previous_category=""
-          IFS= read -r previous_alert || previous_alert=0
-          IFS= read -r previous_pending || previous_pending=none
+          IFS= read -r previous_category
+          IFS= read -r previous_alert
+          IFS= read -r previous_pending
         } < "$state_file" 2>/dev/null; then
           previous_category=""
           previous_alert=0
@@ -279,17 +319,25 @@ APPLESCRIPT
             previous_category=""
             previous_alert=0
             previous_pending=none
+            warn_persistence
             ;;
         esac
         case "$previous_alert" in
-          "" | *[!0-9]*) previous_alert=0 ;;
+          "" | *[!0-9]*)
+            previous_alert=0
+            warn_persistence
+            ;;
         esac
         if [ "''${#previous_alert}" -gt 12 ]; then
           previous_alert=0
+          warn_persistence
         fi
         case "$previous_pending" in
           none | recovered | check-failed | warn | urgent) ;;
-          *) previous_pending=none ;;
+          *)
+            previous_pending=none
+            warn_persistence
+            ;;
         esac
       fi
 
@@ -340,20 +388,25 @@ APPLESCRIPT
       # Save local delivery state before the network call. A failed remote send
       # retries on the next run without repeating the desktop alert.
       if ! write_state; then
-        :
+        run_failed=true
       fi
       if [ -n "$remote_notifier" ] && [ "$pending_remote" != none ]; then
         if message_for_token "$pending_remote" && deliver_remote "$remote_message"; then
           pending_remote=none
           if ! write_state; then
-            :
+            run_failed=true
           fi
+        else
+          run_failed=true
         fi
       fi
 
       log "category=$category previous=''${previous_category:-none}"
-      if [ "$category" = healthy ]; then
-        ping_heartbeat
+      if [ "$category" = healthy ] && [ -n "$heartbeat_url_file" ]; then
+        if ! healthcheck-ping "$heartbeat_url_file"; then
+          log "heartbeat failed"
+          run_failed=true
+        fi
       fi
 
       # Cleanup uses its own six-hour stamp instead of the alert state.
@@ -437,11 +490,16 @@ APPLESCRIPT
           log "cleanup: wanted but throttled"
         fi
       fi
+
+      if [ "$run_failed" = true ]; then
+        exit 1
+      fi
     '';
   };
 
   # Deterministic tests can replace every external input:
-  #   TM_CHECK_PLIST        alternate Time Machine preferences plist
+  #   TM_CHECK_LATEST_SNAPSHOT_COMMAND
+  #                         alternate executable that prints the latest snapshot date
   #   TM_CHECK_STATE_DIR    alternate private state directory
   #   TM_CHECK_LOG_FILE     alternate log file
   #   TM_CHECK_NOW          alternate Unix timestamp
@@ -453,7 +511,7 @@ APPLESCRIPT
   #                         remote notification executable, message on stdin
   tmFreshness = pkgs.writeShellApplication {
     name = "tm-freshness";
-    runtimeInputs = [ pkgs.coreutils pkgs.curl ];
+    runtimeInputs = [ pkgs.coreutils healthcheckPing ];
     text = ''
             set -euo pipefail
             umask 077
@@ -469,17 +527,15 @@ APPLESCRIPT
               remote_notifier="$TM_CHECK_REMOTE_NOTIFY"
             fi
 
+            run_failed=false
+
             heartbeat_url_file=${
               lib.escapeShellArg (if cfg.heartbeatDir == null then "" else "${cfg.heartbeatDir}/tm-freshness.url")
-            }
-            ping_heartbeat() {
-              if [ -n "$heartbeat_url_file" ] && [ -r "$heartbeat_url_file" ]; then
-                curl -fsS --retry 3 --max-time 10 "$(cat "$heartbeat_url_file")" >/dev/null 2>&1 || true
-              fi
             }
 
             persistence_warning_emitted=false
             warn_persistence() {
+              run_failed=true
               if [ "$persistence_warning_emitted" = false ]; then
                 printf '%s\n' \
                   "Time Machine Check persistence unavailable; notifications will continue without durable suppression" \
@@ -561,7 +617,7 @@ APPLESCRIPT
                   remote_message="Time Machine alert: backup history is missing. Check Time Machine settings on caladan."
                   ;;
                 history-unreadable)
-                  remote_message="Time Machine alert: backup history cannot be read. Check Time Machine settings on caladan."
+                  remote_message="Time Machine alert: the latest completed backup cannot be read. Check the backup source command and Time Machine on caladan."
                   ;;
                 destination-missing)
                   remote_message="Time Machine alert: no destination matches the configured backup server. Check Time Machine settings on caladan."
@@ -570,7 +626,7 @@ APPLESCRIPT
                   remote_message="Time Machine alert: no completed backup is recorded. Check Time Machine settings on caladan."
                   ;;
                 snapshot-invalid)
-                  remote_message="Time Machine alert: the completed backup time is invalid. Check Time Machine settings on caladan."
+                  remote_message="Time Machine alert: the completed backup time is invalid. Check the backup source command and Time Machine on caladan."
                   ;;
                 stale-unreachable)
                   remote_message="Time Machine alert: no recent backup, and the backup server is unreachable. Check the server and Time Machine on caladan."
@@ -599,8 +655,9 @@ APPLESCRIPT
             }
 
             default_host=${lib.escapeShellArg cfg.timeMachine.host}
+            default_snapshot_command=${lib.escapeShellArg cfg.timeMachine.latestSnapshotCommand}
             host="''${TM_CHECK_HOST:-$default_host}"
-            plist="''${TM_CHECK_PLIST:-/Library/Preferences/com.apple.TimeMachine.plist}"
+            snapshot_command="''${TM_CHECK_LATEST_SNAPSHOT_COMMAND:-$default_snapshot_command}"
             max_age_sec="''${TM_CHECK_MAX_AGE_SEC:-${toString (cfg.timeMachine.maxAgeHours * 3600)}}"
             now="''${TM_CHECK_NOW:-$(date +%s)}"
 
@@ -652,111 +709,66 @@ APPLESCRIPT
             category=""
             alert_message=""
             age_hours=""
-            if [ ! -f "$plist" ]; then
-              category="history-missing"
-              alert_message="Time Machine alert: backup history is missing. Check Time Machine settings on caladan."
-            elif [ ! -r "$plist" ]; then
-              category="history-unreadable"
-              alert_message="Time Machine alert: backup history cannot be read. Check Time Machine settings on caladan."
+            latest_snapshot=""
+            if ! latest_snapshot="$(
+              timeout --kill-after=5s 30s "$snapshot_command"
+            )"; then
+              if [ "$reachable" = false ]; then
+                category="unreachable"
+                alert_message="Time Machine alert: the backup server is unreachable over SMB. Check its power and network."
+              else
+                category="history-unreadable"
+                alert_message="Time Machine alert: the latest completed backup cannot be read. Check the backup source command and Time Machine on caladan."
+              fi
+            elif [ -z "$latest_snapshot" ] || [[ "$latest_snapshot" == *$'\n'* ]]; then
+              category="snapshot-invalid"
+              alert_message="Time Machine alert: the completed backup time is invalid. Check the backup source command and Time Machine on caladan."
             else
-              # Find the destination whose SMB URL host matches the configured
-              # host, so an old destination cannot make the active one look fresh.
-              destination_count="$(
-                /usr/bin/plutil -extract Destinations raw -o - "$plist" 2>/dev/null
-              )" || destination_count=0
-              case "$destination_count" in
-                "" | *[!0-9]*) destination_count=0 ;;
+              snapshot_epoch="$(date -d "$latest_snapshot" +%s 2>/dev/null || true)"
+
+              case "$snapshot_epoch" in
+                "" | *[!0-9]*) snapshot_epoch=0 ;;
               esac
-              if [ "''${#destination_count}" -gt 3 ] || [ "$destination_count" -gt 100 ]; then
-                destination_count=0
-              fi
 
-              wanted_host="$(printf '%s' "$host" | tr '[:upper:]' '[:lower:]')"
-              wanted_host="''${wanted_host%.}"
-              destination_index=""
-              index=0
-              while [ "$index" -lt "$destination_count" ]; do
-                destination_url="$(
-                  /usr/bin/plutil \
-                    -extract "Destinations.$index.NetworkURL" raw -o - "$plist" 2>/dev/null
-                )" || destination_url=""
-                destination_authority="''${destination_url#*://}"
-                destination_authority="''${destination_authority%%/*}"
-                destination_host="''${destination_authority##*@}"
-                destination_host="''${destination_host%%:*}"
-                destination_host="$(
-                  printf '%s' "$destination_host" | tr '[:upper:]' '[:lower:]'
-                )"
-                destination_host="''${destination_host%.}"
-                if [ -n "$destination_host" ] && [ "$destination_host" = "$wanted_host" ]; then
-                  destination_index="$index"
-                  break
+              if [ "$snapshot_epoch" -eq 0 ] || [ "$snapshot_epoch" -gt "$((now + 300))" ]; then
+                category="snapshot-invalid"
+                alert_message="Time Machine alert: the completed backup time is invalid. Check the backup source command and Time Machine on caladan."
+              else
+                age_sec="$((now - snapshot_epoch))"
+                if [ "$age_sec" -lt 0 ]; then
+                  age_sec=0
                 fi
-                index="$((index + 1))"
-              done
+                age_hours="$((age_sec / 3600))"
 
-              if [ -z "$destination_index" ]; then
-                category="destination-missing"
-                alert_message="Time Machine alert: no destination matches the configured backup server. Check Time Machine settings on caladan."
-              else
-                # SnapshotDates contains durable UTC completion dates. Reading the
-                # plist avoids mounting the backup or waiting for tmutil to contact it.
-                snapshot_dates="$(
-                  /usr/bin/plutil \
-                    -extract "Destinations.$destination_index.SnapshotDates" xml1 -o - "$plist" 2>/dev/null \
-                    | /usr/bin/xmllint --xpath '/plist/array/date/text()' - 2>/dev/null
-                )" || snapshot_dates=""
-              fi
-
-              if [ -n "$category" ]; then
-                :
-              elif [ -z "$snapshot_dates" ]; then
-                category="snapshot-missing"
-                alert_message="Time Machine alert: no completed backup is recorded. Check Time Machine settings on caladan."
-              else
-                # UTC ISO 8601 dates sort chronologically, so this remains correct
-                # even if the plist array is not in order.
-                latest_snapshot="$(printf '%s\n' "$snapshot_dates" | LC_ALL=C sort | tail -n 1)"
-                snapshot_epoch="$(date -d "$latest_snapshot" +%s 2>/dev/null || true)"
-
-                case "$snapshot_epoch" in
-                  "" | *[!0-9]*) snapshot_epoch=0 ;;
-                esac
-
-                if [ "$snapshot_epoch" -eq 0 ] || [ "$snapshot_epoch" -gt "$((now + 300))" ]; then
-                  category="snapshot-invalid"
-                  alert_message="Time Machine alert: the completed backup time is invalid. Check Time Machine settings on caladan."
+                if [ "$age_sec" -gt "$max_age_sec" ] && [ "$reachable" = false ]; then
+                  category="stale-unreachable"
+                  alert_message="Time Machine alert: no recent backup, and the backup server is unreachable. Check the server and Time Machine on caladan."
+                elif [ "$age_sec" -gt "$max_age_sec" ]; then
+                  category="stale"
+                  alert_message="Time Machine alert: no backup completed within ${toString cfg.timeMachine.maxAgeHours} hours. Open Time Machine settings on caladan."
+                elif [ "$reachable" = false ]; then
+                  category="unreachable"
+                  alert_message="Time Machine alert: the backup server is unreachable over SMB. Check its power and network."
                 else
-                  age_sec="$((now - snapshot_epoch))"
-                  if [ "$age_sec" -lt 0 ]; then
-                    age_sec=0
-                  fi
-                  age_hours="$((age_sec / 3600))"
-
-                  if [ "$age_sec" -gt "$max_age_sec" ] && [ "$reachable" = false ]; then
-                    category="stale-unreachable"
-                    alert_message="Time Machine alert: no recent backup, and the backup server is unreachable. Check the server and Time Machine on caladan."
-                  elif [ "$age_sec" -gt "$max_age_sec" ]; then
-                    category="stale"
-                    alert_message="Time Machine alert: no backup completed within ${toString cfg.timeMachine.maxAgeHours} hours. Open Time Machine settings on caladan."
-                  elif [ "$reachable" = false ]; then
-                    category="unreachable"
-                    alert_message="Time Machine alert: the backup server is unreachable over SMB. Check its power and network."
-                  else
-                    category="healthy"
-                  fi
+                  category="healthy"
                 fi
               fi
             fi
+
+            case "$category" in
+              history-missing | history-unreadable | destination-missing | snapshot-missing | snapshot-invalid)
+                run_failed=true
+                ;;
+            esac
 
             previous_category=""
             previous_alert=0
             previous_pending=none
             if [ -f "$state_file" ]; then
               if ! {
-                IFS= read -r previous_category || previous_category=""
-                IFS= read -r previous_alert || previous_alert=0
-                IFS= read -r previous_pending || previous_pending=none
+                IFS= read -r previous_category
+                IFS= read -r previous_alert
+                IFS= read -r previous_pending
               } < "$state_file" 2>/dev/null; then
                 previous_category=""
                 previous_alert=0
@@ -770,18 +782,26 @@ APPLESCRIPT
                   previous_category=""
                   previous_alert=0
                   previous_pending=none
+                  warn_persistence
                   ;;
               esac
               case "$previous_alert" in
-                "" | *[!0-9]*) previous_alert=0 ;;
+                "" | *[!0-9]*)
+                  previous_alert=0
+                  warn_persistence
+                  ;;
               esac
               if [ "''${#previous_alert}" -gt 12 ]; then
                 previous_alert=0
+                warn_persistence
               fi
               case "$previous_pending" in
                 none | recovered | history-missing | history-unreadable | destination-missing | snapshot-missing | snapshot-invalid | stale-unreachable | stale | unreachable)
                   ;;
-                *) previous_pending=none ;;
+                *)
+                  previous_pending=none
+                  warn_persistence
+                  ;;
               esac
             fi
 
@@ -834,33 +854,33 @@ APPLESCRIPT
             # Save local delivery state before the network call. A failed remote
             # send therefore retries hourly without repeating the desktop alert.
             if ! write_state; then
-              :
+              run_failed=true
             fi
             if [ -n "$remote_notifier" ] && [ "$pending_remote" != none ]; then
               if message_for_token "$pending_remote" && deliver_remote "$remote_message"; then
                 pending_remote=none
                 if ! write_state; then
-                  :
+                  run_failed=true
                 fi
+              else
+                run_failed=true
               fi
             fi
 
             if [ "$category" = healthy ]; then
               log "category=healthy age_hours=$age_hours reachable=true"
-              ping_heartbeat
+              if [ -n "$heartbeat_url_file" ] && ! healthcheck-ping "$heartbeat_url_file"; then
+                log "heartbeat failed"
+                run_failed=true
+              fi
             else
               log "category=$category previous=''${previous_category:-none}"
             fi
-    '';
-  };
 
-  # tm-freshness reads a system Time Machine preferences file that macOS gates
-  # by the calling binary's TCC identity. That identity is the resolved real
-  # path (Nix store paths and symlinks to them both change on every rebuild,
-  # which silently drops a Full Disk Access grant); see stable-bin.nix.
-  tmFreshnessStable = stableBin {
-    name = "tm-freshness";
-    package = tmFreshness;
+            if [ "$run_failed" = true ]; then
+              exit 1
+            fi
+    '';
   };
 
   # Off-site (cloud) backup freshness. Generic: reads a last-success date out
@@ -877,7 +897,7 @@ APPLESCRIPT
   #   OFFSITE_CHECK_COVERAGE     coverage executable; nonzero means incomplete
   offsiteFreshness = pkgs.writeShellApplication {
     name = "offsite-freshness";
-    runtimeInputs = [ pkgs.coreutils pkgs.curl ];
+    runtimeInputs = [ pkgs.coreutils healthcheckPing ];
     text = ''
             set -euo pipefail
             umask 077
@@ -901,17 +921,15 @@ APPLESCRIPT
               coverage_checker="$OFFSITE_CHECK_COVERAGE"
             fi
 
+            run_failed=false
+
             heartbeat_url_file=${
               lib.escapeShellArg (if cfg.heartbeatDir == null then "" else "${cfg.heartbeatDir}/offsite-freshness.url")
-            }
-            ping_heartbeat() {
-              if [ -n "$heartbeat_url_file" ] && [ -r "$heartbeat_url_file" ]; then
-                curl -fsS --retry 3 --max-time 10 "$(cat "$heartbeat_url_file")" >/dev/null 2>&1 || true
-              fi
             }
 
             persistence_warning_emitted=false
             warn_persistence() {
+              run_failed=true
               if [ "$persistence_warning_emitted" = false ]; then
                 printf '%s\n' \
                   "Off-site Backup Check persistence unavailable; notifications will continue without durable suppression" \
@@ -1088,6 +1106,12 @@ APPLESCRIPT
               fi
             fi
 
+            case "$category" in
+              state-missing | state-unreadable | success-missing | success-invalid)
+                run_failed=true
+                ;;
+            esac
+
             if [ "$category" = healthy ] && [ -n "$coverage_checker" ]; then
               if ! timeout --kill-after=5s 30s "$coverage_checker" >/dev/null 2>&1; then
                 category="coverage-incomplete"
@@ -1100,9 +1124,9 @@ APPLESCRIPT
             previous_pending=none
             if [ -f "$state_file" ]; then
               if ! {
-                IFS= read -r previous_category || previous_category=""
-                IFS= read -r previous_alert || previous_alert=0
-                IFS= read -r previous_pending || previous_pending=none
+                IFS= read -r previous_category
+                IFS= read -r previous_alert
+                IFS= read -r previous_pending
               } < "$state_file" 2>/dev/null; then
                 previous_category=""
                 previous_alert=0
@@ -1116,18 +1140,26 @@ APPLESCRIPT
                   previous_category=""
                   previous_alert=0
                   previous_pending=none
+                  warn_persistence
                   ;;
               esac
               case "$previous_alert" in
-                "" | *[!0-9]*) previous_alert=0 ;;
+                "" | *[!0-9]*)
+                  previous_alert=0
+                  warn_persistence
+                  ;;
               esac
               if [ "''${#previous_alert}" -gt 12 ]; then
                 previous_alert=0
+                warn_persistence
               fi
               case "$previous_pending" in
                 none | recovered | state-missing | state-unreadable | success-missing | success-invalid | stale | coverage-incomplete)
                   ;;
-                *) previous_pending=none ;;
+                *)
+                  previous_pending=none
+                  warn_persistence
+                  ;;
               esac
             fi
 
@@ -1176,22 +1208,31 @@ APPLESCRIPT
             fi
 
             if ! write_state; then
-              :
+              run_failed=true
             fi
             if [ -n "$remote_notifier" ] && [ "$pending_remote" != none ]; then
               if message_for_token "$pending_remote" && deliver_remote "$remote_message"; then
                 pending_remote=none
                 if ! write_state; then
-                  :
+                  run_failed=true
                 fi
+              else
+                run_failed=true
               fi
             fi
 
             if [ "$category" = healthy ]; then
               log "category=healthy age_hours=$age_hours"
-              ping_heartbeat
+              if [ -n "$heartbeat_url_file" ] && ! healthcheck-ping "$heartbeat_url_file"; then
+                log "heartbeat failed"
+                run_failed=true
+              fi
             else
               log "category=$category previous=''${previous_category:-none}"
+            fi
+
+            if [ "$run_failed" = true ]; then
+              exit 1
             fi
     '';
   };
@@ -1225,9 +1266,9 @@ in
         ping URLs (e.g. Healthchecks.io), one owner-only file per job named
         "<job>.url" - never in Nix or Git, since the URL itself is a
         capability token. A guardrail pings its own file's URL only from the
-        same code path that already decided its outcome is healthy, and
-        silently does nothing if the file for its job is absent, so this is
-        safe to enable before every check-generating job has a file yet.
+        same code path that already decided its outcome is healthy. A missing,
+        unreadable, invalid, or unreachable URL makes the guardrail fail after
+        it saves its notification state.
       '';
     };
 
@@ -1256,6 +1297,14 @@ in
     };
 
     timeMachine = {
+      latestSnapshotCommand = lib.mkOption {
+        type = lib.types.str;
+        description = ''
+          Absolute path to an executable that prints exactly one nonempty line
+          containing the latest completed Time Machine snapshot date.
+        '';
+      };
+
       host = lib.mkOption {
         type = lib.types.str;
         description = "Backup destination hostname probed over SMB (use the .local mDNS name).";
@@ -1310,6 +1359,8 @@ in
   };
 
   config = lib.mkIf cfg.enable {
+    environment.systemPackages = [ healthcheckPing ];
+
     assertions = [
       {
         assertion =
@@ -1319,6 +1370,10 @@ in
       {
         assertion = cfg.remoteNotifier == null || lib.hasPrefix "/" cfg.remoteNotifier;
         message = "services.healthGuardrails.remoteNotifier must be an absolute program path";
+      }
+      {
+        assertion = lib.hasPrefix "/" cfg.timeMachine.latestSnapshotCommand;
+        message = "services.healthGuardrails.timeMachine.latestSnapshotCommand must be an absolute program path";
       }
       {
         assertion = cfg.offsite.coverageCheck == null || lib.hasPrefix "/" cfg.offsite.coverageCheck;
@@ -1336,14 +1391,8 @@ in
       StandardOutPath = "/Users/${user}/Library/Logs/disk-guard.launchd.out.log";
     };
 
-    system.activationScripts.postActivation.text = tmFreshnessStable.activationScript;
-
     launchd.user.agents.tm-freshness.serviceConfig = {
-      ProgramArguments = [
-        "/bin/sh"
-        "-c"
-        "/bin/wait4path ${tmFreshnessStable.stablePath} && exec ${tmFreshnessStable.stablePath}"
-      ];
+      ProgramArguments = wrapped tmFreshness "tm-freshness";
       EnvironmentVariables.HOME = "/Users/${user}";
       StartInterval = 3600;
       RunAtLoad = true;
