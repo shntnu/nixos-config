@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ pkgs, ... }:
 
 let user = "shsingh"; in
 
@@ -37,16 +37,13 @@ let user = "shsingh"; in
     emacs30 # Pinned to Emacs 30.x stable (Darwin only - NixOS config TBD)
   ] ++ (import ../../modules/shared/packages.nix { inherit pkgs; });
 
-  launchd.user.agents.emacs.path = [ config.environment.systemPath ];
   launchd.user.agents.emacs.serviceConfig = {
     KeepAlive = true;
     ProgramArguments = [
-      "/bin/sh"
-      "-c"
-      "/bin/wait4path ${pkgs.emacs30}/bin/emacs && exec ${pkgs.emacs30}/bin/emacs --fg-daemon"
+      "${pkgs.emacs30}/bin/emacs"
+      "--quick"
+      "--fg-daemon"
     ];
-    StandardErrorPath = "/tmp/emacs.err.log";
-    StandardOutPath = "/tmp/emacs.out.log";
   };
 
   # Hourly qmd re-index + embed (refreshes configured collections)
