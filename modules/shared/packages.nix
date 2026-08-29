@@ -90,7 +90,9 @@ with pkgs; [
   lean-lsp-mcp
 
   # Python packages
-  python3
+  (python3.withPackages (python-pkgs: [
+    python-pkgs.pip
+  ]))
   virtualenv
   uv
   pixi
