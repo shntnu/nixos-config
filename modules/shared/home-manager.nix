@@ -45,7 +45,8 @@ in
         export NODE_PATH=$HOME/.npm-packages/lib/node_modules
 
         # Terminfo for Nix-managed terminal entries (ghostty.terminfo on Linux)
-        export TERMINFO_DIRS=$HOME/.nix-profile/share/terminfo:/usr/share/terminfo
+        export TERMINFO_DIRS=$HOME/.nix-profile/share/terminfo
+        [[ -d /usr/share/terminfo ]] && export TERMINFO_DIRS=$TERMINFO_DIRS:/usr/share/terminfo
 
         # Remove history data we don't want to see
         export HISTIGNORE="pwd:ls:cd"
