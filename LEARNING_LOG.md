@@ -265,6 +265,15 @@ launchctl print gui/$(id -u)/org.nixos.<agent>   # "runs" and "last exit reason"
 tmux show-options -g | grep -E 'continuum|resurrect'
 ```
 
+## 2026-08-28: Codex's desktop launcher needs its own open-file limit
+
+**Key Insight:** Raising zsh's open-file limit does not affect the desktop app, because the app starts its shared Codex server through `/bin/sh`.
+
+Codex CLI 0.150.1 exhausted macOS's default soft limit of 256 while loading skills and starting MCP servers.
+The shared app server had more than 230 descriptors open, so some skills and MCP servers failed nondeterministically during startup.
+Home Manager now installs a `~/.local/bin/codex` launcher, which raises the soft limit to 4096 before executing the Nix profile's Codex binary.
+The desktop bootstrap and interactive macOS shells both put that directory first on `PATH`.
+
 ---
 
 ## Entry Guidelines
