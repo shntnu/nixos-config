@@ -2,7 +2,7 @@
 # SSH-first Linux machines. Also re-exported as homeModules.shsingh-headless
 # for neusis to consume. Imports the shared shell/git/tmux/ssh module plus
 # nixpkgs settings, then layers server-only deltas.
-{ config, pkgs, lib, user, ... }:
+{ config, pkgs, lib, user, ... }@args:
 
 let
   marimoLspNixos = pkgs.writeShellApplication {
@@ -81,7 +81,7 @@ in
     };
     packages =
       (pkgs.callPackage ../shared/packages.nix { })
-      ++ (pkgs.callPackage ./packages.nix { })
+      ++ (pkgs.callPackage ./packages.nix { host = args.host or null; })
       ++ [ marimoLspNixos ];
   };
 

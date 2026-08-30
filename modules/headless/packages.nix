@@ -1,7 +1,7 @@
-{ pkgs }:
+{ pkgs, host ? null }:
 
 with pkgs; [
-  awscli2  # Mac gets awscli via Homebrew; servers have no Homebrew, so add it here
+  awscli2 # Mac gets awscli via Homebrew; servers have no Homebrew, so add it here
 
   duf
   httpie
@@ -11,11 +11,7 @@ with pkgs; [
   docker
   docker-compose
 
-  neovim  # servers set EDITOR/VISUAL=nvim (see headless/home-manager.nix)
-
-  ghostty  # only useful on karkinos (it has a display); dead weight on oppy/spirit
-  google-chrome  # ditto: karkinos has a display. Unfree (allowUnfree is on in shared/nixpkgs.nix)
-  vscode  # ditto
+  neovim # servers set EDITOR/VISUAL=nvim (see headless/home-manager.nix)
 
   ranger
 
@@ -27,4 +23,8 @@ with pkgs; [
   imagemagick
   nix-output-monitor
   p7zip
+] ++ pkgs.lib.optionals (host == "karkinos") [
+  ghostty
+  google-chrome # Unfree (allowUnfree is on in shared/nixpkgs.nix)
+  vscode
 ]
