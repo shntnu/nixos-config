@@ -274,6 +274,14 @@ The shared app server had more than 230 descriptors open, so some skills and MCP
 Home Manager now installs a `~/.local/bin/codex` launcher, which raises the soft limit to 4096 before executing the Nix profile's Codex binary.
 The desktop bootstrap and interactive macOS shells both put that directory first on `PATH`.
 
+## 2026-09-03: Headless Git Signing Must Ignore Forwarded SSH Agents
+
+**Key Insight:** A forwarded SSH agent socket can remain present after its channel wedges, so checking only whether the socket exists does not prevent Git signing from hanging.
+
+Codex repointed its stable agent symlink at the newest sshd-forwarded socket on Spirit, which accepted connections but never answered.
+The Home Manager agent and local private key remained healthy.
+Headless Git now invokes `ssh-keygen` through a wrapper that unsets `SSH_AUTH_SOCK` and signs directly with the existing local private key; macOS keeps agent-backed signing.
+
 ---
 
 ## Entry Guidelines

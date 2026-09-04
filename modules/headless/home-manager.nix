@@ -38,6 +38,15 @@ let
     '';
   };
 
+  # Codex points SSH_AUTH_SOCK at the newest forwarded agent. A dead forwarding
+  # channel can leave a valid socket that hangs forever, including during Git
+  # SSH signing. Headless hosts already keep the signing key locally, so bypass
+  # the forwarded agent for this operation.
+  gitSshSign = pkgs.writeShellScript "git-ssh-sign" ''
+    unset SSH_AUTH_SOCK
+    exec ${pkgs.openssh}/bin/ssh-keygen "$@"
+  '';
+
   # `gio mount` exits 2 when the location is already mounted, which makes the
   # oneshot unit below report failed even though the mount is present and fine.
   # Anything else mounting sftp://spirit/ first (a Files bookmark, an earlier
@@ -96,6 +105,11 @@ in
 
   programs = {
     home-manager.enable = true;
+
+    git.settings = {
+      gpg.ssh.program = "${gitSshSign}";
+      user.signingkey = lib.mkForce "~/.ssh/id_ed25519";
+    };
 
     zsh = {
       autosuggestion.enable = true;
