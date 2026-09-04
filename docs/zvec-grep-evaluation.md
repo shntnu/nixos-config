@@ -1,10 +1,10 @@
 # Zvec-Grep evaluation for Nix-managed lab environments
 
-Zvec-Grep works on Spirit and usefully retrieves conceptually related code, but its current packaging and resource costs do not justify making it a shared default.
-A bounded opt-in pilot on one host and one or two large repositories is the appropriate next step.
-The pilot should retain `rg` for exact searches and should not use Zvec-Grep's imperative installer against managed Codex configuration.
+Zvec-Grep works on Spirit and usefully retrieves conceptually related code, but its current packaging costs and overlap with QMD do not justify making it a shared default.
+A same-corpus comparison with the QMD installation already used on Caladan should precede a separate Zvec-Grep pilot.
+QMD should remain the default for curated knowledge collections, while Zvec-Grep should advance only if it adds value for active repository navigation.
 
-The evidence applies to a September 4, 2026 runtime trial, not to a reproducible Nix package or production deployment.
+The evidence applies to a September 4, 2026 Zvec-Grep runtime trial and read-only QMD inventory, not to a reproducible Zvec-Grep package or comparative retrieval benchmark.
 
 ## Question and scope
 
@@ -19,6 +19,9 @@ Upstream source was inspected at commit [`7d73ca1b`](https://github.com/zvec-ai/
 
 The evaluation covered CLI indexing and querying, local embedding models, incremental indexing, the persistent server, an actual MCP exchange, the Codex installer, disk use, and process memory.
 It did not cover Apple Silicon runtime behavior, a hermetic Nix derivation, sustained concurrent use, remote embedding providers, or comparative agent task completion.
+
+QMD entered the evaluation because it already indexes local knowledge collections on Caladan and overlaps with Zvec-Grep's stated purpose.
+The QMD comparison uses current upstream documentation and a read-only inspection of the installed service; QMD was not run against the two Zvec-Grep test corpora.
 
 ## Test design
 
@@ -92,6 +95,57 @@ Its resident set size was approximately 126 MiB before searching, 663 MiB after 
 A direct CLI query reached approximately 634 MiB peak resident memory.
 The pilot must determine whether this working set is acceptable on shared servers; it is disproportionate to occasional searches in a small repository.
 
+## QMD overlaps with Zvec-Grep but targets a different workflow
+
+No declared code or package relationship was found between QMD and Zvec-Grep; they occupy the same local hybrid-search category.
+Both combine BM25 and vector search, support fully local model execution, expose CLI and MCP interfaces, and update indexes incrementally.
+Their package manifests show separate implementations: QMD directly uses SQLite FTS5, sqlite-vec, and `node-llama-cpp`, while Zvec-Grep directly uses the Zvec engine, Hugging Face tooling, and bundled ripgrep.
+
+The Zvec-Grep launch post presents QMD as a peer and introduces its comparison this way:
+
+> "The table below compares the product focus and capability boundaries of several tools while highlighting zg's current capabilities and planned directions." - [Zvec-Grep launch post](https://zvec.org/en/blog/2026-08-28-zvec-grep-open-source/#where-we-are-and-whats-next)
+
+That feature comparison is Zvec's vendor-authored characterization and was not independently reproduced here.
+The table below does not repeat the launch post's matrix.
+It focuses on distinctions relevant to this lab, using QMD's own [version 2.8.3 documentation](https://github.com/tobi/qmd/blob/v2.8.3/README.md), pinned Zvec-Grep documentation, and the local observations reported above.
+
+| Dimension | QMD 2.8.3, documented | Zvec-Grep 0.2.1 |
+| --- | --- | --- |
+| Primary unit | Named collections of notes, documentation, transcripts, and other selected paths | One active code or mixed-content workspace per index |
+| Retrieval | CLI and SDK queries expand plain text into lexical, vector, and HyDE subqueries, search BM25 and vector indexes, fuse with RRF, and rerank locally | BM25 and vectors followed by RRF; query rewriting and model reranking are planned |
+| Literal matching | Tokenized BM25 with quoted phrases and exclusions; no exhaustive regular-expression route | Bundled ripgrep for exhaustive literal and regular-expression search |
+| Content handling | Markdown-first glob by default, with configurable masks and optional AST chunking for JavaScript, TypeScript, Python, Go, and Rust | Repository-first scanning with structured extraction for more code languages and generic extraction for text and data files |
+| Organization | Cross-directory collections, stable `qmd://` identifiers, path context, and document retrieval tools | Per-workspace `.zvec-grep/` indexes and compact ranked previews |
+| Freshness | Explicit `qmd update` and `qmd embed`; this repository schedules both hourly on the Macs | Background refresh and periodic reconciliation when its daemon runs |
+| MCP | Self-contained stdio by default; optional unauthenticated HTTP server with origin and host checks | Local server-backed MCP with optional bearer authentication |
+| Default local models | The full local query path uses three GGUF models totaling about 2 GiB; BM25 and vector-only modes load less | One static embedding model of about 32 MiB |
+| Nix support | Official flake and Home Manager module | No upstream Nix package |
+
+In QMD 2.8.3, automatic expansion of a plain query belongs to the CLI and SDK; the MCP `query` tool instead requires the agent to supply typed lexical, vector, or HyDE subqueries.
+
+The collection-versus-workspace distinction suggests complementary roles rather than interchangeable installations.
+QMD's collections, hierarchical context, query expansion, reranking, and `get` tools fit a durable knowledge base that spans directories.
+Zvec-Grep's automatic repository scan, broader code extraction, integrated ripgrep, and daemon-managed freshness fit repeated navigation in a changing codebase.
+Whether either retrieval pipeline ranks code better remains unknown until both run on the same corpus and questions.
+
+Package and model storage favor opposite tools.
+QMD 2.1.0's installed npm package on Caladan occupies approximately 187 MiB, but its three local models occupy 2.2 GiB.
+Zvec-Grep's trial installation occupied 1.6 GiB because it included many optional native artifacts, while its tested default model occupied only 32 MiB.
+These measurements describe different package versions and installation paths; index sizes reported elsewhere also reflect different corpora.
+They should guide operational planning rather than rank storage efficiency.
+
+## Caladan runs an older, partly imperative QMD deployment
+
+Caladan's live QMD index establishes QMD as already deployed infrastructure rather than a hypothetical alternative.
+The installed QMD 2.1.0 had indexed 336 files into 66,140 vectors, occupied approximately 258 MiB, and reported the index updated 18 hours before inspection.
+Its scheduled launchd job was idle between runs, had completed its last run successfully, and invokes `qmd update && qmd embed` hourly through [the shared Darwin configuration](../hosts/darwin/default.nix).
+Spirit had no QMD executable, index, service, or agent integration, so the Zvec-Grep trial did not collide with QMD there.
+
+The local QMD packaging note is now stale relative to upstream.
+This repository still describes QMD as an imperative npm installation with no Nix flake wrapper in [the shared package list](../modules/shared/packages.nix).
+Upstream QMD 2.8.3 now ships an [official flake and Home Manager module](https://github.com/tobi/qmd/blob/v2.8.3/flake.nix) with fixed dependency hashes for `x86_64-linux` and `aarch64-darwin`, the two architectures currently deployed here.
+QMD is therefore more ready for declarative qualification than Zvec-Grep, although this repository has not yet adopted or tested that upstream package.
+
 ## Runtime compatibility does not yet establish reproducible Nix packaging
 
 Zvec-Grep ran successfully with the Nix-managed Node.js runtime on Spirit.
@@ -154,23 +208,24 @@ The published BrowseComp results report reduced input tokens, tool calls, and ag
 The benchmark is also vendor-run and depends on stochastic agent decisions.
 The [benchmark documentation](https://github.com/zvec-ai/zvec-grep/tree/7d73ca1b5d845dc46ad6afb19d1fc545878e1504/benchmarks) provides the design and reported results.
 
-## Recommended pilot
+## Recommended next comparison
 
-A useful next step is a reversible pilot with explicit success and stop criteria.
-The pilot should use these constraints:
+A matched same-corpus comparison should precede Zvec-Grep packaging or deployment.
+Before running either tool, create fresh immutable repository snapshots, freeze a new question-to-expected-file manifest, and define the minimum improvement that would justify maintaining a second index.
+A tie should favor retaining QMD because it is already deployed.
+The comparison should use these constraints:
 
-- Package the tested path by pinning Zvec-Grep 0.2.1, testing a minimal default-Model2Vec Nix derivation with native-library fixups, and keeping its writable model cache outside the Nix store.
-- Integrate through the existing declarative owner, exclude `.zvec-grep/` from Git, and require bearer authentication for MCP on shared hosts; use direct CLI mode when no daemon is desired.
-- Retain `rg` for exact work and record approximately 25 genuine conceptual-navigation tasks in one or two large repositories.
+- Qualify QMD 2.8.3 through its official Nix flake, run both tools on the same host and Nix environment, and isolate QMD with disposable `QMD_CONFIG_DIR` and `XDG_CACHE_HOME` paths so Caladan's live QMD 2.1.0 index cannot be opened or migrated.
+- Configure both tools to admit the same eligible files, record every file or format either tool excludes, and use the frozen snapshots and query manifest for both runs.
+- Record first-place and top-five retrieval, cold and warm latency, memory, model and index storage, and query reformulations; retain `rg` for exact confirmation and distinguish semantic discovery from literal verification.
 
-Broader adoption should require a clear benefit on real lab work.
-For each task, the user should record whether the first semantic query returned a relevant file among the first five results, whether discovery required query reformulation or fallback to `rg`, elapsed time, and query and file-open actions.
-A task should count as a Zvec-Grep win when it reaches a relevant file without semantic-query reformulation or an `rg` discovery fallback; later `rg` confirmation does not count as fallback.
-A reasonable promotion threshold is a win on at least half of the recorded tasks without unacceptable memory, storage, or indexing overhead.
-Failure to meet that threshold should end the pilot and leave Zvec-Grep as an on-demand tool rather than a managed service.
+Zvec-Grep should advance only if the same-corpus comparison shows a repository-navigation benefit that QMD does not provide.
+If it advances, the next pilot should pin Zvec-Grep 0.2.1, test a minimal Model2Vec Nix package, keep mutable models and indexes outside the Nix store, and require bearer authentication for MCP on shared hosts.
+The pilot should then record approximately 25 genuine navigation tasks and count a win when the first semantic query reaches a relevant file without reformulation or an `rg` discovery fallback.
+Failure to win at least half of those tasks should end the pilot and avoid maintaining two semantic indexes over the same repositories.
 
 ## Conclusion
 
-Zvec-Grep is promising enough to pilot and too immature to make a shared default.
-The Spirit trial demonstrated useful semantic retrieval, low warm-query latency, successful MCP transport, and Codex registration within the existing Nix-managed runtime.
-A bounded pilot can now determine whether those benefits survive ordinary lab work and justify the cost of a maintained Nix package.
+Zvec-Grep is promising enough for a direct comparison with QMD and too immature to make a shared default.
+QMD is already deployed for curated lab knowledge collections and offers the more mature documented Nix integration path.
+Zvec-Grep should become a separate managed tool only if a matched-corpus comparison and subsequent real-use pilot demonstrate a distinct advantage for active repository navigation.
