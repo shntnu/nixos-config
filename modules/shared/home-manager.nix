@@ -60,12 +60,13 @@ in
         # the interactive shell (and unrelated commands typed at the prompt)
         # never inherit KATA_AUTH_TOKEN.
         kata() {
+          local config_file="$HOME/.kata/config.toml"
           local env_file="$HOME/.config/kata/spirit.env"
-          if [[ -f "$env_file" ]]; then
-            ( set -a; source "$env_file"; set +a; command kata "$@" )
-          else
-            command kata "$@"
+          if [[ ! -f "$config_file" || ! -f "$env_file" ]]; then
+            print -u2 "kata: shared client configuration is incomplete"
+            return 1
           fi
+          ( set -a; source "$env_file"; set +a; command kata "$@" )
         }
 
         # nix shortcuts

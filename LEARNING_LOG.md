@@ -299,6 +299,13 @@ The desktop SSH bootstrap also needs a Home Manager launcher at `~/.local/bin/co
 Running it on `AGENTS.md` merged adjacent `@` imports, flattened nested lists, and joined a managed-block end marker to prose.
 Restore those structural boundaries and review the diff before accepting formatter output.
 
+## 2026-09-05: Kata clients must fail closed without remote configuration
+
+**Key Insight:** Running Kata without its remote client files can silently start a separate local ledger.
+A laptop lacked both the shared daemon catalog and credential file, so the shell wrapper invoked bare Kata and Kata created `~/.kata/kata.db`.
+The local database was empty and was moved to Trash after the laptop connected to the shared Spirit daemon.
+The wrapper now refuses to run unless both remote client files exist.
+
 ---
 
 ## Entry Guidelines
