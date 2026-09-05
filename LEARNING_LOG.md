@@ -97,20 +97,14 @@ nix profile upgrade claude-code-nix --refresh
 
 Use declarative (flake-based) for system packages that change with your config; use imperative for tools you want to update independently.
 
-## 2026-02-14: Why Nix Flake Wrappers Over npm/Homebrew for CLI Tools
+## 2026-02-14: Why Nix flake wrappers over npm/Homebrew for Node.js CLI tools
 
-**Key Insight:** Third-party nix flake wrappers (like `sadjow/claude-code-nix`, `sadjow/gemini-cli-nix`, and `sadjow/codex-cli-nix`) solve problems that `npm install -g` and Homebrew cannot.
+**Key Insight:** Third party Nix flake wrappers for Claude Code and Gemini CLI provide version isolation, rollback, and verified updates.
 
 When adding `gemini-cli`, considered Homebrew (macOS-only, won't work on NixOS), npm global install, and nixpkgs (version 0.17.0 vs latest 0.28.2 — same lag problem as claude-code).
-The `sadjow` flake wrappers provide: disabled auto-update (respects Nix store immutability), rollback via `nix profile rollback`, and hourly CI-driven version updates with hash verification.
-For Node.js tools (claude-code, gemini-cli), they also provide Node.js version isolation.
-Codex CLI is a native Rust binary so the wrapper just fetches the prebuilt release — no Node.js needed.
-
-```bash
-# All three tools follow the same pattern
-nix profile install github:sadjow/codex-cli-nix
-nix profile upgrade codex-cli-nix --refresh
-```
+The `sadjow` flake wrappers provide disabled automatic updates, rollback through `nix profile rollback`, and hourly CI updates with hash verification.
+They also provide Node.js version isolation.
+Codex originally used a similar wrapper, but it moved to OpenAI's standalone installer on 2026-09-05; see the later entry below.
 
 ## 2026-02-19: nix-darwin's `brew bundle --no-upgrade` Default
 
@@ -271,7 +265,7 @@ tmux show-options -g | grep -E 'continuum|resurrect'
 
 Codex CLI 0.150.1 exhausted macOS's default soft limit of 256 while loading skills and starting MCP servers.
 The shared app server had more than 230 descriptors open, so some skills and MCP servers failed nondeterministically during startup.
-Home Manager now installs a `~/.local/bin/codex` launcher, which raises the soft limit to 4096 before executing the Nix profile's Codex binary.
+Home Manager now installs a `~/.local/bin/codex` launcher, which raises the soft limit to 4096 before executing the selected Codex binary.
 The desktop bootstrap and interactive macOS shells both put that directory first on `PATH`.
 
 ## 2026-09-03: Headless Git Signing Must Ignore Forwarded SSH Agents
@@ -281,6 +275,19 @@ The desktop bootstrap and interactive macOS shells both put that directory first
 Codex repointed its stable agent symlink at the newest sshd-forwarded socket on Spirit, which accepted connections but never answered.
 The Home Manager agent and local private key remained healthy.
 Headless Git now invokes `ssh-keygen` through a wrapper that unsets `SSH_AUTH_SOCK` and signs directly with the existing local private key; macOS keeps agent-backed signing.
+
+## 2026-09-05: Codex uses OpenAI's standalone installer
+
+**Key Insight:** OpenAI's standalone installer removes the third-party Nix wrapper while keeping Codex updates independent of a Home Manager rebuild.
+
+The installer normally owns `~/.local/bin/codex`, but Home Manager already uses that path for the macOS open-file-limit launcher.
+Codex is therefore installed under `~/.local/libexec/codex`, and the launcher executes that binary.
+Home Manager adds the install directory to `PATH`, which also prevents the installer from trying to edit generated shell files.
+
+```bash
+curl -fsSL https://chatgpt.com/codex/install.sh | \
+  CODEX_INSTALL_DIR="$HOME/.local/libexec/codex" sh
+```
 
 ---
 

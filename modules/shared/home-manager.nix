@@ -38,7 +38,7 @@ in
         fi
 
         export PATH=$HOME/.npm-packages/bin:$HOME/bin:$PATH
-        export PATH=$PATH:$HOME/.local/bin
+        export PATH=$PATH:$HOME/.local/bin:$HOME/.local/libexec/codex
 
         # Configure npm to use home directory for global packages
         export NPM_CONFIG_PREFIX=$HOME/.npm-packages

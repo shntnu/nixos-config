@@ -60,7 +60,7 @@ in
             if [ "$open_file_limit" != unlimited ] && [ "$open_file_limit" -lt 4096 ]; then
               ulimit -S -n 4096
             fi
-            exec "$HOME/.nix-profile/bin/codex" "$@"
+            exec "$HOME/.local/libexec/codex/codex" "$@"
           '';
         };
 
