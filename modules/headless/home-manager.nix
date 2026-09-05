@@ -94,6 +94,15 @@ in
       ++ [ marimoLspNixos ];
   };
 
+  # The desktop SSH bootstrap adds ~/.local/bin without loading zsh's PATH.
+  home.file.".local/bin/codex" = {
+    executable = true;
+    text = ''
+      #!/bin/sh
+      exec "$HOME/.local/libexec/codex/codex" "$@"
+    '';
+  };
+
   # VS Code strips LD_LIBRARY_PATH from its remote extension host. Launch the
   # bundled marimo language server through a narrow wrapper that restores the
   # Nix runtime only for marimo-lsp and its notebook-kernel children.

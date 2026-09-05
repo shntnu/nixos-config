@@ -286,8 +286,12 @@ Home Manager adds the install directory to `PATH`, which also prevents the insta
 
 ```bash
 curl -fsSL https://chatgpt.com/codex/install.sh | \
-  CODEX_INSTALL_DIR="$HOME/.local/libexec/codex" sh
+  env PATH="$HOME/.local/libexec/codex:$PATH" \
+    CODEX_INSTALL_DIR="$HOME/.local/libexec/codex" sh
 ```
+
+Pass the directory in the installer's `PATH` even before activating Home Manager, so an older shell does not trigger a write to the read-only `~/.zprofile`.
+The desktop SSH bootstrap also needs a Home Manager launcher at `~/.local/bin/codex` on Linux because it starts through `/bin/sh` without loading zsh's `PATH`.
 
 ---
 

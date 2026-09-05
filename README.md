@@ -43,6 +43,25 @@ To test-build without activating:
 nix build '.#homeConfigurations."shsingh@oppy".activationPackage'
 ```
 
+## Codex CLI
+
+All machines use OpenAI's standalone installer for Codex.
+Home Manager owns the launcher at `~/.local/bin/codex`; the installer owns the binary under `~/.local/libexec/codex`.
+The macOS launcher also raises the open-file limit to 4096.
+
+Install or update before activating Home Manager on a fresh machine:
+
+```bash
+curl -fsSL https://chatgpt.com/codex/install.sh | \
+  env PATH="$HOME/.local/libexec/codex:$PATH" \
+    CODEX_INSTALL_DIR="$HOME/.local/libexec/codex" sh
+```
+
+For unattended deployment, add `CODEX_NON_INTERACTIVE=1` to `env`.
+After activation, verify `~/.local/bin/codex --version`, then remove the old `codex-cli-nix` entry if it appears in `nix profile list`.
+Restart existing Codex sessions or reconnect the desktop SSH connection to use the new binary.
+No machine reboot is needed.
+
 ## Repo Map
 
 ```
