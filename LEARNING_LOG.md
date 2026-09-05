@@ -301,10 +301,10 @@ Restore those structural boundaries and review the diff before accepting formatt
 
 ## 2026-09-05: Kata clients must fail closed without remote configuration
 
-**Key Insight:** Running Kata without its remote client files can silently start a separate local ledger.
-A laptop lacked both the shared daemon catalog and credential file, so the shell wrapper invoked bare Kata and Kata created `~/.kata/kata.db`.
+**Key Insight:** Running Kata without its remote client files can silently start a separate local ledger, and an interactive shell function does not protect agent subprocesses.
+A laptop lacked both the shared daemon catalog and credential file, so Kata created `~/.kata/kata.db`.
 The local database was empty and was moved to Trash after the laptop connected to the shared Spirit daemon.
-The wrapper now refuses to run unless both remote client files exist.
+The installed executable wrapper now loads the owner-only credential for every invocation and refuses to run unless both remote client files exist.
 
 ---
 

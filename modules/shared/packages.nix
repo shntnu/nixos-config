@@ -1,5 +1,25 @@
 { pkgs, lib ? pkgs.lib }:
 
+let
+  kataPackage = pkgs.callPackage ./kata.nix { };
+  kataClient = pkgs.writeShellApplication {
+    name = "kata";
+    text = ''
+      config_file="$HOME/.kata/config.toml"
+      env_file="''${XDG_CONFIG_HOME:-$HOME/.config}/kata/spirit.env"
+      if [[ ! -f "$config_file" || ! -f "$env_file" ]]; then
+        echo "kata: shared client configuration is incomplete" >&2
+        exit 1
+      fi
+      set -a
+      # shellcheck source=/dev/null
+      source "$env_file"
+      set +a
+      exec ${lib.getExe kataPackage} "$@"
+    '';
+  };
+in
+
 with pkgs; [
   # General packages for development and system management
   aspell
@@ -38,7 +58,7 @@ with pkgs; [
 
   # Workflow management
   jdk17 # Java runtime for Nextflow
-  (callPackage ./kata.nix { })
+  kataClient
   nextflow # Bioinformatics workflow manager, works with Docker Desktop
   nf-test # Testing framework for Nextflow pipelines
 

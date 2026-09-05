@@ -54,21 +54,6 @@ in
         # Disable Claude AI cloud MCP servers (Gmail, Slack, etc.)
         export ENABLE_CLAUDEAI_MCP_SERVERS=false
 
-        # Kata client credentials for the shared spirit daemon; the file is
-        # provisioned outside Nix and absent on machines without access.
-        # Scoped to this function's subshell so ordinary child processes of
-        # the interactive shell (and unrelated commands typed at the prompt)
-        # never inherit KATA_AUTH_TOKEN.
-        kata() {
-          local config_file="$HOME/.kata/config.toml"
-          local env_file="$HOME/.config/kata/spirit.env"
-          if [[ ! -f "$config_file" || ! -f "$env_file" ]]; then
-            print -u2 "kata: shared client configuration is incomplete"
-            return 1
-          fi
-          ( set -a; source "$env_file"; set +a; command kata "$@" )
-        }
-
         # nix shortcuts
         shell() {
             nix-shell '<nixpkgs>' -A "$1"
@@ -80,7 +65,7 @@ in
         alias la='eza --long --all --git --icons=auto'
         alias lt='eza --tree --level=2 --icons=auto'
         alias lta='eza --tree --level=2 --all --icons=auto'
-      '';
+        '';
     };
 
     git = {
@@ -208,7 +193,7 @@ in
           \ '~/Projects',
           \ '~/Documents',
           \ ]
-        '';
+      '';
     };
 
     ssh = {
