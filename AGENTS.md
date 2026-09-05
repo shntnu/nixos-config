@@ -9,127 +9,51 @@ Direct user instructions and the more specific guidance in this file override bo
 @CONSTITUTION.md
 @WRITING.md
 
-## Repository Context
+## Execution and handoff
 
-This is a Nix flake configuration for macOS (using nix-darwin) and NixOS, created from dustinlyons/nixos-config simplified starter template without secrets management. The configuration manages system packages, settings, and user environments declaratively.
+Treat action requests such as "help me" or "can you fix" as instructions to implement and verify the requested change.
+Resolve routine choices from the existing configuration and state material assumptions.
+Carry unfinished authorized work through follow-up questions, incorporating corrections without restarting completed steps.
+If approval is required, finish independent inspection, preparation, and validation first, then present the exact remaining action.
+Do not ask again for authorization already provided in the conversation.
 
-## Primary User Configuration
+User instructions take precedence over skill guidelines.
+If a skill would block requested work, link the exact `SKILL.md`, quote the relevant instruction, and explain whether the restriction is explicit or your interpretation.
 
-- Username: `shsingh`
-- Primary system: `aarch64-darwin` (Apple Silicon Mac)
-- Template source: <https://github.com/dustinlyons/nixos-config> (simplified starter version)
+## Repository boundaries
 
-## Essential Commands
+Read [docs/development.md](docs/development.md) for the module map, build commands, and update workflows.
+Use `flake.nix` and the matching modules as the source of truth for available targets.
+This flake owns Darwin systems and standalone Linux Home Manager profiles; Linux system configuration belongs to its separate repository.
 
-See [README.md](./README.md) for platform-specific build/switch workflows (macOS, lab servers, Ubuntu/WSL).
+Keep each README as a short introduction and index.
+Keep agent rules here, reusable workflows and specifications in `docs/`, and general lessons in `LEARNING_LOG.md`.
+Do not duplicate module inventories or operating procedures in agent instructions.
 
-Key detail: `build` / `build-switch` dispatch on `scutil --get LocalHostName` (case statement in `apps/aarch64-darwin/build{,-switch}`) into a `darwinConfigurations.<host>` key in `flake.nix`. Renaming a Mac requires updating both.
+Host roles, service locations, endpoints, private paths, credential wiring, backup topology, personal corpora, and live deployment records belong in the private input's documentation.
+Public Markdown must describe reusable behavior with placeholders, without reconstructing private configuration from modules, logs, or prior sessions.
+An existing public host key is not permission to publish its private service assignments.
+Consult the matching private module and deployment notes before changing host-specific behavior.
+Keep actual credentials out of both repositories and the Nix store.
 
-On neusis-managed lab servers (oppy, karkinos, spirit), this flake only manages the Home Manager profile — do not attempt `nix run .#build-switch` or `nixos-rebuild` from this repo on those machines.
+## Verification and handoff
 
-## Architecture Overview
+For documentation-only changes, check the diff and referenced paths; no Nix build or activation is needed.
+For Nix changes, inspect the working tree and run `git add .` before building, because Git-backed flakes omit untracked files.
+Build the affected host configuration without activation first, using [the platform workflow](docs/development.md#build-and-apply).
+Shared module changes require coverage of both Darwin and headless consumers.
 
-### Flake Structure
+Apply changes when activation is in scope, using the correct platform workflow.
+A request to build or review alone does not authorize activation.
+For installation or service changes, verify the active executable or service after activation on every requested host.
+A successful build does not prove that running processes use the new configuration.
 
-The `flake.nix` defines:
+Run `git diff --check` and any checks appropriate to changed behavior.
+Once checks pass, repeat or broaden them only for new changes, failures, or unresolved concerns.
+At handoff, distinguish local edits, committed or pushed changes, built configurations, and activated hosts.
+Name any remaining restart or deployment step explicitly.
 
-- **darwinConfigurations**: per-host macOS configurations (`caladan`, `laptop`) — each loads `hosts/darwin/default.nix` (shared base) plus a host-specific file that imports a `darwinModules.<host>` from the `private` input
-- **homeConfigurations**: standalone Home Manager for the lab servers - `shsingh@oppy`, `shsingh@spirit`, `shsingh@karkinos`, all built via `mkHeadlessHomeConfiguration` from `modules/headless/` and an optional matching `private.homeModules.<host>`
-- **homeModules**: exposes `shsingh-headless` (= `modules/headless/home-manager.nix`) for downstream consumers (neusis)
-- **Apps** (`aarch64-darwin` only): `build`, `build-switch`, `rollback` — all dispatch on `scutil --get LocalHostName`
-- **DevShells**: a minimal dev shell (used by `.envrc`)
-
-`user`, `host`, `msgvault`, and the other flake inputs are passed to every module via `specialArgs`/`extraSpecialArgs`, so modules take them as function args rather than redefining those values.
-
-Notable flake inputs:
-
-- `private` (`git+ssh://git@github.com/shntnu/nixos-config-private`) — provides per-host darwinModules (caladan, laptop) and other private config. Required for darwin builds.
-- `msgvault` (`github:wesm/msgvault`) — provides the `msgvault` package used by the `msgvault-sync` launchd agent in `hosts/darwin/default.nix`.
-
-NixOS system-level configuration is not managed here - lab servers (oppy, karkinos, spirit) use `shntnu/neusis` for NixOS system config and only consume the `homeConfigurations` from this flake for user-level setup.
-
-### Module Organization
-
-- **`hosts/`**: System-specific configurations
-  - `darwin/default.nix`: shared macOS base (nix settings, common launchd agents — emacs, msgvault-sync, qmd-reindex — and `system.defaults`)
-  - `darwin/caladan.nix`, `darwin/laptop.nix`: per-host entry points; each imports `./default.nix` plus `private.darwinModules.<host>` and may layer host-specific config (e.g., caladan adds google-drive, dropbox, slack, zoom casks; laptop owns the onedrive-archive agent since OneDriveBackup.app exists only there)
-- **`modules/`**: Reusable configuration modules
-  - `shared/`: the single source of truth, imported by both `darwin/` and `headless/`
-    - `home-manager.nix`: cross-platform HM module — `programs.{zsh,git,vim,ssh,tmux}` etc. A real module (imported via `imports`), not an attrset merged by hand.
-    - `packages.nix`: cross-platform package list
-    - `nixpkgs.nix`: `nixpkgs.config` + overlays; imported at the darwin **system** level and at the headless **HM** level (both expose `nixpkgs.*`)
-    - `overlays.nix`: overlays — currently just `msgvault` (from the flake input). Applied on every machine via `nixpkgs.nix`.
-  - `darwin/`: macOS-specific
-    - `home-manager.nix`: the per-user block; imports `../shared/home-manager.nix` and layers mac-only editor, tool-path, and application configuration plus the emacs files
-    - `casks.nix`: Homebrew casks (all Macs); per-host casks live in `hosts/darwin/{caladan,laptop}.nix`
-    - `dock/`: declarative dock module
-    - `emacs/`: `init.el` + `config.org`
-  - `headless/`: Home Manager profile for lab servers (oppy/spirit/karkinos). Imports `../shared/nixpkgs.nix`, `../shared/home-manager.nix`, and other user-service modules, adds headless-only packages from `headless/packages.nix`, and layers server-specific program configs. It also manages the remote VS Code language-server wrapper and git SSH signing. Also re-exported as `homeModules.shsingh-headless`.
-
-- **`apps/aarch64-darwin/`**: `build`, `build-switch`, `rollback` (Apple Silicon only)
-
-### Key Integration Points
-
-1. **Home Manager**: Manages user-level configurations (dotfiles, shell, programs)
-2. **nix-darwin**: Provides macOS system configuration capabilities
-3. **nix-homebrew**: Declaratively manages Homebrew packages and casks
-
-## Configuration Workflow
-
-### Updating Homebrew Tap Packages
-
-`homebrew.onActivation.upgrade = true` is set in `modules/darwin/home-manager.nix`, so `build-switch` upgrades all Homebrew formulae and casks automatically. For tap-only source updates (without waiting for a full rebuild):
-
-```bash
-nix flake update <tap-input-name>   # e.g., nix flake update some-tap
-nix run .#build-switch              # syncs tap sources and upgrades formulae/casks
-```
-
-Trade-off: rebuilds are slightly slower due to upgrade checks. To revert to manual upgrades, remove the `onActivation.upgrade` line.
-
-1. **Adding Packages**:
-   - Cross-platform (Macs + servers): Edit `modules/shared/packages.nix`
-   - Server-only: Edit `modules/headless/packages.nix`
-   - Homebrew casks: Edit `modules/darwin/casks.nix` (or a host file for one Mac)
-
-2. **Modifying System Settings**:
-   - macOS: Edit `hosts/darwin/default.nix` for system preferences
-   - User settings: Edit `modules/shared/home-manager.nix` or `modules/darwin/home-manager.nix`
-
-3. **After Changes**:
-   - Always run `git add .` before building (only tracked files are copied to Nix store)
-   - Run `nix run .#build-switch` to apply changes
-   - If build fails, check for syntax errors or missing dependencies
-
-## Important Files to Modify
-
-- `modules/shared/packages.nix`: Add/remove common packages
-- `modules/darwin/casks.nix`: Manage GUI applications via Homebrew (applies to all darwin hosts)
-- `modules/shared/home-manager.nix`: Shell configuration (zsh, git, etc.)
-- `hosts/darwin/default.nix`: Shared macOS settings (nix config, launchd agents, `system.defaults`)
-- `hosts/darwin/{caladan,laptop}.nix`: Per-host overrides (e.g., host-specific casks). For private/secret host config, edit the corresponding module in the `private` flake input repo.
-- `modules/headless/`: Headless lab-server profile (`shsingh@oppy`, `shsingh@spirit`, `shsingh@karkinos`)
-
-## Private host configuration
-
-Host-specific services, endpoints, credentials, and operational notes belong in the private flake input.
-Keep this repository limited to shared declarative configuration and consult the matching private host module when changing host-specific behavior.
-
-## Python Development
-
-UV is installed for Python package management. UV can download Python versions as needed, allowing flexible development without Nix-Python conflicts. For reproducible builds requiring Nix integration, consider adding uv2nix when specifically needed.
-
-## Troubleshooting
-
-- If `build-switch` requires sudo password: This is normal for darwin-rebuild
-- If encountering "experimental features" errors: Ensure Nix flakes are enabled
-- For file permission issues: Scripts in `apps/` must be executable (`chmod +x`)
-- Homebrew cask operations (`brew reinstall --cask`, `brew install --cask`) require sudo for `/Applications` — suggest user run via `!` prefix if a coding agent's sandbox can't provide a password
-- Auto-updating apps (e.g., Obsidian) can outgrow their cask installer; `brew upgrade` won't help if no new cask version exists — use `brew reinstall --cask <app>`
-
-## Learning Log
-
-`LEARNING_LOG.md` tracks Nix/Homebrew/system learnings. Update it when encountering new gotchas or non-obvious behavior worth preserving for future reference.
+Record new general gotchas in `LEARNING_LOG.md`; keep host-specific incidents in the private operations record.
 
 <!-- BEGIN KATA (managed by `kata init --with-agents`) -->
 ## kata issue tracker

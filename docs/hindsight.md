@@ -314,17 +314,7 @@ For any server deployment:
 
 The service needs an LLM provider for extraction and consolidation in addition to its local embedding and reranking models.
 Start with a low-cost model that reliably follows Hindsight's structured extraction contract unless measured quality requires a larger one.
-The macOS deployment uses Hindsight `v0.8.6` with OpenRouter's `openai/gpt-oss-20b`, a Hindsight-recommended model for structured retention and consolidation, pinned to Groq with provider fallback disabled.
-The exact settings are:
-
-```text
-HINDSIGHT_API_LLM_PROVIDER=openrouter
-HINDSIGHT_API_LLM_MODEL=openai/gpt-oss-20b
-HINDSIGHT_API_LLM_EXTRA_BODY='{"provider":{"order":["Groq"],"allow_fallbacks":false}}'
-```
-
-In a six-call structured-output check at concurrency two, the Groq route completed in a 1.98-second median with six valid responses, versus 21.09 seconds and three valid responses from OpenRouter's automatic routing.
-The pinned route completed retention and consolidation successfully while leaving Hindsight's completion-limit overrides unset.
+Pin and test the provider route when a gateway supports multiple backends for the selected model.
 Provider credentials and billing failures can break retention while `/health` continues to return success, so a health check is necessary but insufficient.
 In the tested Hindsight `v0.8.5` and `v0.8.6` releases, fact extraction defaults to a `64000`-token completion allowance.
 That allowance is an output ceiling, not the number of tokens a normal retain consumes.

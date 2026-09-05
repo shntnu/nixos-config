@@ -186,8 +186,8 @@ The point isn't which nextflow version anyone ends up on; it's that an override 
 
 Second lesson, mechanical: build on the real target, not a proxy.
 I'd reasoned on the Mac that unifying the overlays "just adds the pin on the servers too," a no-op.
-Actually building the profile on oppy (`rsync` the tree over, `nix build .#homeConfigurations."shsingh@oppy".activationPackage`) and diffing against oppy's *live* profile is what surfaced that the pin was even in play there.
-An eval on the build host is not a build on the target host; the closure diff that told the real story only appeared on oppy.
+Building the profile on the target Linux host and diffing against its live Home Manager profile exposed the active pin.
+An eval on the build host is not a build on the target host; the revealing closure diff only appeared on the target host.
 
 ## 2026-07-14: Wrap Native Python Tools at the VS Code Process Boundary
 
@@ -203,7 +203,7 @@ Home Manager now configures `marimo.lsp.path` to a narrow wrapper that discovers
 
 Claude Desktop for Linux ships only as a `.deb` from Anthropic's apt repo, and nixpkgs has no `claude-desktop` (request #366213 closed unpackaged).
 The route that worked was `github:aaddrick/claude-desktop-debian` (repackages that official `.deb`): flake input, overlay entry beside `msgvault`, one line in `modules/headless/packages.nix`.
-Built and ran on karkinos, then reverted - updates ride `nix flake update` instead of the nixpkgs bump, and it lands in the shared headless profile so oppy and spirit inherit it too.
+Built and ran on a Linux host, then reverted - updates ride `nix flake update` instead of the nixpkgs bump, and the shared headless profile would distribute it to every Linux target.
 Before adding a flake input for a GUI app: what does it do that the CLI can't, and who bumps it in six months?
 
 ## 2026-08-06: GNOME 49 Screenshots Are Shortcut-Only
@@ -242,7 +242,7 @@ Check the listener PID and cgroup, not only `systemctl is-active` or `kata healt
 
 **Key Insight:** tmux-continuum restores on every server start but can only save while a client is attached, so a server whose sessions are never attached replays one frozen snapshot forever.
 
-Caladan kept reopening shells in the admin and career folders long after the work in them had ended.
+A Mac kept reopening shells in old project folders long after the work in them had ended.
 The sessions came from a Remote Control experiment: a launchd agent (May 2026) and later the `launch-remote-control` skill started `claude --remote-control` inside tmux sessions named `rc-<slug>`.
 The agent was dropped on 2026-07-02 precisely because it "produced ghost sessions via tmux-resurrect", yet twelve days later a new `tmux-server` login agent reintroduced restore and its commit treated the returning sessions as a benefit.
 
@@ -272,7 +272,7 @@ The desktop bootstrap and interactive macOS shells both put that directory first
 
 **Key Insight:** A forwarded SSH agent socket can remain present after its channel wedges, so checking only whether the socket exists does not prevent Git signing from hanging.
 
-Codex repointed its stable agent symlink at the newest sshd-forwarded socket on Spirit, which accepted connections but never answered.
+Codex repointed its stable agent symlink at the newest sshd-forwarded socket on a Linux host, which accepted connections but never answered.
 The Home Manager agent and local private key remained healthy.
 Headless Git now invokes `ssh-keygen` through a wrapper that unsets `SSH_AUTH_SOCK` and signs directly with the existing local private key; macOS keeps agent-backed signing.
 
@@ -292,6 +292,12 @@ curl -fsSL https://chatgpt.com/codex/install.sh | \
 
 Pass the directory in the installer's `PATH` even before activating Home Manager, so an older shell does not trigger a write to the read-only `~/.zprofile`.
 The desktop SSH bootstrap also needs a Home Manager launcher at `~/.local/bin/codex` on Linux because it starts through `/bin/sh` without loading zsh's `PATH`.
+
+## 2026-09-05: Review structure after Markdown reflow
+
+**Key Insight:** `reflow-md.py` can alter instruction-file structure even when `git diff --check` passes.
+Running it on `AGENTS.md` merged adjacent `@` imports, flattened nested lists, and joined a managed-block end marker to prose.
+Restore those structural boundaries and review the diff before accepting formatter output.
 
 ---
 

@@ -435,14 +435,8 @@ Upgrading Kata, changing the authentication model, adding another human, exposin
 The fresh setup exercise used this specification on an empty server/client deployment with `v0.14.3` and completed the pinned artifact, private listener, authentication, routing, cross-client ledger, browser-page, managed-service, and backup/restore checks.
 Independent reruns exposed and then validated fixes for import umask, protected authentication negatives, JSONL label counting, browser content negotiation, routing-neutral host-local export, and SSH configuration isolation.
 
-The later production conversion, also before the v0.15.1 package bump, used the repository's Nix implementation and qualified managed activation, explicit restart, forced-failure recovery, Home Manager reapplication, launching-session independence, an installed backup service, checksummed off-host storage, and isolated restored-daemon restart.
-That production exercise was an in-place conversion, not the fresh-install test described above.
-
-A non-credential-bearing live check on 2026-08-22 found the current installed `v0.15.1` daemon healthy with database schema `25` and API schema `0.11.0`, and confirmed user linger, an enabled active managed service, an enabled active backup timer, a single listener, the expected service cgroup, and the secret-free `nixos-config` project binding.
-The same check observed historical failed starts caused by a competing process already holding the listener; the managed service eventually became the sole listener, but this does not establish a clean restart history.
-
-The production record did not establish host reboot, credential-bearing browser login, browser mutation, a naturally triggered timer run, automated pruning, or recurring restore execution.
-Do not infer those results from the declarative configuration.
+Deployment-specific activation, restart, backup, and recovery evidence belongs in the private operations record.
+Do not infer live status or untested acceptance results from the declarative configuration.
 
 This public document intentionally contains no real hostname, private IP, user, token, project, repository, database path outside the service account, or private-network policy.
 Deployment-specific values, external secret ownership, current status, and rollback evidence belong in a private overlay or operations record.

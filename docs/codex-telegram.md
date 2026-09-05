@@ -6,7 +6,7 @@ The host polls Telegram, runs `codex exec --json` in a chosen working directory,
 It needs no webhook, public port, DNS name, TLS certificate, tunnel, or multi-channel agent framework.
 
 This specification records a tested design.
-The reference deployment passed a real phone-to-Telegram-to-local-Codex-to-Google-Calendar relay on macOS on August 17, 2026, using Codex CLI 0.147.0.
+The reference deployment passed a real phone-to-Telegram-to-local-Codex relay with a connected service on macOS on August 17, 2026, using Codex CLI 0.147.0.
 The setup and runtime failures found during that work are expressed below as requirements and acceptance checks.
 Other operating systems, service managers, Codex versions, and connector sets still require the full acceptance process.
 
