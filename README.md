@@ -46,10 +46,16 @@ nix build '.#homeConfigurations."shsingh@oppy".activationPackage'
 ## Codex CLI
 
 All machines use OpenAI's standalone installer for Codex.
+The same install and update command applies to both Macs (caladan and laptop) and all three NixOS servers (oppy, spirit, and karkinos).
 Home Manager owns the launcher at `~/.local/bin/codex`; the installer owns the binary under `~/.local/libexec/codex`.
 The macOS launcher also raises the open-file limit to 4096.
 
-Install or update before activating Home Manager on a fresh machine:
+The desktop app's automatic updater is separate from these standalone CLI installations.
+This configuration does not enable unattended CLI updates, and startup update checks do not establish a scheduled updater.
+See OpenAI's [app update documentation](https://learn.chatgpt.com/docs/enterprise/manage-app-updates) and [startup update setting](https://learn.chatgpt.com/docs/config-file/config-reference#check_for_update_on_startup).
+
+Run this command on each machine when updating its CLI.
+On a fresh machine, install the binary before activating Home Manager:
 
 ```bash
 curl -fsSL https://chatgpt.com/codex/install.sh | \
@@ -58,6 +64,7 @@ curl -fsSL https://chatgpt.com/codex/install.sh | \
 ```
 
 For unattended deployment, add `CODEX_NON_INTERACTIVE=1` to `env`.
+That variable skips installer prompts for this invocation; it does not schedule future updates.
 After activation, verify `~/.local/bin/codex --version`, then remove the old `codex-cli-nix` entry if it appears in `nix profile list`.
 Restart existing Codex sessions or reconnect the desktop SSH connection to use the new binary.
 No machine reboot is needed.
