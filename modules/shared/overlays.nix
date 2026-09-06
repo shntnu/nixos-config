@@ -2,10 +2,9 @@
 { msgvault }:
 
 [
-  # msgvault flake input -> pkgs.msgvault (installed on macOS only, run by the
-  # msgvault-sync launchd agent). Update: nix flake update msgvault
+  # One pinned source build for the installed CLI, services, and remote client.
   (final: prev: {
-    msgvault = msgvault.packages.${prev.stdenv.hostPlatform.system}.default;
+    msgvault = prev.callPackage ./msgvault-package.nix { msgvaultSrc = msgvault; };
   })
 
   # No nextflow overlay: nixpkgs now ships >= the 25.08 we once pinned it
