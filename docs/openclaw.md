@@ -1,233 +1,282 @@
 # OpenClaw deployment pilot specification
 
-Status: implementation specification, September 8, 2026.
-Live deployment status and acceptance results belong in the private deployment overlay.
-"Pilot" names the initial deployment scope, not an OpenClaw software version.
-Record actual OpenClaw and plugin versions separately in the private deployment record.
+[OpenClaw](https://docs.openclaw.ai/) provides a private Telegram conversation with a local Codex agent, including conversation continuity, active-task controls, approvals, a dedicated browser, and scheduled checks.
+The agent uses an existing ChatGPT account, repository tools, calendar connection, Kata ledger, and filtered Hindsight memory.
+OpenClaw supplies the gateway, native Codex runtime integration, sessions, approvals, and scheduler.
 
-## Start here in a new session
+This specification records a tested design.
+The reference deployment completed its acceptance checks on macOS on September 8, 2026, using OpenClaw `2026.9.2`, the official Codex plugin `2026.9.2`, and native Codex `0.153.4`.
+The setup and runtime failures found during that work are expressed below as requirements and acceptance checks.
+Other releases, platforms, service managers, and connector sets require the full acceptance process.
+The term "pilot" names the initial deployment scope; software versions are recorded separately.
 
-This document is the implementation entry point and does not require the originating conversation.
-Read this repository's AGENTS.md, [development workflow](development.md), and the private input's `docs/openclaw-deployment.md` before making changes.
-The private overlay supplies the host, paths, existing services, and chosen defaults.
-Locate it through the flake's `private` input and the operator's available working checkout; inspect local changes before choosing the source to edit.
-Use the local documents when they contain uncommitted work, rather than assuming a GitHub link already contains that work.
-If the private checkout is unavailable, continue public inspection and report the missing access without reconstructing private settings.
+## Use this specification
 
-A complete implementation request can be given as:
+Give a coding agent this document with an explicit instruction:
+
+> Set up the OpenClaw deployment pilot from this specification, preserve the existing Telegram gateway and this machine's configuration model, and run the full acceptance test.
+
+The instruction authorizes implementation, deployment, and messages to the owner's test bot, including finite acceptance schedules.
+It does not authorize purchases, messages to other people, replacement of the existing gateway, or deletion of existing state.
+A bare URL or a request to review or build alone does not authorize activation.
+
+Read the whole specification, then inspect the host, managed configuration, existing services, and authenticated integrations.
+The host needs an always-on user session with outbound HTTPS, an authenticated Codex account, and the existing repository integrations selected for the pilot.
+Obtain a new bot token through a local hidden prompt; ask only for unavailable authentication or decisions that materially change the requested outcome.
+Continue independent preparation while waiting for local authentication or phone interaction.
+
+In this repository, follow [AGENTS.md](../AGENTS.md) and the [development workflow](development.md).
+Host assignments, paths, credentials wiring, and operational evidence belong in the private input's `docs/openclaw-deployment.md`.
+Use the available managed-source checkout, including uncommitted work, rather than assuming a published revision is current.
+Keep intent and completion evidence in the existing Kata ledger.
+
+## Architecture and scope
+
+The flow is:
 
 ```text
-Implement and deploy the OpenClaw deployment pilot specified in docs/openclaw.md,
-including the private input's docs/openclaw-deployment.md.
-Follow the implementation phases and acceptance matrix, preserve the existing
-Telegram gateway, and record the results in the private deployment document.
+owner's Telegram conversation
+  -> outbound polling by the isolated OpenClaw gateway
+  -> native Codex app-server session
+  -> existing repository tools, calendar, browser, and filtered memory
+  -> result delivered to the same owner conversation
 ```
 
-Treat the current user's request as the authority for the session.
-Reading this specification or asking for a build alone does not authorize activation.
-An explicit implementation-and-deployment request covers the pilot service and messages to the owner's test bot, including temporary acceptance-test schedules.
-It does not authorize purchases, messages to other people, replacement of the existing gateway, or deletion of existing state.
-Use prior authorization within its scope and ask only for missing credentials, interactive authentication, or decisions that materially change the requested outcome.
+Use one OpenClaw agent, one named deployment profile, one dedicated browser profile, and one useful read-only workflow.
+Keep the existing Telegram gateway running with its own bot token, polling state, and conversations.
+Only one process may poll each token.
+The new bot accepts direct messages from the owner's exact numeric identity and has group access disabled.
+The gateway listens only on loopback and requires authentication; Telegram long polling needs no public inbound endpoint.
 
-Inspect current Git status and Kata work before creating or resuming an implementation issue.
-The documentation task is not the deployment task.
-Use the existing implementation issue if present; otherwise create one covering the full pilot outcome.
-Do not stop after adding the package when the requested scope is implementation and deployment.
+Ordinary conversation stays in its bound native thread.
+Independent work uses supported separate sessions without resuming another client's active native thread.
+Status requests report the current phase, last verified result, and required input.
+An acknowledgement is followed by a verified result or an actual failure report.
 
-## Required pilot outcome
+The pilot covers text and result delivery, conversation continuity, correction and cancellation, native approval routing, browser persistence, and durable scheduled checks.
+Image and voice messages, phone calls, location triggers, arbitrary-site bookings, autonomous shopping, extra channels, and multi-host execution are outside the tested scope.
+Existing service replacement is a separate deployment decision.
 
-The owner can use a private Telegram conversation to give work to an always-on local Codex agent, receive its result, and interact while it runs.
-The assistant can read an existing connected calendar, execute a selected repository workflow, and perform a scheduled check with meaningful-change notification.
-The implementation uses OpenClaw's existing runtime facilities wherever they meet the contract.
-Do not build a replacement scheduler, gateway, approval engine, memory service, or task database as part of this pilot.
+## Package and native runtime
 
-The deployment pilot includes text and result delivery, conversation continuity, task separation, correction/cancellation, interactive decisions, one dedicated browser profile, and durable scheduling.
-Image and voice-message handling can be smoke-tested if supported by the selected installation, but are not required for pilot completion.
-Phone calls, location triggers, arbitrary-site booking reliability, autonomous shopping, additional chat channels, and multi-host execution are later work.
-
-### Task and interaction contract
-
-- Ordinary conversation preserves context in its own bound native thread.
-  Independent long-running work uses a separate task/session through supported OpenClaw facilities; it must not seize another client's active Codex thread.
-  The owner can ask for status, and receive the current phase, last verified result, and any required input.
-- An acknowledgement is not a completion report.
-  Final reports identify the outcome and supporting artifact or external confirmation, or explain the actual failure.
-  Corrections and stop requests must remain responsive while a worker is active.
-- Reversible preparation and reads proceed under the owner's task instructions.
-  Approval requests for consequential actions state the destination, exact action, relevant amount/date/terms, and expiry when applicable.
-  Bind a decision to the proposed action and ask again only if its material details or authority change.
-  Command approvals alone do not enforce business-level purchase or cancellation rules.
-- A denied or expired approval does not execute the action.
-  A restart or timeout must not blindly replay an action with an uncertain external result.
-  Inspect the authoritative result before retrying; otherwise report the uncertainty and preserve the task for reconciliation.
-  Qualify this with an enabled scheduled job because a manual run of a disabled job does not exercise startup catch-up.
-  Scheduled actions need an operation-specific receipt or equivalent authoritative reconciliation; schedule read-only checks when that support is unavailable.
-
-### Integration contract
-
-| Integration | Required behavior |
-| --- | --- |
-| Codex | Use the native app-server runtime and the intended existing account. Verify the selected model, native thread identity, connector identity, and loaded project instructions. Do not silently fall back to API billing or a different account. |
-| Repository tools and skills | Reuse the existing managed sources and execute in the intended repository context. Do not copy private repositories or overwrite their bootstrap/instruction files. Verify service PATH and working directory with one actual existing tool. |
-| Kata | Keep intent and completion evidence in the existing ledger. OpenClaw may retain runtime task IDs and checkpoints; record their relationship without a second manually synchronized task list. A Kata schedule alone does not execute work. |
-| Hindsight | Preserve existing repository-bank selection and filtered retention. Verify a synthetic recall/retention round trip through the chosen runtime. If hooks cannot work as configured, document and resolve the integration before claiming full pilot completion; do not silently enable broad transcript retention. |
-| Calendar | Perform an authenticated read and verify it against the correct calendar. Live writes require task-specific authority. |
-| Browser | Use a dedicated persistent profile and one tested site. Detect login/interaction requirements and report them. Browser success must be established from resulting page/service state. |
-| Notifications | Deliver to the owner's configured test conversation. Stay quiet on unchanged monitor state and notify on meaningful changes, completion, failure, or required input. Persist enough observation/delivery state to avoid ordinary duplicate notifications after restart. |
-
-Use supported configuration and narrow wrappers for existing tools before writing custom plugins.
-Where a documented capability fails qualification, record the exact version and observed boundary, then try a supported configuration adjustment.
-Do not hide a failed requirement by broadening permissions or substituting another runtime without explaining the change.
-
-### Resolve during implementation
-
-These are technical qualification steps for the implementing agent, not unanswered product questions for the owner.
-Use the selected release's schema/help and a small smoke test to resolve them, then record the effective settings privately.
-
-| Question | Required resolution |
-| --- | --- |
-| Which CLI/plugin/runtime versions work together? | Choose a supported stable combination with the required native Codex and interaction features. Record exact versions and resolved executable paths. |
-| How does managed configuration coexist with plugin installation? | Identify installer-owned state, provision the pinned plugin, and render reproducible non-secret configuration. Check that a second setup preserves auth and conversations. |
-| How does the separate OpenClaw workspace execute repository tasks? | Verify a supported working-directory/instruction path using an actual task, without overwriting repository instructions or copying the whole repository into the profile. |
-| How are permissions and decisions routed? | Configure native approval delivery to the owner. Ordinary authorized reads and reversible preparation should not require repeated confirmation; platform-required escalation and materially new transaction authority use the interactive path. Do not inherit the old wrapper's unconditional `-a never` as a substitute for testing approvals. |
-| How do memory hooks and scheduled tasks behave in this runtime? | Test the actual native-runtime path, including a restart. Preserve the existing filtering and account policy, and record any supported adaptation. |
-
-If a required feature is unavailable, complete independent work and state the failing acceptance case with the smallest concrete alternative.
-Do not declare the requirement satisfied by documentation alone.
-
-Manage the package and persistent service through this repository.
-Keep host assignments and settings in the private input, following [module ownership](development.md#ownership-and-layout).
-Credentials, authentication sessions, browser profiles, conversations, and scheduler state stay outside Git and the Nix store.
-
-## Package choice
-
-Start on macOS with the Homebrew formula declared through nix-darwin:
+The tested macOS installation uses the Homebrew formula declared through nix-darwin:
 
 ```nix
 homebrew.brews = [ "openclaw-cli" ];
 ```
 
-Put the declaration in the private host module if only one machine should run it.
-The formula supplies the `openclaw` executable and its Node dependency.
-The separate `openclaw` cask is the desktop application and is optional for a Telegram pilot.
-As of this review, the [Homebrew formula](https://formulae.brew.sh/formula/openclaw-cli) provides version 2026.9.2.
+Keep a single-host declaration in its host module.
+The formula supplies the CLI and its Node dependency; the desktop cask is unnecessary for the tested gateway.
+Verify both the installed executable and the Homebrew receipt.
+A pinned tap alone does not prove the installed version, and a tap update can upgrade unrelated packages during activation.
+The Homebrew declaration records installation intent rather than a fully hermetic Nix package pin.
 
-The upstream [nix-openclaw module](https://github.com/openclaw/nix-openclaw) remains an option for fully Nix-packaged deployment.
-However, revision `5cbb2f1bdaf89575076cf95e9cee59c851c967fe` pins OpenClaw to `2026.7.1-2` and its Codex plugin to `2026.7.1`.
-That plugin pins Codex `0.144.3`, while the September OpenClaw runtime documentation specifies managed Codex `0.153.4`.
-Do not apply September configuration examples to that default package without checking compatibility.
-[Pinned source](https://github.com/openclaw/nix-openclaw/blob/5cbb2f1bdaf89575076cf95e9cee59c851c967fe/nix/sources/openclaw-source.nix), [pinned Codex plugin](https://github.com/openclaw/nix-openclaw/blob/5cbb2f1bdaf89575076cf95e9cee59c851c967fe/nix/generated/openclaw-runtime-plugins/codex.nix).
-
-A Homebrew declaration manages installation intent; it is not a fully hermetic Nix package pin.
-Check the formula and installed executable version at deployment, and record them together with the Codex plugin version.
-Review any tap update separately because this repository enables Homebrew upgrades during activation.
-
-## Run a foreground trial
-
-First install only the CLI through the normal [build and apply workflow](development.md#build-and-apply).
-Use a separate named OpenClaw profile and a dedicated workspace for the trial.
-The CLI's `--profile <name>` option selects separate state and configuration paths.
-Run guided onboarding in that profile, select a local gateway, and decline daemon installation during this stage.
-Verify the installed release's onboarding options before automating them.
-[CLI profiles](https://docs.openclaw.ai/cli), [onboarding](https://docs.openclaw.ai/cli/onboard).
-
-Choose the native Codex runtime and install the matching official Codex plugin in the trial profile.
-Use existing ChatGPT authentication through the supported Codex setup; an API-billed route is a separate choice.
-OpenClaw's default Codex home is agent-scoped.
-Sharing the operator's native home requires explicit `appServer.homeScope: "user"` configuration and verification of the existing plugins and hooks.
-Keep independent writers on separate native threads.
-[Codex harness](https://docs.openclaw.ai/plugins/codex-harness).
-
-Create a separate test bot through [BotFather](https://t.me/BotFather). Provide its token through a local secret prompt or file reference, and restrict direct messages to the owner's numeric identity.
-Disable group access for the pilot.
-Keep one poller per bot token.
-Bind the gateway to loopback and use gateway authentication; Telegram long polling does not require an inbound public endpoint.
-[Telegram setup](https://docs.openclaw.ai/channels/telegram), [gateway](https://docs.openclaw.ai/cli/gateway).
-
-After configuring the named profile, these commands validate it and run the gateway in the foreground:
+Onboard a separate named profile with a dedicated workspace and a local gateway, skipping daemon installation.
+Check the effective state and configuration paths because environment overrides can change profile defaults.
+Install the official plugin into that profile using the qualified version, replacing `<profile>` with its selected name:
 
 ```bash
-openclaw --profile pilot config validate
-openclaw --profile pilot gateway run --bind loopback
+openclaw --profile <profile> plugins install @openclaw/codex@2026.9.2 \
+  --pin --accept-capabilities
 ```
 
-Use the same profile for plugin, authentication, and diagnostic commands.
-An explicit custom state/config environment can override profile defaults, so check the effective paths before onboarding.
+The tested plugin uses its managed Codex `0.153.4` binary.
+Verify the native runtime version, model, account, and thread identity through an actual session.
+The reference test used `gpt-6-astra` with medium effort and no configured API fallback.
+Select an available model through the intended account when reproducing the deployment.
 
-## Make the tested configuration persistent
+The tested settings select the Codex agent runtime for the model and use `plugins.entries.codex.config.appServer` with these values:
 
-Once the foreground trial passes, add a small private module for the desired OpenClaw settings and launchd service.
-The module should run the foreground gateway command with explicit paths, working directory, restart behavior, and owner-only logs/state.
-Use one service manager; do not also run Homebrew services or OpenClaw's daemon installer.
+```json
+{
+  "homeScope": "user",
+  "mode": "guardian",
+  "approvalPolicy": "on-request",
+  "sandbox": "workspace-write",
+  "approvalsReviewer": "user"
+}
+```
 
-Keep desired configuration separate from runtime auth and plugin-install metadata.
-Determine which files the selected plugin installer writes before making the production configuration immutable.
-OpenClaw's Nix mode can enforce immutable configuration, but also disables plugin install/update commands.
-Provision pinned plugins before enabling that mode, or package their verified roots declaratively.
-Do not mix an immutable configuration with an installer that expects to rewrite it.
-[Nix mode](https://docs.openclaw.ai/install/nix), [plugin management](https://docs.openclaw.ai/cli/plugins).
+Sharing the existing user Codex home provides the intended authentication and plugins.
+It does not establish that every existing hook or connector works through OpenClaw.
+Verify the actual calendar identity, loaded project instructions, and one existing repository helper under the service's environment.
+The tested calendar plugin had destructive actions disabled, and its authenticated read returned the expected account and event.
+Do not change managed Codex authentication or silently switch to API billing to bypass a failure.
 
-A runtime helper can obtain credentials from the host credential store and supply file or environment references.
-Secret values must never be interpolated into Nix-generated files or command-line arguments.
-Capture any browser permissions and login prerequisites in the private deployment notes.
+Keep `agents.defaults.workspace` in a separate bootstrap directory and set `agents.defaults.cwd` to the intended repository.
+Manage the bootstrap instructions separately, with `skipBootstrap: true`, so setup preserves the repository's own instruction files.
+Do not copy repositories into the profile.
 
-Start with one agent, one browser profile, and one useful workflow.
-Reuse the existing task ledger and memory policy where compatible.
-Additional channels, voice calls, external skill catalogs, and extra memory engines can be added when a specific task needs them.
+## Credentials and configuration
 
-## Acceptance and handoff
+The tested deployment uses OpenClaw's native JSON file SecretRefs for the bot token and gateway token.
+Unattended Keychain access failed with the exact service Python even though another local reader succeeded.
+Protected file storage was therefore selected and verified without interaction.
+Do not infer unattended credential access from an interactive setup test.
 
-Verify a real Telegram response, a follow-up in the same conversation, and an authenticated read such as the next calendar event.
-While work is running, test a correction, an approval decision, and a stop request.
-Test a scheduled notification across a gateway restart, including duplicate suppression.
-Browser actions need an explicit expected result and verification of that result.
+Store credentials outside Git and the Nix store in a mode-`0600` file inside a mode-`0700` directory owned by the service user.
+Reject symlinks, unexpected ownership, loose permissions, and incomplete values.
+The setup helper accepts the new token through a no-echo terminal prompt, verifies bot identity with `getMe`, and rejects the existing bot even if its token has rotated.
+Reuse the owner's already verified numeric Telegram identity when available; otherwise establish it through a local pairing flow.
+Generate a separate gateway token and preserve existing credentials on repeat setup.
+Keep secret values out of arguments, logs, source files, and chat.
 
-Record package/runtime versions, active service identity, effective configuration paths, credential wiring, and test evidence privately.
-Only then replace an existing bot gateway if replacement is the chosen deployment scope.
-Disabling a service preserves its conversations and state; removing runtime data is a separate action.
+Configure a native file provider pointing at `<credential-file>` and reference its JSON fields from Telegram and gateway authentication.
+The declarative configuration contains references and the runtime owner allowlist, while the secret values remain in the protected file.
+File permissions protect access by other users; they do not isolate credentials from an agent running as the same OS user.
+Run the secret audit under the deployed environment and verify that no plaintext configuration secrets or unresolved references remain.
 
-## Implementation phases
+Keep the desired non-secret configuration separate from authentication, conversations, and plugin-install metadata.
+The tested setup helper inspects the installed Codex plugin version, installs the pinned version when needed, and links the reviewed Hindsight adapter.
+It renders the owner allowlist at runtime, applies a native configuration patch, and validates the result.
+Use the same immutable adapter directory for plugin installation and configuration loading to avoid duplicate plugin discovery.
+Run setup twice and verify that authentication and native session identities survive without duplicate plugins.
 
-1. Inspect the live baseline and managed sources, including existing gateway, package resolution, credentials wiring, Codex configuration ownership, and memory hooks.
-   Verify version-sensitive schema and commands against the selected release and its CLI help.
-   The versions above are research observations, not permission to assume they remain current.
-2. Add the host-scoped package declaration and setup/run helpers in the private overlay.
-   Build without activation, then activate when deployment is in scope.
-   Obtain any new token through a local no-echo setup flow; never request that the owner paste it into the conversation.
-   Continue source and build checks while any required user login or bot creation is pending.
-3. Qualify one foreground profile with the native Codex runtime, test Telegram identity, loaded instructions, and calendar read.
-   Use a finite foreground process owned by the session and stop it before starting the managed service.
-   Capture proven configuration in managed sources, with runtime auth/plugin state kept separate.
-4. Add launchd persistence, task controls, the dedicated browser, and the scheduled-check workflow.
-   Verify memory/ledger behavior and state backup coverage.
-   Complete the matrix below against the installed service, then record the actual deployment and remaining limitations privately.
+The tested profile remains writable for native plugin installation and configuration patching.
+Do not enable immutable Nix mode while relying on an installer that rewrites profile metadata.
+Schema and secret checks use the selected profile:
 
-Use the repository's build, commit, lock-update, and activation rules.
-Preserve unrelated staged and unstaged work, and do not treat pre-existing staged changes as yours to commit.
-When a pinned private input is involved, distinguish a temporary override from an ordinary reproducible deployment.
-No commit, push, or deployment should be claimed unless performed and verified.
+```bash
+openclaw --profile <profile> config validate
+openclaw --profile <profile> secrets audit --check
+```
+
+## Task controls and approvals
+
+Configure `tools.exec.mode: "ask"` and enable native Telegram approval delivery to the owner.
+Native requests need an explicit reply destination.
+A CLI-started request without a reply route failed closed in the reference test, while `--deliver --reply-channel telegram --reply-to <owner>` delivered an approval card.
+
+Use the same authenticated GatewayClient connection or an authorized operator-admin client for direct gateway controls.
+A separate client with insufficient scope failed to cancel a CLI-started session during qualification.
+The supported control path successfully applied a correction and cancelled the exact run, after which no active native run remained.
+The owner also verified that phone `/stop` interrupted its native worker without leaving the fixture running.
+
+The approval tests verified allow-once execution, rejection of a replayed decision, a fresh request for a changed destination, denial, and expiry.
+The expiry fixture waited 120 seconds, and a late approval was rejected without executing.
+Decisions were exercised through the supported local operator CLI; Telegram card delivery was verified separately.
+Human interaction with Telegram approval buttons is outside that evidence and needs its own test when required.
+
+Command approvals do not enforce every business rule for purchases, bookings, cancellations, or submissions.
+Obtain task-specific authority for the exact destination, action, relevant amount, dates, terms, and expiry before a consequential action.
+A denial or expiry permits no action, and material changes require a new decision.
+Keep ordinary authorized reads and reversible preparation within the existing task authority.
+
+## Memory and task records
+
+Kata remains the intent and completion ledger, while OpenClaw owns its runtime session IDs and scheduler checkpoints.
+Do not create another manually synchronized task list or memory database.
+Reuse the existing repository-bank resolver and filtering policy described in the [Hindsight specification](hindsight.md).
+
+Native Hindsight hooks did not run in the tested Codex integration, including a trial with native hooks explicitly enabled.
+The qualified implementation uses a small local OpenClaw plugin that calls the existing filtered recall and retain adapters.
+The plugin activates at startup and has explicit conversation-hook access.
+It invokes recall before prompt construction and retention after a successful agent turn.
+
+Pass only the submitted prompt and the final assistant text, together with stable session and turn identifiers and the intended repository cwd.
+Reject tool-only responses and earlier-turn assistant text.
+Never read a transcript file or forward raw tool output, reasoning, or recalled context as new conversation content.
+Bound adapter execution time and output size, suppress private diagnostics, and fail open with a fixed warning if memory integration fails.
+
+Disable OpenClaw's additional memory slot, automatic memory flush, periodic heartbeat, and autonomous skill review for this scope.
+Explicit native schedules remain available.
+Verify a filtered synthetic retention and fresh-session recall round trip, then verify recall through the managed service after restart.
+
+## Scheduling and action recovery
+
+Use OpenClaw's native scheduler and supported durable trigger state for observation and delivery checkpoints.
+The qualified availability watch used the read tool, stayed quiet on unchanged state, and delivered one notification for a tested change.
+Another gateway restart produced no duplicate notification.
+An earlier version used a shell command for the read and was blocked by ask mode after restart; the final watch needed no exec allowlist or broader permission.
+Remove finite acceptance jobs after collecting their receipts.
+
+An enabled one-shot job interrupted after an action but before acknowledgement can run again at startup in OpenClaw `2026.9.2`.
+The unguarded test executed its synthetic action twice.
+Manually running a disabled job did not expose that behavior, and `cron.skipMissedJobs` did not disable interrupted one-shot catch-up.
+Scheduler completion records alone do not provide exactly-once external effects.
+
+Schedule read-only checks or action tools that reconcile an authoritative operation receipt before another effect.
+The qualified fixture was invoked twice across restart but applied one action because it recognized the existing receipt.
+A separate incomplete receipt produced explicit uncertainty and no retry.
+For a real action, use the external service's operation ID and authoritative result, then test its own recovery behavior.
+The synthetic receipt establishes that reconciliation pattern only; it does not qualify arbitrary commands or external services.
+
+## Browser and useful workflow
+
+Use a dedicated persistent browser profile with its own browser data and an unused debugging port.
+Verify the resulting page state rather than treating a successful tool call as completion.
+The reference test opened example.com, preserved synthetic localStorage across a browser restart, and verified removal of the test value.
+It established profile persistence and a reversible action on an unauthenticated site.
+Authenticated sites, booking flows, and arbitrary-site reliability require separate qualification.
+Report login requirements rather than attaching the owner's normal browser profile.
+
+Complete one useful read-only workflow using the existing calendar and archive access, with delivery only to the owner.
+The reference workflow looked for an upcoming trip and used a tomorrow-calendar brief when none was found.
+The calendar fallback and owner delivery completed with source identifiers and a delivery receipt.
+The trip branch was not exercised by that result.
+
+## Service, backup, and deployment
+
+First install and configure the selected profile, then qualify the foreground gateway:
+
+```bash
+openclaw --profile <profile> gateway run --bind loopback
+```
+
+After the foreground trial, stop that process and run the same command through the host's managed service system.
+The tested macOS service uses launchd with explicit executable paths, working directory, `HOME`, `CODEX_HOME`, and PATH.
+It starts with the user's session, restarts automatically, and uses a throttle and owner-only state and logs.
+The gateway receives a restricted environment, and the Codex configuration clears gateway and Telegram token environment variables from its child.
+Use one service manager; do not also install an OpenClaw daemon or enable Homebrew services.
+
+Verify gateway readiness, healthy Telegram polling, and plugin status after restart.
+A PID alone does not establish readiness; one qualification restart took about 92 seconds before the gateway became ready.
+Recheck the original gateway's identity and health without restarting it as part of the pilot.
+
+Add the profile state and credential directory to the existing backup system, then verify a completed backup containing the new files.
+Restore representative configuration, credentials, and native session SQLite state into an isolated protected directory without starting another gateway or poller.
+Compare content without printing secrets, verify ownership and modes, and run SQLite's integrity check on the restored database.
+The reference deployment passed a local Time Machine restore with matching configuration and credential content, preserved modes, and a successful SQLite `PRAGMA quick_check`.
+A verified local backup and representative restore satisfy this pilot's backup requirement; offsite recovery is separate qualification.
+
+Build before activation and verify the installed artifact after activation.
+For Git-backed flakes, ensure that new managed files are included and that any wrapper forwards `"$@"` to the inner command.
+The reference trial initially built the wrong private revision because an app wrapper discarded the override arguments.
+Treat a local input override as temporary validation.
+When publication is authorized, commit and push the managed sources, refresh the dependent lock, and repeat the ordinary build and activation without the override.
+Distinguish local edits, committed and pushed sources, successful builds, and activated state in the handoff.
 
 ## Acceptance matrix
 
-Record each result as PASS, FAIL, or NOT RUN with the observed version, time, and concise evidence.
-Use synthetic content where possible and keep personal results in the private record.
+Run focused tests for custom credential handling and memory filtering, along with the repository's configuration and syntax checks.
+Then test the installed service against the matrix below.
+Record PASS, FAIL, or NOT RUN with versions, dates, evidence, and the tested interaction path in the private deployment record.
+The reference deployment completed A1 through A12 within the qualifications stated here.
 
 | ID | Test | Required evidence |
 | --- | --- | --- |
-| A1 | Validate configuration and build the affected target. | Schema validation and build succeed; installed CLI/plugin/runtime versions match the qualified combination. |
-| A2 | Start the managed service with the test bot. | One service and one poller; a real Telegram-to-Codex response; existing gateway remains healthy. |
-| A3 | Send a follow-up and then a separate task. | Follow-up retains context; independent work does not overwrite or concurrently mutate another native thread. |
-| A4 | Read the calendar and run an existing repository helper. | Correct account/calendar result and a real helper result under the service's environment; intended repository instructions are effective. |
-| A5 | Run a harmless long task, correct it, then stop it. | Correction affects the active task; cancellation reaches the worker; report any detached work rather than claiming it stopped. |
-| A6 | Exercise an approval checkpoint with a reversible fixture. | Approve executes once; deny and expiry execute nothing; changed action cannot reuse the old decision. |
-| A7 | Schedule a finite synthetic availability watch. | Unchanged state is quiet; a change produces one notification; restart does not duplicate the observed change; test job expires or is removed afterward. |
-| A8 | Interrupt a fixture between action and acknowledgement. | Reconciliation or explicit uncertainty replaces blind replay; no duplicate fixture action. |
-| A9 | Use the dedicated browser and reopen its session. | Profile separation, expected persistence, and a verified reversible action; report authentication requirements. |
-| A10 | Check Kata and Hindsight using synthetic task content. | Intent/completion evidence is retrievable; memory uses the expected repository bank and retention policy without secret or raw-tool leakage. |
-| A11 | Restart the installed service and inspect storage. | Service recovers, context/state remains usable, protected files have appropriate ownership, and backup coverage is verified for persistent deployment. |
-| A12 | Complete one useful owner-selected workflow. | End-to-end result with evidence, required user interventions, and observed limitations. Use the private overlay's default when no alternative is supplied. |
+| A1 | Validate configuration and build the affected target. | Schema, secret audit, and build pass; installed CLI, plugin, and native runtime match the qualified versions. Repeat setup preserves auth and sessions without duplicate plugins. |
+| A2 | Start the managed service with the separate bot. | Ready loopback service and one poller; real Telegram-to-Codex reply; original gateway remains healthy. |
+| A3 | Send a follow-up and then a separate task. | Follow-up retains native context; independent work uses a separate native thread. |
+| A4 | Read the calendar and run an existing repository helper. | Correct account and calendar result; helper succeeds under the service environment and intended repository instructions. |
+| A5 | Correct and cancel harmless active work. | Supported gateway correction changes the result; exact-run cancellation clears active work; owner phone stop interrupts its worker without a detached fixture. |
+| A6 | Exercise native approvals with reversible fixtures. | Allow-once executes once; replay, denial, expiry, and changed-action reuse do not execute. Verify Telegram card delivery and record whether decisions came from the local operator or phone. |
+| A7 | Run a finite read-only availability watch. | Unchanged state is quiet; a change delivers once; restart does not repeat the observed notification; remove the job afterward. |
+| A8 | Interrupt an enabled scheduled action before acknowledgement. | Repeated invocation reconciles an authoritative receipt without a second effect; an uncertain receipt stops without retry. Qualify each real action tool separately. |
+| A9 | Reopen the dedicated browser profile. | Profile separation, persistent synthetic state, and a verified reversible action on the test site. Record authenticated-site tests separately. |
+| A10 | Check Kata and filtered Hindsight. | Intent and completion evidence remain retrievable; synthetic retention and fresh-session recall use the expected repository bank, including after service restart. |
+| A11 | Restart the service and restore representative state. | Readiness, context, ownership, and modes survive; a completed backup contains the pilot; isolated configuration, credential, and SQLite restore checks pass. |
+| A12 | Complete one useful read-only workflow. | Verified calendar/archive result and owner delivery receipt; state which branch ran and which user interventions were needed. |
 
-A missing login or unperformed phone test is NOT RUN, not PASS.
-Do not describe the pilot as fully deployed while a required acceptance case remains unresolved.
-If the session ends early, update the implementation issue's attention and leave a precise next command/action plus the blocking fact in the private progress record.
-Use the repository's scheduling or review convention for remaining work, without inventing a recurring automation.
+A missing login or unperformed interaction remains NOT RUN for that capability.
+Keep historical failures in the private evidence record, with the final result and its qualifications clearly identified.
+Do not claim broader approval, browser, scheduling, or recovery guarantees than the tests establish.
+
+## Scope and boundaries
+
+This blueprint describes a single-user deployment with existing repository tools and authenticated integrations.
+It does not publish hostnames, bot usernames, user IDs, private repository paths, service labels, credential locations, or live deployment identifiers.
+Preserve each host's configuration model while retaining the tested behavior and acceptance checks.
+The public specification is the canonical reusable design; private overlays contain deployment choices and operational evidence.
+
+For version-specific implementation, consult the upstream [CLI](https://docs.openclaw.ai/cli), [Codex harness](https://docs.openclaw.ai/plugins/codex-harness), [Telegram](https://docs.openclaw.ai/channels/telegram), [secrets](https://docs.openclaw.ai/gateway/secrets), and [plugin management](https://docs.openclaw.ai/cli/plugins) documentation alongside the selected release's schema and help.
