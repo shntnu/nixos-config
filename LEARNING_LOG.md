@@ -321,3 +321,10 @@ Structure each as:
 
 Focus on "what" and "why", not detailed "how".
 Reader can consult docs for implementation details.
+
+## 2026-09-08: Forward arguments through flake app wrappers
+
+Every wrapper between `nix run` and the build command must forward `"$@"`.
+The generated app launcher discarded arguments even though the platform build script accepted them.
+A private-input override therefore appeared to build successfully while the inner build still used the pinned input.
+Check the evaluated package list and the inner command's override diagnostic before treating an override build as evidence for local private changes.

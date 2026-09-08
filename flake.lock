@@ -183,11 +183,11 @@
     "homebrew-core": {
       "flake": false,
       "locked": {
-        "lastModified": 1787239100,
-        "narHash": "sha256-oFrydbDv7iZn1pHfyKraazpCMzgSSGWd4OFP6/nzH6w=",
+        "lastModified": 1788842201,
+        "narHash": "sha256-0v7OiMMVZAuNCzGMM32To4BWm/iu+HstTHaY17M7hJk=",
         "owner": "homebrew",
         "repo": "homebrew-core",
-        "rev": "fb066048bd8bd1e684baa57159163a543b3ceeb4",
+        "rev": "c62feec65e8ae3af5ebb2e64d7314b6f5fa127db",
         "type": "github"
       },
       "original": {
@@ -255,11 +255,11 @@
     },
     "private": {
       "locked": {
-        "lastModified": 1788472738,
-        "narHash": "sha256-oQ5bo0G2aghb203aNLKj03rACV1yOCUwU7iazqOQWdU=",
+        "lastModified": 1788849418,
+        "narHash": "sha256-E1FbDDWkXhn8Fx1TVkKMjoPKcM626NMduw0Si0YdSQs=",
         "ref": "refs/heads/main",
-        "rev": "7c1e814cb236116c9cb8b562025a48f55b9bc452",
-        "revCount": 83,
+        "rev": "006c6c5cb942d205eb8171aca6698a2949eb6e5f",
+        "revCount": 90,
         "type": "git",
         "url": "ssh://git@github.com/shntnu/nixos-config-private"
       },
