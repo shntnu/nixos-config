@@ -58,6 +58,8 @@ Phone calls, location triggers, arbitrary-site booking reliability, autonomous s
 - A denied or expired approval does not execute the action.
   A restart or timeout must not blindly replay an action with an uncertain external result.
   Inspect the authoritative result before retrying; otherwise report the uncertainty and preserve the task for reconciliation.
+  Qualify this with an enabled scheduled job because a manual run of a disabled job does not exercise startup catch-up.
+  Scheduled actions need an operation-specific receipt or equivalent authoritative reconciliation; schedule read-only checks when that support is unavailable.
 
 ### Integration contract
 

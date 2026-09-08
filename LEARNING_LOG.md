@@ -328,3 +328,11 @@ Every wrapper between `nix run` and the build command must forward `"$@"`.
 The generated app launcher discarded arguments even though the platform build script accepted them.
 A private-input override therefore appeared to build successfully while the inner build still used the pinned input.
 Check the evaluated package list and the inner command's override diagnostic before treating an override build as evidence for local private changes.
+
+
+## 2026-09-08: Qualify scheduler replay using an enabled job
+
+A manual run of a disabled one-shot does not test startup catch-up.
+OpenClaw 2026.9.2 reruns an enabled one-shot interrupted before its terminal result, even if an external action already happened.
+Use read-only scheduled checks or operation-specific reconciliation before actions, and verify both an enabled-job restart and an uncertain receipt.
+Scheduler completion records alone do not provide exactly-once external effects.
