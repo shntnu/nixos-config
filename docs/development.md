@@ -112,6 +112,7 @@ Deployment locations, service inventory, secret wiring, and current operational 
 
 - [Hindsight memory](hindsight.md).
 - [Codex Telegram gateway](codex-telegram.md).
+- [OpenClaw deployment pilot specification](openclaw.md).
 - [Kata shared work ledger](kata.md).
 - [Headlong provider configuration](headlong.md).
 - [Zvec-Grep evaluation](zvec-grep-evaluation.md).

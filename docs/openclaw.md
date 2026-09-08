@@ -1,7 +1,9 @@
-# OpenClaw v1 implementation specification
+# OpenClaw deployment pilot specification
 
 Status: implementation specification, September 8, 2026.
 Live deployment status and acceptance results belong in the private deployment overlay.
+"Pilot" names the initial deployment scope, not an OpenClaw software version.
+Record actual OpenClaw and plugin versions separately in the private deployment record.
 
 ## Start here in a new session
 
@@ -15,7 +17,7 @@ If the private checkout is unavailable, continue public inspection and report th
 A complete implementation request can be given as:
 
 ```text
-Implement and deploy the OpenClaw v1 pilot specified in docs/openclaw.md,
+Implement and deploy the OpenClaw deployment pilot specified in docs/openclaw.md,
 including the private input's docs/openclaw-deployment.md.
 Follow the implementation phases and acceptance matrix, preserve the existing
 Telegram gateway, and record the results in the private deployment document.
@@ -29,18 +31,18 @@ Use prior authorization within its scope and ask only for missing credentials, i
 
 Inspect current Git status and Kata work before creating or resuming an implementation issue.
 The documentation task is not the deployment task.
-Use the existing implementation issue if present; otherwise create one covering the full v1 outcome.
+Use the existing implementation issue if present; otherwise create one covering the full pilot outcome.
 Do not stop after adding the package when the requested scope is implementation and deployment.
 
-## Required v1 outcome
+## Required pilot outcome
 
 The owner can use a private Telegram conversation to give work to an always-on local Codex agent, receive its result, and interact while it runs.
 The assistant can read an existing connected calendar, execute a selected repository workflow, and perform a scheduled check with meaningful-change notification.
 The implementation uses OpenClaw's existing runtime facilities wherever they meet the contract.
 Do not build a replacement scheduler, gateway, approval engine, memory service, or task database as part of this pilot.
 
-V1 includes text and result delivery, conversation continuity, task separation, correction/cancellation, interactive decisions, one dedicated browser profile, and durable scheduling.
-Image and voice-message handling can be smoke-tested if supported by the selected installation, but are not required for v1 completion.
+The deployment pilot includes text and result delivery, conversation continuity, task separation, correction/cancellation, interactive decisions, one dedicated browser profile, and durable scheduling.
+Image and voice-message handling can be smoke-tested if supported by the selected installation, but are not required for pilot completion.
 Phone calls, location triggers, arbitrary-site booking reliability, autonomous shopping, additional chat channels, and multi-host execution are later work.
 
 ### Task and interaction contract
@@ -68,7 +70,7 @@ Phone calls, location triggers, arbitrary-site booking reliability, autonomous s
 | Codex | Use the native app-server runtime and the intended existing account. Verify the selected model, native thread identity, connector identity, and loaded project instructions. Do not silently fall back to API billing or a different account. |
 | Repository tools and skills | Reuse the existing managed sources and execute in the intended repository context. Do not copy private repositories or overwrite their bootstrap/instruction files. Verify service PATH and working directory with one actual existing tool. |
 | Kata | Keep intent and completion evidence in the existing ledger. OpenClaw may retain runtime task IDs and checkpoints; record their relationship without a second manually synchronized task list. A Kata schedule alone does not execute work. |
-| Hindsight | Preserve existing repository-bank selection and filtered retention. Verify a synthetic recall/retention round trip through the chosen runtime. If hooks cannot work as configured, document and resolve the integration before claiming full v1 completion; do not silently enable broad transcript retention. |
+| Hindsight | Preserve existing repository-bank selection and filtered retention. Verify a synthetic recall/retention round trip through the chosen runtime. If hooks cannot work as configured, document and resolve the integration before claiming full pilot completion; do not silently enable broad transcript retention. |
 | Calendar | Perform an authenticated read and verify it against the correct calendar. Live writes require task-specific authority. |
 | Browser | Use a dedicated persistent profile and one tested site. Detect login/interaction requirements and report them. Browser success must be established from resulting page/service state. |
 | Notifications | Deliver to the owner's configured test conversation. Stay quiet on unchanged monitor state and notify on meaningful changes, completion, failure, or required input. Persist enough observation/delivery state to avoid ordinary duplicate notifications after restart. |
@@ -226,6 +228,6 @@ Use synthetic content where possible and keep personal results in the private re
 | A12 | Complete one useful owner-selected workflow. | End-to-end result with evidence, required user interventions, and observed limitations. Use the private overlay's default when no alternative is supplied. |
 
 A missing login or unperformed phone test is NOT RUN, not PASS.
-Do not describe v1 as fully deployed while a required acceptance case remains unresolved.
+Do not describe the pilot as fully deployed while a required acceptance case remains unresolved.
 If the session ends early, update the implementation issue's attention and leave a precise next command/action plus the blocking fact in the private progress record.
 Use the repository's scheduling or review convention for remaining work, without inventing a recurring automation.
