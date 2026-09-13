@@ -7,11 +7,11 @@
     ../../modules/darwin/health-guardrails.nix
   ];
 
-  # Grozier is caladan's Time Machine destination; the bare hostname does not
-  # resolve, so probe the mDNS name over SMB.
+  # grozier (NixOS NAS) is caladan's Time Machine destination; probe the mDNS
+  # name over SMB.
   services.healthGuardrails = {
     enable = true;
-    timeMachine.host = "Grozier.local";
+    timeMachine.host = "grozier.local";
   };
 
   power.sleep.computer = "never";
