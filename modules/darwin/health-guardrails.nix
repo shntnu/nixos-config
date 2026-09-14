@@ -167,6 +167,9 @@ let
           return
         fi
 
+        # Use one delivery channel when a remote notifier is configured.
+        [ -z "$remote_notifier" ] || return 0
+
         if ! timeout --kill-after=5s 30s /usr/bin/osascript - "$message" <<'APPLESCRIPT'
 on run argv
   display notification (item 1 of argv) with title "Disk Guard"
@@ -373,25 +376,18 @@ APPLESCRIPT
       pending_remote="$previous_pending"
       if [ "$category" = healthy ]; then
         next_alert=0
-        if [ -n "$previous_category" ] && [ "$previous_category" != healthy ]; then
-          should_alert=true
-          alert_token=recovered
-          alert_message="Disk space recovered: $free_gib GiB is free."
-        fi
       elif [ "$category" != "$previous_category" ]; then
         should_alert=true
         alert_token="$category"
       elif [ "$previous_alert" -eq 0 ] \
         || [ "$now" -lt "$previous_alert" ] \
-        || [ "$((now - previous_alert))" -ge 86400 ]; then
+        || [ "$((now - previous_alert))" -ge 604800 ]; then
         should_alert=true
         alert_token="$category"
       fi
 
       if [ "$category" = healthy ]; then
-        if [ "$pending_remote" != recovered ]; then
-          pending_remote=none
-        fi
+        pending_remote=none
       elif [ "$pending_remote" != "$category" ]; then
         pending_remote=none
       fi
@@ -558,6 +554,9 @@ APPLESCRIPT
             heartbeat_url_file=${
               lib.escapeShellArg (if cfg.heartbeatDir == null then "" else "${cfg.heartbeatDir}/tm-freshness.url")
             }
+            if [ "''${TM_CHECK_HEARTBEAT_FILE+x}" = x ]; then
+              heartbeat_url_file="$TM_CHECK_HEARTBEAT_FILE"
+            fi
 
             persistence_warning_emitted=false
             warn_persistence() {
@@ -627,6 +626,9 @@ APPLESCRIPT
 
               # Pass the message as argv instead of interpolating it into AppleScript.
               # Every message is selected from the fixed strings below.
+              # Use one delivery channel when a remote notifier is configured.
+              [ -z "$remote_notifier" ] || return 0
+
               if ! timeout --kill-after=5s 30s /usr/bin/osascript - "$message" <<'APPLESCRIPT'
       on run argv
         display notification (item 1 of argv) with title "Time Machine Check"
@@ -837,17 +839,10 @@ APPLESCRIPT
             pending_remote="$previous_pending"
             if [ "$category" = healthy ]; then
               next_alert=0
-              if [ -n "$previous_category" ] && [ "$previous_category" != healthy ]; then
-                should_alert=true
-                alert_token=recovered
-                alert_message="Time Machine recovered: the backup is recent, and the backup server is reachable."
-              fi
-            elif [ "$category" != "$previous_category" ]; then
-              should_alert=true
-              alert_token="$category"
-            elif [ "$previous_alert" -eq 0 ] \
-              || [ "$now" -lt "$previous_alert" ] \
-              || [ "$((now - previous_alert))" -ge 86400 ]; then
+            elif [ -n "$previous_category" ] && [ "$previous_category" != healthy ] \
+              && { [ "$previous_alert" -eq 0 ] \
+                || [ "$now" -lt "$previous_alert" ] \
+                || [ "$((now - previous_alert))" -ge 604800 ]; }; then
               should_alert=true
               alert_token="$category"
             fi
@@ -855,9 +850,7 @@ APPLESCRIPT
             # A pending token is useful only while it still describes the
             # current state. Category changes supersede an undelivered message.
             if [ "$category" = healthy ]; then
-              if [ "$pending_remote" != recovered ]; then
-                pending_remote=none
-              fi
+              pending_remote=none
             elif [ "$pending_remote" != "$category" ]; then
               pending_remote=none
             fi
@@ -952,6 +945,9 @@ APPLESCRIPT
             heartbeat_url_file=${
               lib.escapeShellArg (if cfg.heartbeatDir == null then "" else "${cfg.heartbeatDir}/offsite-freshness.url")
             }
+            if [ "''${OFFSITE_CHECK_HEARTBEAT_FILE+x}" = x ]; then
+              heartbeat_url_file="$OFFSITE_CHECK_HEARTBEAT_FILE"
+            fi
 
             persistence_warning_emitted=false
             warn_persistence() {
@@ -1018,6 +1014,9 @@ APPLESCRIPT
                 fi
                 return
               fi
+
+              # Use one delivery channel when a remote notifier is configured.
+              [ -z "$remote_notifier" ] || return 0
 
               if ! timeout --kill-after=5s 30s /usr/bin/osascript - "$message" <<'APPLESCRIPT'
       on run argv
@@ -1195,25 +1194,16 @@ APPLESCRIPT
             pending_remote="$previous_pending"
             if [ "$category" = healthy ]; then
               next_alert=0
-              if [ -n "$previous_category" ] && [ "$previous_category" != healthy ]; then
-                should_alert=true
-                alert_token=recovered
-                alert_message="Off-site backup recovered: the latest success is recent, and no material backup queue is idle. An active upload may still be completing."
-              fi
-            elif [ "$category" != "$previous_category" ]; then
-              should_alert=true
-              alert_token="$category"
-            elif [ "$previous_alert" -eq 0 ] \
-              || [ "$now" -lt "$previous_alert" ] \
-              || [ "$((now - previous_alert))" -ge 86400 ]; then
+            elif [ -n "$previous_category" ] && [ "$previous_category" != healthy ] \
+              && { [ "$previous_alert" -eq 0 ] \
+                || [ "$now" -lt "$previous_alert" ] \
+                || [ "$((now - previous_alert))" -ge 604800 ]; }; then
               should_alert=true
               alert_token="$category"
             fi
 
             if [ "$category" = healthy ]; then
-              if [ "$pending_remote" != recovered ]; then
-                pending_remote=none
-              fi
+              pending_remote=none
             elif [ "$pending_remote" != "$category" ]; then
               pending_remote=none
             fi
@@ -1277,7 +1267,8 @@ in
       type = lib.types.nullOr lib.types.str;
       default = null;
       description = ''
-        Optional absolute path to a notification program. Each disk-space or
+        Optional absolute path to a notification program, used instead of
+        desktop notifications. Each disk-space or
         backup guardrail passes one fixed alert line on standard input. A
         failed send leaves a small pending token so the next run retries the
         remote delivery without repeating the local macOS notification.
@@ -1302,13 +1293,13 @@ in
       warnFreeGb = lib.mkOption {
         type = lib.types.ints.positive;
         default = 60;
-        description = "Notify on entry and at most daily while free space stays below this many GiB.";
+        description = "Notify on entry and at most weekly while free space stays below this many GiB.";
       };
 
       urgentFreeGb = lib.mkOption {
         type = lib.types.ints.positive;
         default = 20;
-        description = "Notify on entry and at most daily while free space stays below this many GiB.";
+        description = "Notify on entry and at most weekly while free space stays below this many GiB.";
       };
 
       cleanupFreeGb = lib.mkOption {
