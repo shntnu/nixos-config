@@ -30,15 +30,31 @@
       url = "github:wesm/msgvault";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+    deploy-rs = {
+      url = "github:serokell/deploy-rs";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
     private.url = "git+ssh://git@github.com/shntnu/nixos-config-private";
   };
 
-  outputs = { self, darwin, nix-homebrew, homebrew-bundle, homebrew-core, homebrew-cask, home-manager, nixpkgs, msgvault, private } @inputs:
+  outputs = { self, darwin, nix-homebrew, homebrew-bundle, homebrew-core, homebrew-cask, home-manager, nixpkgs, msgvault, private, deploy-rs } @inputs:
     let
       user = "shsingh";
       linuxSystems = [ "x86_64-linux" "aarch64-linux" ];
       darwinSystems = [ "aarch64-darwin" "x86_64-darwin" ];
       forAllSystems = f: nixpkgs.lib.genAttrs (linuxSystems ++ darwinSystems) f;
+      # Use the cached nixpkgs executable with the upstream activation helpers.
+      deployPkgs = forAllSystems (system: import nixpkgs {
+        inherit system;
+        overlays = [
+          deploy-rs.overlays.default
+          (_: prev: {
+            deploy-rs = prev.deploy-rs // {
+              inherit (nixpkgs.legacyPackages.${system}) deploy-rs;
+            };
+          })
+        ];
+      });
       devShell = system: let pkgs = nixpkgs.legacyPackages.${system}; in {
         default = with pkgs; mkShell {
           nativeBuildInputs = with pkgs; [ bashInteractive git ];
@@ -109,7 +125,75 @@
     in
     {
       devShells = forAllSystems devShell;
-      apps = nixpkgs.lib.genAttrs [ "aarch64-darwin" ] mkDarwinApps;
+      apps = forAllSystems (system: {
+        deploy = {
+          type = "app";
+          meta.description = "Deploy selected Darwin or standalone Home Manager profiles over SSH";
+          program = "${deployPkgs.${system}.deploy-rs.deploy-rs}/bin/deploy";
+        };
+        deploy-linux = {
+          type = "app";
+          meta.description = "Build and deploy Linux profiles from an SSH builder without a checkout";
+          program = "${nixpkgs.legacyPackages.${system}.writeShellApplication {
+            name = "deploy-linux";
+            runtimeInputs = with nixpkgs.legacyPackages.${system}; [ nix openssh ];
+            text = ''
+              export DEPLOY_FLAKE=${self}
+              ${builtins.readFile ./apps/deploy-linux}
+            '';
+          }}/bin/deploy-linux";
+        };
+      } // nixpkgs.lib.optionalAttrs (system == "aarch64-darwin") (mkDarwinApps system));
+
+      deploy = {
+        sshUser = user;
+        autoRollback = true;
+        magicRollback = true;
+        confirmTimeout = 60;
+        activationTimeout = 1800;
+        sshOpts = [
+          "-o" "ConnectTimeout=10"
+          "-o" "ServerAliveInterval=15"
+          "-o" "ServerAliveCountMax=3"
+        ];
+        nodes = nixpkgs.lib.mapAttrs (host: configuration: {
+          hostname = if host == "laptop" then "wm89a-c9c" else host;
+          profiles.system = {
+            user = "root";
+            interactiveSudo = true;
+            path = deployPkgs.${configuration.pkgs.stdenv.hostPlatform.system}.deploy-rs.lib.activate.darwin configuration;
+          };
+        }) self.darwinConfigurations // builtins.listToAttrs (
+          nixpkgs.lib.mapAttrsToList (name: configuration: {
+            name = nixpkgs.lib.removePrefix "${user}@" name;
+            value = {
+              hostname = nixpkgs.lib.removePrefix "${user}@" name;
+              # Keep deploy-rs history separate from Home Manager's own profile.
+              profiles.home = {
+                inherit user;
+                path = deployPkgs.${configuration.pkgs.stdenv.hostPlatform.system}.deploy-rs.lib.activate.home-manager configuration;
+              };
+            };
+          }) self.homeConfigurations
+        );
+      };
+
+      # Check each platform's activators on that platform, without forcing Mac
+      # builds into Linux-only deployments or Linux builds into Mac-only checks.
+      checks = nixpkgs.lib.genAttrs [ "aarch64-darwin" "x86_64-linux" ] (system:
+        deployPkgs.${system}.deploy-rs.lib.deployChecks (self.deploy // {
+          nodes = nixpkgs.lib.filterAttrs (_: node:
+            nixpkgs.lib.all (profile: profile.path.system == system)
+              (builtins.attrValues node.profiles)
+          ) self.deploy.nodes;
+        }) // {
+          deploy-linux-arguments = nixpkgs.legacyPackages.${system}.runCommand "deploy-linux-arguments" {} ''
+            cd ${self}
+            bash tests/deploy-linux.sh
+            touch "$out"
+          '';
+        }
+      );
 
       darwinConfigurations = {
         caladan = mkDarwinConfig { hostModule = ./hosts/darwin/caladan.nix; };

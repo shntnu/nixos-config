@@ -54,6 +54,66 @@ Do not run `nixos-rebuild` from this flake; it does not own the Linux system con
 An SSH command does not automatically load the interactive Home Manager shell environment.
 Check tools with `ssh <host> 'zsh -ic "command -v home-manager"'` or use an explicit executable path.
 
+## Remote deployment
+
+The `deploy` app uses [deploy-rs](https://github.com/serokell/deploy-rs) to build and transfer configurations, then activate them over SSH.
+Use the same locked inputs for every selected target.
+Targets need Nix and SSH access but do not need configuration checkouts or Git access to the private input.
+The authoring machine fetches that input before sending sources to the Linux builder.
+
+Each Darwin configuration has a `<host>.system` deployment profile.
+Each standalone Home Manager configuration has a `<host>.home` deployment profile, using its existing host key without the username prefix.
+Linux system configuration remains owned by the separate system flake.
+Its Home Manager integration must continue to exclude users whose profiles are managed here.
+
+First, stage new source files and build the affected configurations.
+Use an Apple Silicon controller for Mac builds.
+Use `deploy-linux` to build and deploy Linux profiles on an `x86_64-linux` SSH builder.
+The app copies its own immutable flake and locked inputs with `nix flake archive`, then runs deploy-rs against the archived source on the builder.
+No Git checkout, daemon reconfiguration, or sudo bootstrap is needed on the builder.
+It needs Nix on its noninteractive SSH PATH and permission to accept the archived store paths.
+The builder also needs SSH access to the deployment targets as the configured user.
+Use a trusted builder because the archived sources include the private configuration.
+
+Linux outputs stay on the builder and selected targets, avoiding a second copy on the Mac.
+Ordinary Nix distributed builds copy outputs back to the controller, which can be expensive for large profiles.
+Nix reuses shared dependencies while building a separate generation for each host.
+Keep the builder hostname and operational examples in the private operations documentation.
+
+Next, build and transfer a selected profile without activating it:
+
+```bash
+nix run .#deploy -- --dry-activate '.#<mac>.system'
+nix run .#deploy-linux -- <builder> --dry-activate '.#<host>.home'
+```
+
+The dry run prints the activation command and leaves the active generation unchanged.
+It checks building, transfer, and remote execution, but does not test actual dotfile linking, service restarts, or Homebrew actions.
+The flake's deployment checks validate schemas and activation wrappers separately for Darwin and Linux.
+They also check SSH argument forwarding; that check can be run directly with `bash tests/deploy-linux.sh`.
+
+Finally, activate the selected profiles:
+
+```bash
+nix run .#deploy -- '.#<mac>.system'
+nix run .#deploy-linux -- <builder> --targets '.#<host-a>.home' '.#<host-b>.home'
+```
+
+Select `.system` profiles with the Mac command and `.home` profiles with the Linux command.
+Passing `.` to deploy-rs selects every configured machine, including incompatible platforms.
+Darwin deployment, including a normal dry run, prompts for sudo authentication.
+Standalone Home Manager deployment runs as the account owner.
+The `deploy` app also accepts a revision-qualified remote flake as its target.
+For example, `github:<owner>/<repo>/<revision>#<host>.home` deploys a published revision without using a target checkout.
+For `deploy-linux`, use `.#<host>.home` targets; the app expands them to the archived source path.
+Publish a revision before using its remote URL; a local staged checkout can be tested without pushing it.
+
+Deploy-rs keeps its Linux `home` profile separate from Home Manager's `home-manager` profile.
+Automatic rollback requires a previous generation managed by deploy-rs, so retain the native generation history during the first deployment.
+After a failed first Home Manager deployment, select the previous path from `home-manager generations` and run its `activate` script.
+Macs retain the existing `rollback` app.
+Nix rollback does not undo changes to application data or Homebrew installations.
+
 ## Dependency updates
 
 ```bash
