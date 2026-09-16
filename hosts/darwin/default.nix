@@ -62,8 +62,8 @@ let user = "shsingh"; in
     StartCalendarInterval = [
       { Minute = 20; }
     ];
-    StandardErrorPath = "/tmp/qmd-reindex.err.log";
-    StandardOutPath = "/tmp/qmd-reindex.out.log";
+    StandardErrorPath = "/Users/${user}/Library/Logs/qmd-reindex.err.log";
+    StandardOutPath = "/Users/${user}/Library/Logs/qmd-reindex.out.log";
   };
 
   system = {
