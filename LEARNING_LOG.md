@@ -336,3 +336,9 @@ A manual run of a disabled one-shot does not test startup catch-up.
 OpenClaw 2026.9.2 reruns an enabled one-shot interrupted before its terminal result, even if an external action already happened.
 Use read-only scheduled checks or operation-specific reconciliation before actions, and verify both an enabled-job restart and an uncertain receipt.
 Scheduler completion records alone do not provide exactly-once external effects.
+
+## 2026-09-17: Bound established SSH commands separately
+
+**Key Insight:** OpenSSH `ConnectTimeout` does not bound a remote command after the connection succeeds.
+An SSH or private network path can become unresponsive after setup, which leaves a command waiting even when `ConnectTimeout` is set.
+Use a command timeout for the full operation, and use `ServerAliveInterval` with `ServerAliveCountMax` to detect a dead established connection.
