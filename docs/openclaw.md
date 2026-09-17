@@ -7,6 +7,8 @@ OpenClaw supplies the gateway, native Codex runtime integration, sessions, appro
 This specification records a tested design.
 The reference deployment completed its acceptance checks on macOS on September 8, 2026, using OpenClaw `2026.9.2`, the official Codex plugin `2026.9.2`, and native Codex `0.153.4`.
 The setup and runtime failures found during that work are expressed below as requirements and acceptance checks.
+A September 14 review found that the managed workspace instruction file was unreadable and that the native executable was not pinned by the plugin version.
+The instruction and runtime checks below include those corrections; the original acceptance report did not establish them.
 Other releases, platforms, service managers, and connector sets require the full acceptance process.
 The term "pilot" names the initial deployment scope; software versions are recorded separately.
 
@@ -80,8 +82,11 @@ openclaw --profile <profile> plugins install @openclaw/codex@2026.9.2 \
   --pin --accept-capabilities
 ```
 
-The tested plugin uses its managed Codex `0.153.4` binary.
-Verify the native runtime version, model, account, and thread identity through an actual session.
+The plugin installs Codex `0.153.4`, but that package version does not determine the executable used by every configuration.
+On macOS, `homeScope: "user"` prefers the desktop application's bundled Codex, with the plugin package as a fallback.
+Desktop updates can therefore change the running Codex version without a Nix or plugin update.
+An explicit `appServer.command` overrides that selection; qualify shared plugins and desktop integrations before using it to pin a different executable.
+See the upstream [runtime selection rules](https://docs.openclaw.ai/plugins/codex-computer-use). Verify the service's actual executable path and version, model, account, and thread identity through an actual session.
 The reference test used `gpt-6-astra` with medium effort and no configured API fallback.
 Select an available model through the intended account when reproducing the deployment.
 
@@ -104,8 +109,16 @@ The tested calendar plugin had destructive actions disabled, and its authenticat
 Do not change managed Codex authentication or silently switch to API billing to bypass a failure.
 
 Keep `agents.defaults.workspace` in a separate bootstrap directory and set `agents.defaults.cwd` to the intended repository.
-Manage the bootstrap instructions separately, with `skipBootstrap: true`, so setup preserves the repository's own instruction files.
-Do not copy repositories into the profile.
+Keep `skipBootstrap: true` so setup preserves the repository's own instruction files.
+Codex discovers task `AGENTS.md` from its working directory; a separate workspace `AGENTS.md` does not establish that pilot guidance reaches ordinary turns.
+OpenClaw rejects bootstrap symlinks, including Home Manager links into the Nix store.
+Forwarding guidance through `SOUL.md` is also insufficient when native model catalog instructions replace the legacy persona carrier.
+Supply the pilot policy through `before_prompt_build.prependSystemContext` in the existing local bridge, with the reviewed text supplied by the Nix configuration.
+The policy callback must be independent of memory recall so an adapter failure cannot suppress the instructions.
+Keep workspace persona files and repository instruction files intact.
+Verify a fresh and a resumed native turn can quote a distinctive pilot rule without reading files or calling tools.
+The bootstrap report's `native_unverified` status and a readable file on disk are insufficient evidence of instruction delivery.
+See the upstream [workspace instruction rules](https://docs.openclaw.ai/plugins/codex-harness-reference/workspace-bootstrap-files). Do not copy repositories into the profile.
 
 ## Credentials and configuration
 
@@ -255,7 +268,7 @@ The reference deployment completed A1 through A12 within the qualifications stat
 
 | ID | Test | Required evidence |
 | --- | --- | --- |
-| A1 | Validate configuration and build the affected target. | Schema, secret audit, and build pass; installed CLI, plugin, and native runtime match the qualified versions. Repeat setup preserves auth and sessions without duplicate plugins. |
+| A1 | Validate configuration and build the affected target. | Schema, secret audit, and build pass; record actual service executable paths and versions separately from package pins. Fresh and resumed turns quote a distinctive pilot rule without tools. Repeat setup preserves auth and sessions without duplicate plugins. |
 | A2 | Start the managed service with the separate bot. | Ready loopback service and one poller; real Telegram-to-Codex reply; original gateway remains healthy. |
 | A3 | Send a follow-up and then a separate task. | Follow-up retains native context; independent work uses a separate native thread. |
 | A4 | Read the calendar and run an existing repository helper. | Correct account and calendar result; helper succeeds under the service environment and intended repository instructions. |
