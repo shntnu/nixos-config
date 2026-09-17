@@ -22,12 +22,26 @@ let
       ssh_options=(
         -o BatchMode=yes
         -o ConnectTimeout=15
+        -o ServerAliveCountMax=3
+        -o ServerAliveInterval=5
         -o StrictHostKeyChecking=yes
         -o UserKnownHostsFile=${knownHosts}
       )
 
-      remote_status="$(ssh "''${ssh_options[@]}" "$source_host" \
-        '$HOME/.nix-profile/bin/msgvault --no-log-file daemon status' 2>/dev/null)"
+      # The remote shell, not this client, expands HOME.
+      # shellcheck disable=SC2016
+      remote_status="$(timeout --kill-after=5s 20s \
+        ssh "''${ssh_options[@]}" "$source_host" \
+          '$HOME/.nix-profile/bin/msgvault --no-log-file daemon status' \
+          2>/dev/null)" || {
+        remote_status_exit=$?
+        if [ "$remote_status_exit" -eq 124 ] || [ "$remote_status_exit" -eq 137 ]; then
+          echo "Timed out after 20 seconds while contacting Caladan over SSH" >&2
+        else
+          echo "Unable to contact Caladan over SSH (exit $remote_status_exit)" >&2
+        fi
+        exit 1
+      }
       remote_port="$(printf '%s\n' "$remote_status" \
         | sed -n 's/.*running at http:\/\/127\.0\.0\.1:\([0-9][0-9]*\).*/\1/p')"
       if [ -z "$remote_port" ]; then
@@ -50,7 +64,6 @@ let
       ssh -NT \
         "''${ssh_options[@]}" \
         -o ExitOnForwardFailure=yes \
-        -o ServerAliveInterval=30 \
         -L "127.0.0.1:$local_port:127.0.0.1:$remote_port" \
         "$source_host" &
       tunnel_pid=$!
