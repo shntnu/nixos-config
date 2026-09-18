@@ -139,6 +139,32 @@ nix run .#build -- --override-input private path:../nixos-config-private
 The first `--` forwards arguments to the app's inner Nix command.
 An override is temporary validation; documentation-only private edits do not require a lock update or activation.
 
+## msgvault source package
+
+The `msgvault` input pins a source commit, and `modules/shared/msgvault-package.nix` builds the executable.
+The installed CLI, service commands, and remote client use the same `pkgs.msgvault` package.
+Development builds inside a source checkout do not change that package.
+
+The package owns its Go and Bun versions because upstream no longer provides Nix packaging.
+Go modules and frontend dependencies have separate fixed-output hashes.
+The frontend dependency fetch includes optional packages for all supported platforms, and the application builds without network access.
+The build validates the frontend assets before embedding them and checks the installed executable's embedded assets.
+
+When updating msgvault, change the source revision in `flake.nix` and update the package version.
+Check the source's `go.mod` and `web/package.json` for toolchain changes.
+If dependencies changed, replace the relevant hash with `lib.fakeHash`, build that dependency output, and record the reported hash.
+
+```bash
+nix build --option eval-cache false .#msgvault.goModules .#msgvault.webDependencies
+nix build --option eval-cache false .#msgvault
+```
+
+Run the affected platform builds described above, including a headless profile when changing the shared package.
+Test upgrades against a consistent archive copy before activation, and check imports, cache rebuilds, search, and remote clients.
+Record machine-specific evidence and the deployment decision in the private input's documentation.
+After activation, restart an idle daemon and verify its executable because replacing the installed CLI does not replace an already running process.
+Keep an archive backup for rollback because a Nix generation rollback does not undo database migrations.
+
 ## Codex CLI
 
 All machines use OpenAI's standalone installer for Codex.
