@@ -62,6 +62,7 @@ let
   #   DISK_GUARD_NOTIFY        local notification executable, message on stdin
   #   DISK_GUARD_REMOTE_NOTIFY remote notification executable, message on stdin
   #   DISK_GUARD_CLEANUP       cleanup test executable; no arguments
+  #   DISK_GUARD_HEARTBEAT_FILE alternate heartbeat URL file; empty disables
   diskGuard = pkgs.writeShellApplication {
     name = "disk-guard";
     runtimeInputs = [
@@ -93,6 +94,9 @@ let
       heartbeat_url_file=${
         lib.escapeShellArg (if cfg.heartbeatDir == null then "" else "${cfg.heartbeatDir}/disk-guard.url")
       }
+      if [ "''${DISK_GUARD_HEARTBEAT_FILE+x}" = x ]; then
+        heartbeat_url_file="$DISK_GUARD_HEARTBEAT_FILE"
+      fi
 
       persistence_warning_emitted=false
       warn_persistence() {
@@ -163,6 +167,9 @@ let
           return
         fi
 
+        # Use one delivery channel when a remote notifier is configured.
+        [ -z "$remote_notifier" ] || return 0
+
         if ! timeout --kill-after=5s 30s /usr/bin/osascript - "$message" <<'APPLESCRIPT'
 on run argv
   display notification (item 1 of argv) with title "Disk Guard"
@@ -176,14 +183,10 @@ APPLESCRIPT
       message_for_token() {
         case "$1" in
           warn)
-            remote_message="Disk space alert: caladan has less than ${
-              toString cfg.disk.warnFreeGb
-            } GiB free. Free space or move data soon."
+            remote_message="Disk space alert: $free_gib GiB free; reserve not yet recovered. Free space or move data soon."
             ;;
           urgent)
-            remote_message="Disk space urgent: caladan has less than ${
-              toString cfg.disk.urgentFreeGb
-            } GiB free. Free space now and pause large writes."
+            remote_message="Disk space urgent: $free_gib GiB free; urgent reserve not yet recovered. Free space now and pause large writes."
             ;;
           check-failed)
             remote_message="Disk space check failed: free space on caladan could not be measured. Check the disk and Disk Guard."
@@ -299,6 +302,18 @@ APPLESCRIPT
         log "free space: $free_gib GiB"
       fi
 
+      # Fixed-cost diagnostics: no directory scans or database queries in the guard.
+      if [ "$free_injected" = false ]; then
+        swap="$(/usr/sbin/sysctl -n vm.swapusage 2>/dev/null || printf 'unavailable')"
+        process_counts="$(/bin/ps -axo ppid=,comm= 2>/dev/null | awk '
+          { total++; parent[$1]++ }
+          /\/ChatGPT.app\/Contents\/Resources\/codex$/ { app++ }
+          END { for (p in parent) if (parent[p] > largest) largest=parent[p];
+                printf "processes=%d desktop_codex=%d largest_child_count=%d", total, app, largest }
+        ' || printf 'unavailable')"
+        log "swap: $swap; $process_counts"
+      fi
+
       previous_category=""
       previous_alert=0
       previous_pending=none
@@ -341,31 +356,38 @@ APPLESCRIPT
         esac
       fi
 
+      # Escalate immediately; require headroom above a boundary to recover.
+      if [ "$measurement_ok" = true ]; then
+        if [ "$previous_category" = urgent ] \
+          && [ "$free_kb" -lt "${toString ((cfg.disk.urgentFreeGb + cfg.disk.recoveryMarginGb) * kbPerGib)}" ]; then
+          category=urgent
+          alert_message="Disk space urgent: $free_gib GiB free; waiting for recovery headroom."
+        elif { [ "$previous_category" = warn ] || [ "$previous_category" = urgent ]; } \
+          && [ "$category" = healthy ] \
+          && [ "$free_kb" -lt "${toString ((cfg.disk.warnFreeGb + cfg.disk.recoveryMarginGb) * kbPerGib)}" ]; then
+          category=warn
+          alert_message="Disk space alert: $free_gib GiB free; waiting for recovery headroom."
+        fi
+      fi
+
       should_alert=false
       alert_token=none
       next_alert="$previous_alert"
       pending_remote="$previous_pending"
       if [ "$category" = healthy ]; then
         next_alert=0
-        if [ -n "$previous_category" ] && [ "$previous_category" != healthy ]; then
-          should_alert=true
-          alert_token=recovered
-          alert_message="Disk space recovered: $free_gib GiB is free."
-        fi
       elif [ "$category" != "$previous_category" ]; then
         should_alert=true
         alert_token="$category"
       elif [ "$previous_alert" -eq 0 ] \
         || [ "$now" -lt "$previous_alert" ] \
-        || [ "$((now - previous_alert))" -ge 86400 ]; then
+        || [ "$((now - previous_alert))" -ge 604800 ]; then
         should_alert=true
         alert_token="$category"
       fi
 
       if [ "$category" = healthy ]; then
-        if [ "$pending_remote" != recovered ]; then
-          pending_remote=none
-        fi
+        pending_remote=none
       elif [ "$pending_remote" != "$category" ]; then
         pending_remote=none
       fi
@@ -532,6 +554,9 @@ APPLESCRIPT
             heartbeat_url_file=${
               lib.escapeShellArg (if cfg.heartbeatDir == null then "" else "${cfg.heartbeatDir}/tm-freshness.url")
             }
+            if [ "''${TM_CHECK_HEARTBEAT_FILE+x}" = x ]; then
+              heartbeat_url_file="$TM_CHECK_HEARTBEAT_FILE"
+            fi
 
             persistence_warning_emitted=false
             warn_persistence() {
@@ -601,6 +626,9 @@ APPLESCRIPT
 
               # Pass the message as argv instead of interpolating it into AppleScript.
               # Every message is selected from the fixed strings below.
+              # Use one delivery channel when a remote notifier is configured.
+              [ -z "$remote_notifier" ] || return 0
+
               if ! timeout --kill-after=5s 30s /usr/bin/osascript - "$message" <<'APPLESCRIPT'
       on run argv
         display notification (item 1 of argv) with title "Time Machine Check"
@@ -811,17 +839,10 @@ APPLESCRIPT
             pending_remote="$previous_pending"
             if [ "$category" = healthy ]; then
               next_alert=0
-              if [ -n "$previous_category" ] && [ "$previous_category" != healthy ]; then
-                should_alert=true
-                alert_token=recovered
-                alert_message="Time Machine recovered: the backup is recent, and the backup server is reachable."
-              fi
-            elif [ "$category" != "$previous_category" ]; then
-              should_alert=true
-              alert_token="$category"
-            elif [ "$previous_alert" -eq 0 ] \
-              || [ "$now" -lt "$previous_alert" ] \
-              || [ "$((now - previous_alert))" -ge 86400 ]; then
+            elif [ -n "$previous_category" ] && [ "$previous_category" != healthy ] \
+              && { [ "$previous_alert" -eq 0 ] \
+                || [ "$now" -lt "$previous_alert" ] \
+                || [ "$((now - previous_alert))" -ge 604800 ]; }; then
               should_alert=true
               alert_token="$category"
             fi
@@ -829,9 +850,7 @@ APPLESCRIPT
             # A pending token is useful only while it still describes the
             # current state. Category changes supersede an undelivered message.
             if [ "$category" = healthy ]; then
-              if [ "$pending_remote" != recovered ]; then
-                pending_remote=none
-              fi
+              pending_remote=none
             elif [ "$pending_remote" != "$category" ]; then
               pending_remote=none
             fi
@@ -926,6 +945,9 @@ APPLESCRIPT
             heartbeat_url_file=${
               lib.escapeShellArg (if cfg.heartbeatDir == null then "" else "${cfg.heartbeatDir}/offsite-freshness.url")
             }
+            if [ "''${OFFSITE_CHECK_HEARTBEAT_FILE+x}" = x ]; then
+              heartbeat_url_file="$OFFSITE_CHECK_HEARTBEAT_FILE"
+            fi
 
             persistence_warning_emitted=false
             warn_persistence() {
@@ -992,6 +1014,9 @@ APPLESCRIPT
                 fi
                 return
               fi
+
+              # Use one delivery channel when a remote notifier is configured.
+              [ -z "$remote_notifier" ] || return 0
 
               if ! timeout --kill-after=5s 30s /usr/bin/osascript - "$message" <<'APPLESCRIPT'
       on run argv
@@ -1169,25 +1194,16 @@ APPLESCRIPT
             pending_remote="$previous_pending"
             if [ "$category" = healthy ]; then
               next_alert=0
-              if [ -n "$previous_category" ] && [ "$previous_category" != healthy ]; then
-                should_alert=true
-                alert_token=recovered
-                alert_message="Off-site backup recovered: the latest success is recent, and no material backup queue is idle. An active upload may still be completing."
-              fi
-            elif [ "$category" != "$previous_category" ]; then
-              should_alert=true
-              alert_token="$category"
-            elif [ "$previous_alert" -eq 0 ] \
-              || [ "$now" -lt "$previous_alert" ] \
-              || [ "$((now - previous_alert))" -ge 86400 ]; then
+            elif [ -n "$previous_category" ] && [ "$previous_category" != healthy ] \
+              && { [ "$previous_alert" -eq 0 ] \
+                || [ "$now" -lt "$previous_alert" ] \
+                || [ "$((now - previous_alert))" -ge 604800 ]; }; then
               should_alert=true
               alert_token="$category"
             fi
 
             if [ "$category" = healthy ]; then
-              if [ "$pending_remote" != recovered ]; then
-                pending_remote=none
-              fi
+              pending_remote=none
             elif [ "$pending_remote" != "$category" ]; then
               pending_remote=none
             fi
@@ -1251,7 +1267,8 @@ in
       type = lib.types.nullOr lib.types.str;
       default = null;
       description = ''
-        Optional absolute path to a notification program. Each disk-space or
+        Optional absolute path to a notification program, used instead of
+        desktop notifications. Each disk-space or
         backup guardrail passes one fixed alert line on standard input. A
         failed send leaves a small pending token so the next run retries the
         remote delivery without repeating the local macOS notification.
@@ -1275,24 +1292,30 @@ in
     disk = {
       warnFreeGb = lib.mkOption {
         type = lib.types.ints.positive;
-        default = 20;
-        description = "Notify on entry and at most daily while free space stays below this many GiB.";
+        default = 60;
+        description = "Notify on entry and at most weekly while free space stays below this many GiB.";
       };
 
       urgentFreeGb = lib.mkOption {
         type = lib.types.ints.positive;
-        default = 10;
-        description = "Notify on entry and at most daily while free space stays below this many GiB.";
+        default = 20;
+        description = "Notify on entry and at most weekly while free space stays below this many GiB.";
       };
 
       cleanupFreeGb = lib.mkOption {
         type = lib.types.ints.positive;
-        default = 5;
+        default = 40;
         description = ''
           Run safe automatic cleanup (user Nix generations older than 14 days,
           uv cache prune) below this many GiB. Trash and msgvault are never
           touched automatically.
         '';
+      };
+
+      recoveryMarginGb = lib.mkOption {
+        type = lib.types.ints.unsigned;
+        default = 5;
+        description = "Additional free GiB required before lowering an existing warning or urgent state.";
       };
     };
 
@@ -1364,8 +1387,8 @@ in
     assertions = [
       {
         assertion =
-          cfg.disk.warnFreeGb > cfg.disk.urgentFreeGb && cfg.disk.urgentFreeGb > cfg.disk.cleanupFreeGb;
-        message = "services.healthGuardrails disk thresholds must satisfy warn > urgent > cleanup";
+          cfg.disk.warnFreeGb > cfg.disk.cleanupFreeGb && cfg.disk.cleanupFreeGb > cfg.disk.urgentFreeGb;
+        message = "services.healthGuardrails disk thresholds must satisfy warn > cleanup > urgent";
       }
       {
         assertion = cfg.remoteNotifier == null || lib.hasPrefix "/" cfg.remoteNotifier;
@@ -1384,7 +1407,7 @@ in
     launchd.user.agents.disk-guard.serviceConfig = {
       ProgramArguments = wrapped diskGuard "disk-guard";
       EnvironmentVariables.HOME = "/Users/${user}";
-      StartInterval = 1800;
+      StartInterval = 300;
       RunAtLoad = true;
       Umask = 63;
       StandardErrorPath = "/Users/${user}/Library/Logs/disk-guard.launchd.err.log";

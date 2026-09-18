@@ -1,5 +1,17 @@
 # Nix Learning Log
 
+## 2026-09-14: Keep large remote deployment outputs on the builder
+
+Nix distributed builds copy their outputs back to the controller, even with `builders-use-substitutes` enabled.
+A large Linux Home Manager profile can therefore exhaust a Mac controller's disk.
+Use `nix flake archive --to ssh-ng://<builder>` to send the immutable source and inputs, then run the Linux build and deployment on that builder.
+No target Git checkout is required.
+
+Nix 2.31.3 rejected flake installables when its working directory was inside the archived Nix-store source directory.
+The same explicit `path:/nix/store/<source>#<output>` reference worked from the account's normal directory.
+The deployment launcher expands `.#<host>.home` targets to explicit archived references and keeps the remote working directory outside the store.
+Quote arguments for the remote login shell and preserve Nix arguments following `--`.
+
 ## 2025-01-21: System vs User Level Management
 
 **Key Insight:** Ubuntu needs different commands than NixOS/macOS because it lacks system-level rebuild tools.

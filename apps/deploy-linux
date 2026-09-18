@@ -1,0 +1,37 @@
+if [[ $# -eq 1 && $1 == --help ]]; then
+  echo 'Usage: deploy-linux [user@]builder [deploy-rs options] .#host.home'
+  echo 'Archives this flake, then builds and deploys the selected profiles on the builder.'
+  exit 0
+fi
+
+if [[ $# -lt 2 ]]; then
+  echo 'Usage: deploy-linux [user@]builder [deploy-rs options] .#host.home' >&2
+  exit 2
+fi
+
+build_host=$1
+shift
+if [[ ! $build_host =~ ^([a-zA-Z0-9_][a-zA-Z0-9_.-]*@)?[a-zA-Z0-9][a-zA-Z0-9_.-]*$ ]]; then
+  echo 'Use an SSH hostname or alias, optionally prefixed with user@.' >&2
+  exit 2
+fi
+
+# Archive inputs for remote evaluation, keeping Linux closures off the Mac.
+nix flake archive --no-update-lock-file --to "ssh-ng://$build_host" "path:$DEPLOY_FLAKE" >/dev/null
+
+# Nix 2.31 rejects flake installables when cwd is inside their store directory.
+# Resolve targets explicitly, leaving Nix arguments after -- untouched.
+command=(nix run --no-update-lock-file "path:$DEPLOY_FLAKE#deploy" --)
+build_arguments=false
+for argument in "$@"; do
+  if [[ $argument == -- ]]; then
+    build_arguments=true
+  elif [[ $build_arguments == false && $argument == .#* ]]; then
+    argument="path:$DEPLOY_FLAKE${argument:1}"
+  fi
+  command+=("$argument")
+done
+
+# SSH uses the remote login shell. POSIX single quotes preserve all arguments.
+printf -v remote_command "'%s' " "${command[@]//\'/\'\\\'\'}"
+exec ssh -o BatchMode=yes -o ConnectTimeout=10 "$build_host" "exec $remote_command"
