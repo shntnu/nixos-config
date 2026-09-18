@@ -27,8 +27,8 @@
       flake = false;
     };
     msgvault = {
-      url = "github:wesm/msgvault";
-      inputs.nixpkgs.follows = "nixpkgs";
+      url = "github:kenn-io/msgvault/4e1aae8c2e48bf5062788c6007831e41ea66ef20";
+      flake = false;
     };
     private.url = "git+ssh://git@github.com/shntnu/nixos-config-private";
   };
@@ -109,6 +109,11 @@
     in
     {
       devShells = forAllSystems devShell;
+      packages = forAllSystems (system: {
+        msgvault = nixpkgs.legacyPackages.${system}.callPackage ./modules/shared/msgvault-package.nix {
+          msgvaultSrc = msgvault;
+        };
+      });
       apps = nixpkgs.lib.genAttrs [ "aarch64-darwin" ] mkDarwinApps;
 
       darwinConfigurations = {
