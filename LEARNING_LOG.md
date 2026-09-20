@@ -364,3 +364,10 @@ Scheduler completion records alone do not provide exactly-once external effects.
 **Key Insight:** OpenSSH `ConnectTimeout` does not bound a remote command after the connection succeeds.
 An SSH or private network path can become unresponsive after setup, which leaves a command waiting even when `ConnectTimeout` is set.
 Use a command timeout for the full operation, and use `ServerAliveInterval` with `ServerAliveCountMax` to detect a dead established connection.
+
+## 2026-09-20: Reset timed-out Automation denials before re-prompting
+
+**Key Insight:** A macOS Automation prompt that times out is stored as a denial with reason 9, and macOS 26.6 offers no working toggle for a path-based client such as `sshd-keygen-wrapper`.
+The denial suppresses further prompts, so re-running the sender changes nothing.
+`tccutil reset AppleEvents` clears every Automation decision for the user; a fresh send from each context then prompts once and is granted when Allow is clicked at the unlocked Mac.
+Verified for `claude` and the SSH wrapper on caladan with delivered iMessages; see [imsg on macOS](docs/development.md#imsg-on-macos).

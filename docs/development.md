@@ -202,6 +202,26 @@ Check `launchctl limit maxfiles` and the unchanged `sysctl kern.maxfiles kern.ma
 Verify `ulimit -Sn` in a new GUI terminal and a new SSH session before relying on the setting.
 A logout or reboot may be needed for existing parent processes to inherit it; do not restart active sessions automatically.
 
+## imsg on macOS
+
+`imsg` is packaged from the upstream macOS release in `modules/darwin/imsg-package.nix` and installed for Darwin hosts through Home Manager.
+It sends through Messages.app with Apple events and verifies delivery by reading `~/Library/Messages/chat.db`, so the process context that launches it needs both Automation for Messages and Full Disk Access.
+macOS attributes the grant to the parent context, not to `imsg`: a terminal app, `claude`, the ChatGPT app, or `/usr/libexec/sshd-keygen-wrapper` for SSH sessions.
+
+Grant each context once by running a real send from it while sitting at the unlocked Mac and clicking Allow on the dialog:
+
+```bash
+imsg send --to +1XXXXXXXXXX --service imessage --text "permission test" --json
+```
+
+For the SSH context, run the same command through `ssh caladan 'zsh -ic "..."'`.
+A dialog that times out is recorded as a denial with reason 9, and on macOS 26.6 the System Settings toggle for `sshd-keygen-wrapper` cannot undo it.
+Clear it with `tccutil reset AppleEvents`, which resets every Automation decision for the user, then repeat the send and click Allow.
+Verify the grant with the privacy database (`auth_value` 2 under `kTCCServiceAppleEvents` for `com.apple.MobileSMS`) and delivery with `is_sent` and `is_delivered` on the newest `message` row.
+
+`imsg` 0.15.6 confirms a send only when the conversation is labeled iMessage; a send to a chat that Messages labels RCS, such as an owner's self-conversation, delivers but exits with `may_have_completed`.
+Treat that as an upstream verifier limitation and check `chat.db` rather than retrying.
+
 ## Reference documents
 
 Public specifications describe reusable behavior and acceptance checks.
