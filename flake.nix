@@ -129,6 +129,8 @@
         msgvault = nixpkgs.legacyPackages.${system}.callPackage ./modules/shared/msgvault-package.nix {
           msgvaultSrc = msgvault;
         };
+      } // nixpkgs.lib.optionalAttrs (builtins.elem system darwinSystems) {
+        imsg = nixpkgs.legacyPackages.${system}.callPackage ./modules/darwin/imsg-package.nix { };
       });
       apps = forAllSystems (system: {
         deploy = {

@@ -136,8 +136,7 @@ with pkgs; [
   #   Install: nix profile install github:sadjow/gemini-cli-nix
   #   Upgrade: nix profile upgrade gemini-cli-nix --refresh
   # codex-cli installed with OpenAI's standalone installer:
-  #   Install/upgrade: curl -fsSL https://chatgpt.com/codex/install.sh |
-  #     env PATH="$HOME/.local/libexec/codex:$PATH" CODEX_INSTALL_DIR="$HOME/.local/libexec/codex" sh
+  #   Platform-specific install/update commands: docs/development.md#codex-cli
   # qmd (Query Markup Documents) — no nix flake wrapper yet, uses npm:
   #   Install: npm install -g @tobilu/qmd
   #   Upgrade: npm update -g @tobilu/qmd

@@ -33,6 +33,33 @@ let user = "shsingh"; in
 
   services.tailscale.enable = true;
 
+  # Raise the inherited limit for GUI and SSH processes without wrapping
+  # self-updating executables. Existing processes need a new login/startup.
+  launchd.daemons.file-limits = {
+    script = ''
+      # Split launchctl's three whitespace-separated columns intentionally.
+      # shellcheck disable=SC2046
+      set -eu
+      set -- $(/bin/launchctl limit maxfiles)
+      if [ "$2" = unlimited ] || [ "$2" -ge 4096 ]; then
+        exit 0
+      fi
+      kernel_max=$(/usr/sbin/sysctl -n kern.maxfiles)
+      kernel_per_process=$(/usr/sbin/sysctl -n kern.maxfilesperproc)
+      # launchctl may also change the kernel ceilings; preserve them.
+      trap '/usr/sbin/sysctl -w kern.maxfiles="$kernel_max" kern.maxfilesperproc="$kernel_per_process"' EXIT
+      /bin/launchctl limit maxfiles 4096 "$kernel_per_process"
+      /bin/launchctl limit maxfiles
+      set -- $(/bin/launchctl limit maxfiles)
+      test "$2" -ge 4096
+    '';
+    serviceConfig = {
+      RunAtLoad = true;
+      StandardOutPath = "/var/log/org.nixos.file-limits.log";
+      StandardErrorPath = "/var/log/org.nixos.file-limits.log";
+    };
+  };
+
   environment.systemPackages = with pkgs; [
     emacs30 # Pinned to Emacs 30.x stable (Darwin only - NixOS config TBD)
   ] ++ (import ../../modules/shared/packages.nix { inherit pkgs; });

@@ -168,16 +168,24 @@ Keep an archive backup for rollback because a Nix generation rollback does not u
 ## Codex CLI
 
 All machines use OpenAI's standalone installer for Codex.
-The same install and update command applies to macOS and Linux.
-Home Manager owns the launcher at `~/.local/bin/codex`; the installer owns the binary under `~/.local/libexec/codex`.
-The macOS launcher also raises the open-file limit to 4096.
+On macOS, the installer owns `~/.local/bin/codex`, including replacements made by Codex's updater.
+Nix sets a minimum inherited launchd soft file limit of 4096, so Codex does not need a wrapper at that path.
+The limit applies to newly launched GUI and SSH processes across the Mac; existing processes keep their inherited limits.
+The launch job preserves the kernel file ceilings and uses the kernel per-process ceiling as the numeric hard limit when raising the soft limit.
+On Linux, Home Manager still owns the launcher at `~/.local/bin/codex`, which executes the installer-owned binary under `~/.local/libexec/codex`.
 
 The desktop app's automatic updater is separate from these standalone CLI installations.
 This configuration does not enable unattended CLI updates, and startup update checks do not establish a scheduled updater.
 See OpenAI's [app update documentation](https://learn.chatgpt.com/docs/enterprise/manage-app-updates) and [startup update setting](https://learn.chatgpt.com/docs/config-file/config-reference#check_for_update_on_startup).
 
-Run this command on each machine when updating its CLI.
-On a fresh machine, install the binary before activating Home Manager:
+On macOS, install or update with:
+
+```bash
+curl -fsSL https://chatgpt.com/codex/install.sh | \
+  env PATH="$HOME/.local/bin:$PATH" sh
+```
+
+On Linux, install the binary before activating Home Manager:
 
 ```bash
 curl -fsSL https://chatgpt.com/codex/install.sh | \
@@ -189,7 +197,10 @@ For unattended deployment, add `CODEX_NON_INTERACTIVE=1` to `env`.
 That variable skips installer prompts for this invocation; it does not schedule future updates.
 After activation, verify `~/.local/bin/codex --version`, then remove the old `codex-cli-nix` entry if it appears in `nix profile list`.
 Restart existing Codex sessions or reconnect the desktop SSH connection to use the new binary.
-No machine reboot is needed.
+For the macOS file-limit migration, activate Nix and inspect `sudo launchctl print system/org.nixos.file-limits` and `/var/log/org.nixos.file-limits.log` for a successful exit and a soft limit of at least 4096.
+Check `launchctl limit maxfiles` and the unchanged `sysctl kern.maxfiles kern.maxfilesperproc` values.
+Verify `ulimit -Sn` in a new GUI terminal and a new SSH session before relying on the setting.
+A logout or reboot may be needed for existing parent processes to inherit it; do not restart active sessions automatically.
 
 ## Reference documents
 

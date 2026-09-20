@@ -37,7 +37,9 @@ in
 
     home = {
       enableNixpkgsReleaseCheck = false;
-      packages = import ../shared/packages.nix { inherit pkgs; };
+      packages = (import ../shared/packages.nix { inherit pkgs; }) ++ [
+        (pkgs.callPackage ./imsg-package.nix { })
+      ];
       stateVersion = "23.11";
       file = {
         "emacs-launcher.command".source = myEmacsLauncher;
@@ -48,21 +50,6 @@ in
         # Out-of-store symlink: points at the live dir, not a nix-store copy.
         "work/GitHub".source =
           config.lib.file.mkOutOfStoreSymlink "${config.home.homeDirectory}/Documents/GitHub";
-
-        # The desktop app starts its shared Codex server through /bin/sh, so a
-        # zsh-only ulimit does not cover it. This path is first in both the
-        # desktop bootstrap PATH and interactive macOS shells.
-        ".local/bin/codex" = {
-          executable = true;
-          text = ''
-            #!/bin/sh
-            open_file_limit=$(ulimit -Sn)
-            if [ "$open_file_limit" != unlimited ] && [ "$open_file_limit" -lt 4096 ]; then
-              ulimit -S -n 4096
-            fi
-            exec "$HOME/.local/libexec/codex/codex" "$@"
-          '';
-        };
 
         ".emacs.d/init.el".source = ./emacs/init.el;
 

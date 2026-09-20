@@ -277,8 +277,9 @@ tmux show-options -g | grep -E 'continuum|resurrect'
 
 Codex CLI 0.150.1 exhausted macOS's default soft limit of 256 while loading skills and starting MCP servers.
 The shared app server had more than 230 descriptors open, so some skills and MCP servers failed nondeterministically during startup.
-Home Manager now installs a `~/.local/bin/codex` launcher, which raises the soft limit to 4096 before executing the selected Codex binary.
+Home Manager initially installed a `~/.local/bin/codex` launcher, which raised the soft limit to 4096 before executing the selected Codex binary.
 The desktop bootstrap and interactive macOS shells both put that directory first on `PATH`.
+The September 20 entry describes its replacement to avoid updater collisions.
 
 ## 2026-09-03: Headless Git Signing Must Ignore Forwarded SSH Agents
 
@@ -292,8 +293,8 @@ Headless Git now invokes `ssh-keygen` through a wrapper that unsets `SSH_AUTH_SO
 
 **Key Insight:** OpenAI's standalone installer removes the third-party Nix wrapper while keeping Codex updates independent of a Home Manager rebuild.
 
-The installer normally owns `~/.local/bin/codex`, but Home Manager already uses that path for the macOS open-file-limit launcher.
-Codex is therefore installed under `~/.local/libexec/codex`, and the launcher executes that binary.
+The installer normally owns `~/.local/bin/codex`, but Home Manager already used that path for the macOS open-file-limit launcher.
+Codex was therefore installed under `~/.local/libexec/codex`, and the launcher executed that binary.
 Home Manager adds the install directory to `PATH`, which also prevents the installer from trying to edit generated shell files.
 
 ```bash
@@ -304,6 +305,15 @@ curl -fsSL https://chatgpt.com/codex/install.sh | \
 
 Pass the directory in the installer's `PATH` even before activating Home Manager, so an older shell does not trigger a write to the read-only `~/.zprofile`.
 The desktop SSH bootstrap also needs a Home Manager launcher at `~/.local/bin/codex` on Linux because it starts through `/bin/sh` without loading zsh's `PATH`.
+
+## 2026-09-20: Keep self-updating executables outside Home Manager file ownership
+
+Codex's updater can replace `~/.local/bin/codex` even when an earlier installation used a different directory.
+A replacement symlink bypasses the file-limit wrapper and causes Home Manager's next activation to refuse the collision.
+Codex 0.155.0 still passed a 256-file inherited soft limit to a child command in a direct app-server test.
+The macOS configuration now sets a minimum inherited launchd soft limit of 4096 and leaves the executable path to the installer.
+The launch job preserves kernel ceilings; activation and fresh GUI/SSH process checks must verify inheritance.
+See [Codex CLI](docs/development.md#codex-cli) for installation and verification.
 
 ## 2026-09-05: Review structure after Markdown reflow
 
