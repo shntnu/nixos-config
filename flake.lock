@@ -197,11 +197,11 @@
     },
     "private": {
       "locked": {
-        "lastModified": 1789572695,
-        "narHash": "sha256-A41fqyG/cp0Mz1SEMHci+NsKNq0EU5DjOQSQ7zRmHf8=",
+        "lastModified": 1789930304,
+        "narHash": "sha256-pGYtS6B7+HBlu7DckpbnzW1FqmWluu7jsQ8kJOM3Cg0=",
         "ref": "refs/heads/main",
-        "rev": "18361d2ae8e9817188db1e6fe52bd0a1013daf40",
-        "revCount": 106,
+        "rev": "32c9ec1001ff08ce9f76f26fe9c82551eb303ba9",
+        "revCount": 109,
         "type": "git",
         "url": "ssh://git@github.com/shntnu/nixos-config-private"
       },
@@ -213,6 +213,7 @@
     "root": {
       "inputs": {
         "darwin": "darwin",
+        "deploy-rs": "deploy-rs",
         "home-manager": "home-manager",
         "homebrew-bundle": "homebrew-bundle",
         "homebrew-cask": "homebrew-cask",
@@ -220,8 +221,7 @@
         "msgvault": "msgvault",
         "nix-homebrew": "nix-homebrew",
         "nixpkgs": "nixpkgs",
-        "private": "private",
-        "deploy-rs": "deploy-rs"
+        "private": "private"
       }
     },
     "systems": {
