@@ -1,4 +1,4 @@
-# Share one Kata work ledger across coding agents and private machines
+# Kata as a work ledger for coding agents and humans
 
 [Kata](https://www.katatracker.com/) is a lightweight issue tracker designed for coding-agent work.
 This specification builds one durable Linux Kata server, same-host and remote CLI clients, stable repository project bindings, scheduled off-host backups, and the built-in browser UI over a trusted private network.
