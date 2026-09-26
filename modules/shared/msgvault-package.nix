@@ -11,7 +11,7 @@
   msgvaultSrc,
 }:
 let
-  version = "0.19.3-unstable-2026-09-05";
+  version = "0.19.3-unstable-2026-09-25-migration-fix";
   revision = msgvaultSrc.rev;
   system = stdenvNoCC.hostPlatform.system;
 
@@ -75,14 +75,18 @@ let
       runHook postInstall
     '';
     outputHashMode = "recursive";
-    outputHash = "sha256-d0wvfqXK+4mOro2Hj62u2mkTnJU8MHuU3v0mZZjUoWA=";
+    outputHash = "sha256-D8x47fF+OnUTSDNQ3t0v6s/8hLll9jg1HVna2zOmSMI=";
   };
 in
 (buildGoModule.override { inherit go; }) {
   pname = "msgvault";
   inherit version;
   src = msgvaultSrc;
-  vendorHash = "sha256-G/55LAWHJIJ8bF+uSuy1CnWyzOJoZJ+89qoGQ1ia7t0=";
+  patches = [
+    ./msgvault-person-fact-migration.patch
+    ./msgvault-cache-message-id.patch
+  ];
+  vendorHash = "sha256-nzStVmLzjXg8ZfJxO2ZKi2yamNq9GUCq4rTaGZbdYWM=";
   proxyVendor = true;
   subPackages = [ "cmd/msgvault" ];
   nativeBuildInputs = [

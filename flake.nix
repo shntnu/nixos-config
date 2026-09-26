@@ -27,7 +27,7 @@
       flake = false;
     };
     msgvault = {
-      url = "github:kenn-io/msgvault/4e1aae8c2e48bf5062788c6007831e41ea66ef20";
+      url = "github:kenn-io/msgvault/ac15d62c1a4a280e43d528ea7da4b24d6a7630bf";
       flake = false;
     };
     deploy-rs = {
