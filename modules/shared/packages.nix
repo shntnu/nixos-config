@@ -129,9 +129,8 @@ with pkgs; [
 
   # AI Coding tools
   ollama # local LLM runtime; daemon: `ollama serve`, models: `ollama pull <name>`
-  # claude-code installed imperatively:
-  #   Install: nix profile install github:sadjow/claude-code-nix
-  #   Upgrade: nix profile upgrade claude-code-nix --refresh
+  # claude-code installed with Anthropic's native installer (self-updating;
+  # needs nix-ld on NixOS): curl -fsSL https://claude.ai/install.sh | bash
   # gemini-cli installed imperatively:
   #   Install: nix profile install github:sadjow/gemini-cli-nix
   #   Upgrade: nix profile upgrade gemini-cli-nix --refresh

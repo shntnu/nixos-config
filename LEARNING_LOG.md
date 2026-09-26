@@ -117,6 +117,7 @@ When adding `gemini-cli`, considered Homebrew (macOS-only, won't work on NixOS),
 The `sadjow` flake wrappers provide disabled automatic updates, rollback through `nix profile rollback`, and hourly CI updates with hash verification.
 They also provide Node.js version isolation.
 Codex originally used a similar wrapper, but it moved to OpenAI's standalone installer on 2026-09-05; see the later entry below.
+Claude Code moved to Anthropic's native installer on 2026-09-26: with updates disabled, the wrapped copies on the servers had fallen as far as 76 releases behind because nobody ran the manual upgrade.
 
 ## 2026-02-19: nix-darwin's `brew bundle --no-upgrade` Default
 
