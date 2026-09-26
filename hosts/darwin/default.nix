@@ -61,13 +61,13 @@ let user = "shsingh"; in
   };
 
   environment.systemPackages = with pkgs; [
-    emacs30 # Pinned to Emacs 30.x stable (Darwin only - NixOS config TBD)
+    emacs # Current stable Emacs (Darwin only - NixOS config TBD)
   ] ++ (import ../../modules/shared/packages.nix { inherit pkgs; });
 
   launchd.user.agents.emacs.serviceConfig = {
     KeepAlive = true;
     ProgramArguments = [
-      "${pkgs.emacs30}/bin/emacs"
+      "${pkgs.emacs}/bin/emacs"
       "--quick"
       "--fg-daemon"
     ];
