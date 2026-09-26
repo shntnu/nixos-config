@@ -72,6 +72,11 @@ in
       };
     };
 
+    xdg.configFile."yazi/yazi.toml".text = ''
+      [mgr]
+      ratio = [1, 2, 5]
+    '';
+
     # macOS-only shell additions (merged after the shared zsh init)
     programs.zsh.initContent = lib.mkAfter ''
       # Emacs is my editor
