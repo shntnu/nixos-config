@@ -1,0 +1,21 @@
+diff --git a/cmd/msgvault/cmd/sync_slack.go b/cmd/msgvault/cmd/sync_slack.go
+index 74600725..d5fb9429 100644
+--- a/cmd/msgvault/cmd/sync_slack.go
++++ b/cmd/msgvault/cmd/sync_slack.go
+@@ -25,0 +26 @@ func newSyncSlackCmd() *cobra.Command {
++	var syncDMs, syncGroupDMs bool
+@@ -85,0 +87 @@ Examples:
++				applySlackConversationOverrides(cmd, &opts, syncDMs, syncGroupDMs)
+@@ -123,0 +126,2 @@ Examples:
++	cmd.Flags().BoolVar(&syncDMs, "dms", true, "include one-to-one DMs for this run, overriding config (true or false)")
++	cmd.Flags().BoolVar(&syncGroupDMs, "group-dms", true, "include group DMs for this run, overriding config (true or false)")
+@@ -126,0 +131,9 @@ Examples:
++func applySlackConversationOverrides(cmd *cobra.Command, opts *slack.ImportOptions, dms, groupDMs bool) {
++	if cmd.Flags().Changed("dms") {
++		opts.ExcludeDMs = !dms
++	}
++	if cmd.Flags().Changed("group-dms") {
++		opts.ExcludeGroupDMs = !groupDMs
++	}
++}
++

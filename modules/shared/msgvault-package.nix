@@ -11,7 +11,7 @@
   msgvaultSrc,
 }:
 let
-  version = "0.19.3-unstable-2026-09-25-migration-fix";
+  version = "0.19.3-unstable-2026-09-25-local-fixes";
   revision = msgvaultSrc.rev;
   system = stdenvNoCC.hostPlatform.system;
 
@@ -85,6 +85,7 @@ in
   patches = [
     ./msgvault-person-fact-migration.patch
     ./msgvault-cache-message-id.patch
+    ./msgvault-slack-run-scope.patch
   ];
   vendorHash = "sha256-nzStVmLzjXg8ZfJxO2ZKi2yamNq9GUCq4rTaGZbdYWM=";
   proxyVendor = true;
