@@ -95,13 +95,16 @@ in
   };
 
   # The desktop SSH bootstrap adds ~/.local/bin without loading zsh's PATH.
-  home.file.".local/bin/codex" = {
-    executable = true;
-    text = ''
-      #!/bin/sh
-      exec "$HOME/.local/libexec/codex/codex" "$@"
-    '';
-  };
+  # Codex's updater replaces ~/.local/bin/codex, so Home Manager must not own
+  # it; only seed the installer's own symlink when the path is missing.
+  home.activation.codexLauncher = lib.hm.dag.entryAfter [ "linkGeneration" ] ''
+    codex_bin="$HOME/.codex/packages/standalone/current/bin/codex"
+    if [ ! -e "$HOME/.local/bin/codex" ] && [ ! -L "$HOME/.local/bin/codex" ] \
+      && [ -x "$codex_bin" ]; then
+      run mkdir -p "$HOME/.local/bin"
+      run ln -s "$codex_bin" "$HOME/.local/bin/codex"
+    fi
+  '';
 
   # VS Code strips LD_LIBRARY_PATH from its remote extension host. Launch the
   # bundled marimo language server through a narrow wrapper that restores the

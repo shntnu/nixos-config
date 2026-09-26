@@ -313,6 +313,9 @@ A replacement symlink bypasses the file-limit wrapper and causes Home Manager's 
 Codex 0.155.0 still passed a 256-file inherited soft limit to a child command in a direct app-server test.
 The macOS configuration now sets a minimum inherited launchd soft limit of 4096 and leaves the executable path to the installer.
 The launch job preserves kernel ceilings; activation and fresh GUI/SSH process checks must verify inheritance.
+The Linux profile kept its own Home Manager launcher at the same path, and on 2026-09-24 the updater replaced it on one server, so the next deployment failed and rolled back.
+The Linux profile now leaves the path to the installer as well and only seeds the installer's symlink when the path is missing.
+Apply a platform-specific fix of this kind to every platform that declares the same path.
 See [Codex CLI](docs/development.md#codex-cli) for installation and verification.
 
 ## 2026-09-05: Review structure after Markdown reflow

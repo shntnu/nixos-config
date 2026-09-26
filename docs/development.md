@@ -172,26 +172,21 @@ On macOS, the installer owns `~/.local/bin/codex`, including replacements made b
 Nix sets a minimum inherited launchd soft file limit of 4096, so Codex does not need a wrapper at that path.
 The limit applies to newly launched GUI and SSH processes across the Mac; existing processes keep their inherited limits.
 The launch job preserves the kernel file ceilings and uses the kernel per-process ceiling as the numeric hard limit when raising the soft limit.
-On Linux, Home Manager still owns the launcher at `~/.local/bin/codex`, which executes the installer-owned binary under `~/.local/libexec/codex`.
+On Linux, the installer also owns `~/.local/bin/codex`, which the desktop SSH bootstrap needs because it does not load zsh's `PATH`.
+Home Manager only creates the installer's symlink there when the path is missing, so an updater replacement never blocks activation.
 
 The desktop app's automatic updater is separate from these standalone CLI installations.
 This configuration does not enable unattended CLI updates, and startup update checks do not establish a scheduled updater.
 See OpenAI's [app update documentation](https://learn.chatgpt.com/docs/enterprise/manage-app-updates) and [startup update setting](https://learn.chatgpt.com/docs/config-file/config-reference#check_for_update_on_startup).
 
-On macOS, install or update with:
+Install or update with:
 
 ```bash
 curl -fsSL https://chatgpt.com/codex/install.sh | \
   env PATH="$HOME/.local/bin:$PATH" sh
 ```
 
-On Linux, install the binary before activating Home Manager:
-
-```bash
-curl -fsSL https://chatgpt.com/codex/install.sh | \
-  env PATH="$HOME/.local/libexec/codex:$PATH" \
-    CODEX_INSTALL_DIR="$HOME/.local/libexec/codex" sh
-```
+Older Linux installations also have a `~/.local/libexec/codex/codex` symlink into the same standalone release; it is unused and harmless.
 
 For unattended deployment, add `CODEX_NON_INTERACTIVE=1` to `env`.
 That variable skips installer prompts for this invocation; it does not schedule future updates.
