@@ -8,7 +8,7 @@ NC='\033[0m'
 LOCAL_HOSTNAME=$(scutil --get LocalHostName)
 case "$LOCAL_HOSTNAME" in
   caladan)            FLAKE="caladan" ;;
-  wm89a-c9c)          FLAKE="laptop" ;;
+  wm89a-c9c|lm781-201) FLAKE="laptop" ;;
   *)
     echo "${RED}Unknown LocalHostName: $LOCAL_HOSTNAME${NC}"
     echo "${RED}Add a mapping in apps/aarch64-darwin/rollback${NC}"

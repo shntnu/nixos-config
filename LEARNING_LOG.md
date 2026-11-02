@@ -1,5 +1,19 @@
 # Nix Learning Log
 
+## 2026-11-02: Bootstrapping a fresh Mac with remote deploy-rs
+
+A first `nix run .#deploy -- '.#<mac>.system'` to a Mac with only the official Nix installer hits several one-time obstacles before nix-darwin manages the machine.
+The target's noninteractive SSH shell cannot find `nix-store`, because the installer adds Nix to the PATH only for interactive shells.
+A temporary `~/.zshenv` that sources `/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh` fixes the copy; Home Manager later moves it to `~/.zshenv.hm-bak`.
+The target's daemon rejects unsigned paths built on the controller until the SSH user is trusted, so append `trusted-users = root <user>` to `/etc/nix/nix.conf` and restart `org.nixos.nix-daemon` once.
+Activation then refuses to overwrite the installer's `/etc/nix/nix.conf`, `/etc/bashrc`, and `/etc/zshrc`; rename each with a `.before-nix-darwin` suffix.
+nix-homebrew cannot migrate a stale `/opt/homebrew` left by a previous owner, so move it aside.
+Casks whose installers call `sudo` fail inside the deployment because no terminal can answer the prompt.
+Install them once with `ssh -t <mac> '/opt/homebrew/bin/brew install --cask <casks>'`, using `--adopt` for apps that device management already installed.
+
+On a managed Mac, Remote Login may admit only the admin group.
+If admin rights are temporary, SSH accepts the key and then closes the connection once they lapse, which looks like an intermittent network fault.
+
 ## 2026-09-14: Keep large remote deployment outputs on the builder
 
 Nix distributed builds copy their outputs back to the controller, even with `builders-use-substitutes` enabled.

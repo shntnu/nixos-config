@@ -164,7 +164,7 @@
           "-o" "ServerAliveCountMax=3"
         ];
         nodes = nixpkgs.lib.mapAttrs (host: configuration: {
-          hostname = if host == "laptop" then "wm89a-c9c" else host;
+          hostname = if host == "laptop" then "lm781-201" else host;
           profiles.system = {
             user = "root";
             interactiveSudo = true;
