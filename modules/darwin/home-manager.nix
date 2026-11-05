@@ -32,6 +32,7 @@ in
   home-manager.users.${user} = { config, pkgs, lib, ... }: {
     imports = [
       ../shared/home-manager.nix
+      ../shared/kata-service.nix
       ../shared/msgvault-remote.nix
     ];
 

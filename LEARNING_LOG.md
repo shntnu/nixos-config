@@ -1,5 +1,14 @@
 # Nix Learning Log
 
+## 2026-11-04: A private-network daemon can start before its address exists
+
+**Key Insight:** A service that binds a literal overlay-network address can start before the overlay assigns it, so the bind fails and the service restarts in a loop.
+A Linux Kata user unit restarted 54 times at five-second intervals before Tailscale brought up its address, and it bound only on the next attempt.
+The macOS launchd launcher therefore waits up to two minutes for the address to appear on an interface before it starts the daemon.
+launchd also has no `EnvironmentFile`, so a launcher must validate and load an owner-only token file itself, and Home Manager must install the daemon's `config.toml` before `setupLaunchAgents` loads the agent.
+
+---
+
 ## 2026-11-02: Bootstrapping a fresh Mac with remote deploy-rs
 
 A first `nix run .#deploy -- '.#<mac>.system'` to a Mac with only the official Nix installer hits several one-time obstacles before nix-darwin manages the machine.

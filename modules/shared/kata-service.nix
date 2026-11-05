@@ -7,7 +7,9 @@
 
 let
   cfg = config.services.kata;
+  inherit (pkgs.stdenv.hostPlatform) isDarwin isLinux;
   tomlFormat = pkgs.formats.toml { };
+  logDirectory = "${config.home.homeDirectory}/Library/Logs";
 
   configData =
     lib.optionalAttrs cfg.client.enable {
@@ -156,6 +158,52 @@ let
           transfer_backup "$local_file"
         done
       ''}
+      ${lib.optionalString (cfg.backup.successCommand != null) cfg.backup.successCommand}
+    '';
+  };
+
+  # launchd has no EnvironmentFile, so the macOS daemon starts through this
+  # launcher. It loads only the owner-only token file and first waits up to
+  # two minutes for the private listen address, because an overlay network
+  # such as Tailscale can assign it after launchd starts login agents.
+  serverLauncher = pkgs.writeShellApplication {
+    name = "kata-server";
+    runtimeInputs = [
+      pkgs.coreutils
+      pkgs.gnugrep
+    ];
+    text = ''
+      environment_file=${lib.escapeShellArg cfg.server.environmentFile}
+      listen=${lib.escapeShellArg cfg.server.listen}
+
+      if [[ ! -f "$environment_file" || -L "$environment_file" ]]; then
+        echo "Kata server environment file is missing or is not a regular file" >&2
+        exit 1
+      fi
+      if [[ "$(/usr/bin/stat -f '%u' "$environment_file")" != "$(id -u)" ||
+        "$(/usr/bin/stat -f '%Lp' "$environment_file")" != 600 ]]; then
+        echo "Kata server environment file must be owned by the service user with mode 0600" >&2
+        exit 1
+      fi
+
+      listen_host="''${listen%:*}"
+      for _ in $(seq 60); do
+        if /sbin/ifconfig | grep -Fq "inet $listen_host "; then
+          break
+        fi
+        sleep 2
+      done
+
+      set -a
+      # shellcheck source=/dev/null
+      source "$environment_file"
+      set +a
+      if [[ -z "''${KATA_AUTH_TOKEN:-}" ]]; then
+        echo "Kata server environment file does not set KATA_AUTH_TOKEN" >&2
+        exit 1
+      fi
+
+      exec ${cfg.package}/bin/kata daemon start --foreground --listen "$listen"
     '';
   };
 in
@@ -165,8 +213,8 @@ in
 
     package = lib.mkOption {
       type = lib.types.package;
-      default = pkgs.callPackage ../shared/kata.nix { };
-      defaultText = lib.literalExpression "pkgs.callPackage ../shared/kata.nix { }";
+      default = pkgs.callPackage ./kata.nix { };
+      defaultText = lib.literalExpression "pkgs.callPackage ./kata.nix { }";
       description = "Pinned Kata package used by the client, daemon, and backup job.";
     };
 
@@ -217,8 +265,10 @@ in
       environmentFile = lib.mkOption {
         type = lib.types.str;
         description = ''
-          Runtime systemd EnvironmentFile containing KATA_AUTH_TOKEN.
-          The file is provisioned outside Nix and must be owner-only.
+          Runtime file containing KATA_AUTH_TOKEN, provisioned outside Nix
+          and owner-only. On Linux it is the systemd EnvironmentFile and may
+          use specifiers such as %h; on macOS it must be an absolute path,
+          which the launchd launcher requires to be a mode-0600 regular file.
         '';
       };
     };
@@ -242,6 +292,26 @@ in
         type = lib.types.str;
         default = "15m";
         description = "Maximum randomized delay applied to each scheduled backup.";
+      };
+
+      calendarInterval = lib.mkOption {
+        type = lib.types.listOf (lib.types.attrsOf lib.types.int);
+        default = [
+          {
+            Hour = 0;
+            Minute = 0;
+          }
+        ];
+        description = "launchd StartCalendarInterval entries for the macOS backup job.";
+      };
+
+      successCommand = lib.mkOption {
+        type = lib.types.nullOr lib.types.lines;
+        default = null;
+        description = ''
+          Shell commands run after each successful export and off-host copy,
+          such as a dead-man's-switch heartbeat.
+        '';
       };
 
       offHost = {
@@ -303,28 +373,41 @@ in
           || builtins.match "/[A-Za-z0-9._/-]+" cfg.backup.offHost.identityFile != null;
         message = "Kata off-host SSH identity must be a simple absolute path";
       }
+      {
+        assertion = !(isDarwin && cfg.server.enable) || lib.hasPrefix "/" cfg.server.environmentFile;
+        message = "On macOS, services.kata.server.environmentFile must be an absolute path";
+      }
     ];
 
     # Home Manager's normal home.file entries are world-readable Nix-store
     # symlinks. The TOML is non-secret, but Kata's acceptance contract requires
     # an owner-only regular file, so install it during activation instead.
-    home.activation.kataConfiguration = lib.hm.dag.entryAfter [ "writeBoundary" ] ''
-      $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -d -m 0700 \
-        ${lib.escapeShellArg cfg.homeDirectory}
-      $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -m 0600 \
-        ${configFile} ${lib.escapeShellArg "${cfg.homeDirectory}/config.toml"}
+    # On macOS, install it before launchd loads the daemon so the first start
+    # reads the current listener and browser origin.
+    home.activation.kataConfiguration =
+      (
+        if isDarwin then
+          lib.hm.dag.entryBetween [ "setupLaunchAgents" ] [ "writeBoundary" ]
+        else
+          lib.hm.dag.entryAfter [ "writeBoundary" ]
+      )
+        ''
+          $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -d -m 0700 \
+            ${lib.escapeShellArg cfg.homeDirectory}
+          $DRY_RUN_CMD ${pkgs.coreutils}/bin/install -m 0600 \
+            ${configFile} ${lib.escapeShellArg "${cfg.homeDirectory}/config.toml"}
 
-      for state_file in \
-        ${lib.escapeShellArg "${cfg.homeDirectory}/kata.db"} \
-        ${lib.escapeShellArg "${cfg.homeDirectory}/kata.db-wal"} \
-        ${lib.escapeShellArg "${cfg.homeDirectory}/kata.db-shm"}; do
-        if [[ -e "$state_file" ]]; then
-          $DRY_RUN_CMD ${pkgs.coreutils}/bin/chmod 0600 "$state_file"
-        fi
-      done
-    '';
+          for state_file in \
+            ${lib.escapeShellArg "${cfg.homeDirectory}/kata.db"} \
+            ${lib.escapeShellArg "${cfg.homeDirectory}/kata.db-wal"} \
+            ${lib.escapeShellArg "${cfg.homeDirectory}/kata.db-shm"}; do
+            if [[ -e "$state_file" ]]; then
+              $DRY_RUN_CMD ${pkgs.coreutils}/bin/chmod 0600 "$state_file"
+            fi
+          done
+        '';
 
-    systemd.user.services = lib.mkIf cfg.server.enable {
+    systemd.user.services = lib.mkIf (isLinux && cfg.server.enable) {
       kata = {
         Unit = {
           Description = "Kata shared work-ledger daemon";
@@ -372,7 +455,7 @@ in
       };
     };
 
-    systemd.user.timers.kata-backup = lib.mkIf cfg.backup.enable {
+    systemd.user.timers.kata-backup = lib.mkIf (isLinux && cfg.backup.enable) {
       Unit.Description = "Schedule owner-only Kata JSONL exports";
       Timer = {
         OnCalendar = cfg.backup.onCalendar;
@@ -381,6 +464,49 @@ in
         Unit = "kata-backup.service";
       };
       Install.WantedBy = [ "timers.target" ];
+    };
+
+    # macOS has no linger: these agents run in the logged-in user's GUI
+    # domain, so an unattended server needs that session to stay logged in.
+    # KeepAlive restarts the daemon after any exit; stop it deliberately with
+    # launchctl bootout rather than kata daemon stop.
+    launchd.agents = lib.mkIf (isDarwin && cfg.server.enable) {
+      kata = {
+        enable = true;
+        config = {
+          ProgramArguments = [ "${serverLauncher}/bin/kata-server" ];
+          EnvironmentVariables = {
+            HOME = config.home.homeDirectory;
+            KATA_HOME = cfg.homeDirectory;
+            KATA_TELEMETRY_ENABLED = "0";
+            KATA_TRUST_PRIVATE_NETWORK = "1";
+          };
+          WorkingDirectory = config.home.homeDirectory;
+          RunAtLoad = true;
+          KeepAlive = true;
+          ThrottleInterval = 10;
+          Umask = 63; # 0077
+          StandardOutPath = "${logDirectory}/kata.out.log";
+          StandardErrorPath = "${logDirectory}/kata.err.log";
+        };
+      };
+
+      kata-backup = lib.mkIf cfg.backup.enable {
+        enable = true;
+        config = {
+          ProgramArguments = [ "${backupScript}/bin/kata-backup" ];
+          EnvironmentVariables = {
+            HOME = config.home.homeDirectory;
+            KATA_TELEMETRY_ENABLED = "0";
+          };
+          WorkingDirectory = config.home.homeDirectory;
+          StartCalendarInterval = cfg.backup.calendarInterval;
+          ProcessType = "Background";
+          Umask = 63; # 0077
+          StandardOutPath = "${logDirectory}/kata-backup.out.log";
+          StandardErrorPath = "${logDirectory}/kata-backup.err.log";
+        };
+      };
     };
   };
 }

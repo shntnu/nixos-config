@@ -71,7 +71,7 @@ let
 in
 {
   imports = [
-    ./kata.nix
+    ../shared/kata-service.nix
     ../shared/msgvault-remote.nix
     ../shared/nixpkgs.nix
     ../shared/home-manager.nix

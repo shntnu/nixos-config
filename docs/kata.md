@@ -1,7 +1,7 @@
 # Kata as a work ledger for coding agents and humans
 
 [Kata](https://www.katatracker.com/) is a lightweight issue tracker designed for coding-agent work.
-This specification builds one durable Linux Kata server, same-host and remote CLI clients, stable repository project bindings, scheduled off-host backups, and the built-in browser UI over a trusted private network.
+This specification builds one durable Kata server on Linux or macOS, same-host and remote CLI clients, stable repository project bindings, scheduled off-host backups, and the built-in browser UI over a trusted private network.
 It is written as a portable handoff for a coding agent and can be implemented with Nix or translated into another managed configuration system.
 
 The current pinned package is Kata `v0.15.1`, commit `c31c2a8`; the audited live Linux deployment also runs that build.
@@ -30,7 +30,7 @@ The ordinary setup instruction does not authorize changing private-network ACLs 
 
 ## Required outcome
 
-One always-on unprivileged Linux account owns one SQLite database and the only Kata daemon for the deployment.
+One always-on unprivileged account owns one SQLite database and the only Kata daemon for the deployment, as a Linux systemd user service or a macOS launchd agent.
 Every CLI, including CLIs on the server, resolves its workspace to that daemon instead of starting an independent local ledger.
 The daemon listens on one literal stable private address, never `0.0.0.0`, `::`, or a public interface.
 
@@ -76,7 +76,7 @@ Preserve the host's existing private-network identity and ACL policy unless the 
 This repository contains the tested implementation:
 
 - [`modules/shared/kata.nix`](../modules/shared/kata.nix) packages the pinned release.
-- [`modules/headless/kata.nix`](../modules/headless/kata.nix) defines the reusable Home Manager client, server, backup service, and timer options.
+- [`modules/shared/kata-service.nix`](../modules/shared/kata-service.nix) defines the reusable Home Manager client, server, and backup options, with systemd user units on Linux and launchd agents on macOS.
 - [`modules/shared/packages.nix`](../modules/shared/packages.nix) installs the CLI in the shared profile.
 
 On a Nix-managed machine, read those modules and use them instead of recreating their generated TOML, systemd units, or backup wrapper by hand.
@@ -190,6 +190,16 @@ loginctl show-user <server-user> -p Linger
 Ask before enabling linger if the user did not identify this account as an always-on server.
 A foreground process orphaned from an SSH session or running in `session-*.scope` is not a managed service.
 The accepted daemon PID must belong to the loaded Kata unit and its service cgroup.
+
+### macOS launchd agent
+
+On macOS the same module declares a Home Manager launchd agent instead of a systemd unit.
+launchd has no `EnvironmentFile`, so the agent runs a launcher that requires an absolute, owner-only, mode-`0600` token file, loads only that file, and runs the same foreground command.
+The launcher first waits up to two minutes for the listen address, because a private overlay network can assign it after launchd starts login agents; without the wait, the daemon fails to bind and restarts in a loop.
+Home Manager installs `config.toml` before it loads the agents, so the first start reads the current listener and browser origin.
+`KeepAlive` restarts the daemon after any exit, so stop it deliberately with `launchctl bootout gui/<uid>/org.nix-community.home.kata`.
+macOS has no linger: the agent runs in the logged-in user's GUI domain, so an unattended server needs that session to stay logged in, including after a reboot.
+The backup job uses `StartCalendarInterval` instead of a timer and can run a success command such as a heartbeat ping.
 
 ## Configure clients and workspaces
 
@@ -361,6 +371,8 @@ Test installed artifacts and the active managed service.
 9. Kill only the verified service PID, wait for automatic recovery, and repeat the checks.
 10. End the launching login or SSH session, reconnect, and prove the service remains available through linger.
 
+On macOS, replace the unit, cgroup, and linger checks with `launchctl print gui/<uid>/org.nix-community.home.kata`, which must show a running job whose PID owns the listener, and prove the service survives the end of an SSH session while the GUI session stays logged in.
+
 Host reboot is the strongest boot-durability test and requires separate action-time authorization.
 If it is not performed, report reboot durability as untested.
 
@@ -428,7 +440,7 @@ The upstream [agent workflow](https://www.katatracker.com/workflows/agents/) con
 - A stale process holding the configured listener can make the managed unit restart repeatedly; inspect listener ownership and the service cgroup before accepting service health.
 - A foreground process, transient unit, or successful build does not prove enabled service, login independence, declarative reapplication, or reboot durability.
 
-Upgrading Kata, changing the authentication model, adding another human, exposing the service beyond the trusted private network, or replacing systemd requires a new design review and the complete acceptance suite.
+Upgrading Kata, changing the authentication model, adding another human, exposing the service beyond the trusted private network, or moving the daemon to another service manager requires a new design review and the complete acceptance suite.
 
 ## Evidence and remaining boundaries
 
