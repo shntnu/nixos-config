@@ -114,6 +114,24 @@ After a failed first Home Manager deployment, select the previous path from `hom
 Macs retain the existing `rollback` app.
 Nix rollback does not undo changes to application data or Homebrew installations.
 
+### Magic rollback
+
+Deploy-rs keeps magic rollback on.
+After activation, the target waits for the controller to reconnect over SSH and confirm; if no confirmation arrives within the timeout (30 seconds by default, `--confirm-timeout <seconds>`), the target reactivates its previous generation by itself.
+This protects remote hosts from a change that breaks SSH or networking.
+
+The controller's "Deployment confirmed" line does not prove the target received the confirmation.
+On 2026-11-06 every deploy to `lm781-201` printed it and then rolled back when the timeout expired, and the controller showed nothing.
+After every Mac deployment, an agent must therefore:
+
+1. Wait longer than the confirmation timeout.
+2. Compare `ssh <mac> readlink /run/current-system` with the expected path from `nix path-info '.#darwinConfigurations.<host>.system'`.
+3. Check that `ssh <mac> pgrep -fl activate-rs` finds no process; while one runs, a rollback can still happen.
+
+If the target rolled back while SSH still works, rerun the deployment with `--magic-rollback false` and verify it the same way.
+Without magic rollback nothing recovers a broken deployment automatically, so use it only when SSH access has just been shown to work or someone can reach the machine directly; recover with `nix run .#rollback` on the target.
+Do not lengthen the timeout as a fix; that only delays the same rollback.
+
 ## Dependency updates
 
 ```bash

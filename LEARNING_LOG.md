@@ -1,5 +1,14 @@
 # Nix Learning Log
 
+## 2026-11-06: A confirmed deploy-rs activation can still roll back
+
+**Key Insight:** Deploy-rs printed "Deployment confirmed" for `lm781-201`, yet the target never registered the confirmation and reactivated its previous generation when the timeout expired, without any sign on the controller.
+Two deploys, the second with `--confirm-timeout 120`, rolled back this way; `--magic-rollback false` made the third stick.
+The cause was not isolated.
+Verify the target's `/run/current-system` after the timeout instead of trusting the controller output; [the deployment guide](docs/development.md#magic-rollback) has the procedure.
+
+---
+
 ## 2026-11-04: A private-network daemon can start before its address exists
 
 **Key Insight:** A service that binds a literal overlay-network address can start before the overlay assigns it, so the bind fails and the service restarts in a loop.
