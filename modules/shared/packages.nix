@@ -6,7 +6,7 @@ let
     name = "kata";
     text = ''
       config_file="$HOME/.kata/config.toml"
-      env_file="''${XDG_CONFIG_HOME:-$HOME/.config}/kata/spirit.env"
+      env_file="''${XDG_CONFIG_HOME:-$HOME/.config}/kata/client.env"
       if [[ ! -f "$config_file" || ! -f "$env_file" ]]; then
         echo "kata: shared client configuration is incomplete" >&2
         exit 1
