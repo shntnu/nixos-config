@@ -30,6 +30,7 @@ For Nix changes, inspect the working tree and run `git add .` before building be
 Build the affected host without activation first, using [the platform workflow](docs/development.md#build-and-apply).
 Shared module changes require coverage of both Darwin and headless consumers.
 Apply when activation is in scope, using that platform's workflow.
+After a remote Mac deployment, verify the target's active system after the confirmation timeout, as [magic rollback](docs/development.md#magic-rollback) describes; the controller's "Deployment confirmed" does not prove it stayed.
 For installation or service changes, verify the active executable or service on every requested host; a successful build does not prove running processes use it.
 Run `git diff --check` and checks appropriate to changed behavior; broaden or repeat only for new changes, failures, or unresolved concerns.
 At handoff, distinguish local, committed, pushed, built, and activated state, and name remaining restart or deployment steps.
