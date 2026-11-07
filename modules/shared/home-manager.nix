@@ -199,6 +199,7 @@ in
     ssh = {
       enable = true;
       enableDefaultConfig = false;
+      extraOptionOverrides.Include = "~/.sky/generated/ssh/*";
       includes = [ "${config.home.homeDirectory}/.ssh/config_external" ];
       settings."*" = {
         AddKeysToAgent = "yes";
